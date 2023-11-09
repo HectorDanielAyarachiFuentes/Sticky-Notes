@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --pink: #f45891;
+  --yellow: #fbee9d;
+  --green: #a9ef58;
+  --blue: #34add1;
+  --purple: #c97fe5;
+}
+
+* {
+  margin: 0;
+}
+
+#board {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #cd995f;
+  overflow: hidden;
+  perspective: 1600px;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+  box-sizing: border-box;
+  padding: 50px;
+}
+
+.stickynote {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  box-sizing: border-box;
+  padding: 10px;
+  transform: rotateX(5deg);
+  box-shadow: -1px 10px 5px -4px rgba(0, 0, 0, 0.012), 
+              inset 0 24px 30px -12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stickynote:nth-child(n) {
+  background: var(--purple);
+}
+
+.stickynote:nth-child(2n) {
+  background: var(--pink);
+}
+
+.stickynote:nth-child(3n) {
+  background: var(--green);
+}
+
+.stickynote:nth-child(4n) {
+  background: var(--blue);
+}
+
+.stickynote:nth-child(5n) {
+  background: var(--yellow);
+}
+
+.stickynote-text {
+  border-radius: 10px;
+  color: #373C49;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: center;
+  resize: none;
+  overflow: hidden;
+  font-family: 'Playpen Sans', cursive;
+}
+
+.stickynote-text:focus {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.stickynote-text::placeholder {
+  color: black;
+  opacity: 30%;
+}
