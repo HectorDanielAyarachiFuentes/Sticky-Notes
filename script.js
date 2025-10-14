@@ -4,7 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const palette = document.querySelector("#note-palette");
     const boardList = document.querySelector("#board-list");
     const addBoardBtn = document.querySelector("#add-board-btn");
+    const searchInput = document.querySelector("#search-input");
     const boardManager = document.querySelector("#board-manager");
+    const globalSearchResults = document.querySelector("#global-search-results");
     const trashCan = document.querySelector("#trash-can");
 
     // --- CONFIGURACIÓN INICIAL ---
@@ -76,12 +78,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- FUNCIONES DE LÓGICA DE LA APP ---
-    function switchBoard(boardId) {
+    function switchBoard(boardId, noteToHighlightId = null) {
         if (boardId === appState.activeBoardId) return;
         appState.activeBoardId = boardId;
         saveState();
         renderBoardList();
         renderActiveBoard();
+        searchInput.value = ''; // Limpiar búsqueda al cambiar de tablero
+        globalSearchResults.innerHTML = ''; // Limpiar resultados globales
+        board.classList.remove('searching');
+
+        if (noteToHighlightId) {
+            // Pequeño delay para asegurar que la nota está en el DOM
+            setTimeout(() => {
+                const noteEl = board.querySelector(`.stickynote[data-note-id="${noteToHighlightId}"]`);
+                if (noteEl) {
+                    noteEl.classList.add('highlight');
+                    noteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Quitar el resaltado después de un tiempo
+                    setTimeout(() => noteEl.classList.remove('highlight'), 2500);
+                }
+            }, 100);
+        }
     }
 
     function addNewBoard() {
@@ -95,6 +113,58 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             switchBoard(newBoardId);
         }
+    }
+
+    function handleSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        globalSearchResults.innerHTML = ''; // Limpiar resultados anteriores
+
+        if (searchTerm === '') {
+            board.classList.remove('searching');
+            board.querySelectorAll('.stickynote').forEach(noteEl => {
+                noteEl.classList.remove('highlight');
+            });
+            return;
+        }
+
+        board.classList.add('searching');
+        
+        // Recorrer TODOS los tableros
+        Object.values(appState.boards).forEach(currentBoard => {
+            currentBoard.notes.forEach(note => {
+                // Usamos un div temporal para quitar el HTML y buscar solo en el texto
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.content;
+                const noteText = tempDiv.textContent || tempDiv.innerText || "";
+
+                if (noteText.toLowerCase().includes(searchTerm)) {
+                    // Si la nota está en el tablero ACTIVO, la resaltamos
+                    if (currentBoard.id === appState.activeBoardId) {
+                        const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
+                        noteEl?.classList.add('highlight');
+                    } 
+                    // Si la nota está en OTRO tablero, la mostramos en los resultados globales
+                    else {
+                        const resultItem = document.createElement('div');
+                        resultItem.classList.add('search-result-item');
+                        resultItem.innerHTML = `
+                            <span class="board-name">${currentBoard.name}</span>
+                            <span class="note-snippet">${noteText.substring(0, 100)}</span>
+                        `;
+                        resultItem.addEventListener('click', () => {
+                            switchBoard(currentBoard.id, note.id);
+                        });
+                        globalSearchResults.appendChild(resultItem);
+                    }
+                } else {
+                    // Si no coincide, nos aseguramos de que no esté resaltada (en el tablero activo)
+                    if (currentBoard.id === appState.activeBoardId) {
+                        const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
+                        noteEl?.classList.remove('highlight');
+                    }
+                }
+            });
+        });
     }
 
     function autoLink(text) {
@@ -124,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (noteData.content !== newContent) {
                 noteData.content = newContent;
                 saveState();
+                handleSearch(); // Re-evaluar la búsqueda si el contenido cambia
             }
         });
 
@@ -299,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         addBoardBtn.addEventListener('click', addNewBoard);
+        searchInput.addEventListener('input', handleSearch);
         document.addEventListener('pointerdown', handlePointerDown);
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);

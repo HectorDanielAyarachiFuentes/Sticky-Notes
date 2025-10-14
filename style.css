@@ -53,6 +53,7 @@ body {
 #board-manager li:hover { background-color: var(--sidebar-hover); }
 #board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
 #board-manager button {
+    margin-top: 15px; /* Espacio sobre el botón */
     width: 100%;
     padding: 12px;
     background-color: var(--rojo-circo);
@@ -66,6 +67,48 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
+}
+#board-manager #search-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0 0 0;
+    border-radius: 6px;
+    border: 1px solid var(--sidebar-hover);
+    background-color: #3a3a3a;
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+#board-manager #search-input:focus {
+    outline: none;
+    border-color: var(--rojo-circo);
+    background-color: var(--sidebar-bg);
+}
+
+/* --- Resultados de Búsqueda Global --- */
+#global-search-results {
+    margin-top: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+.search-result-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background-color: #3a3a3a;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-left: 3px solid var(--azul-carpa);
+}
+.search-result-item:hover { background-color: var(--sidebar-hover); }
+.search-result-item .note-snippet {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    opacity: 0.8;
+    font-size: 0.85em;
 }
 #board-manager button:hover { background-color: var(--azul-carpa); transform: translateY(-2px); }
 #board-manager .icon { font-size: 1.2em; }
@@ -141,6 +184,18 @@ body {
     background-size: 20px 20px;
     overflow: auto; /* Permite scroll si las notas se salen */
 }
+/* Estilos para el modo búsqueda */
+#board.searching .stickynote {
+    opacity: 0.2;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+#board.searching .stickynote.highlight {
+    opacity: 1;
+    transform: scale(1.03) !important; /* !important para sobreescribir el transform al arrastrar */
+    box-shadow: 0 0 25px 5px var(--amarillo-luz);
+    z-index: 999;
+}
+
 
 /* --- NOTAS DE PLANTILLA EN LA PALETA --- */
 .palette-note {
