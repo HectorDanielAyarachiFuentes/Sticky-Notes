@@ -31,20 +31,25 @@ document.querySelectorAll('textarea').forEach(textarea => {
 // If you are reading this you can actually place stickies with an angle if you do it fast enough ;)
 const draggables = Draggable.create(".stickynote", {
   type: "x,y",
+  inertia: true,
   onDragStart: function () {
-    // InertiaPlugin.track(this.target, "x"); // Remove this line
+    gsap.killTweensOf(this.target);
     grabNoteAnimation(this.target);
     const inputField = this.target.querySelector('.stickynote-text');
     inputField.placeholder = "Stick Me";
-  },
-  onDrag: function () {
-    // Remove the InertiaPlugin related code in this section
-    // ...
   },
   onDragEnd: function () {
     releaseNoteAnimation(this.target);
     const inputField = this.target.querySelector('.stickynote-text');
     inputField.placeholder = "Write On Me";
+    // If you drag fast, it will spin, otherwise it will just land flat
+    if (this.getDirection("velocity") !== "left" && this.getDirection("velocity") !== "right") {
+      gsap.to(this.target, {
+        rotation: 0,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.5)"
+      });
+    }
   },
   dragClickables: false,
 });
@@ -1340,4 +1345,3 @@ document.querySelectorAll(".stickynote-text").forEach((textField) => {
     delete e.default;
   }
 });
-
