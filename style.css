@@ -215,6 +215,44 @@ body {
     background-size: 20px 20px;
     overflow: auto; /* Permite scroll si las notas se salen */
 }
+/* --- CONTROLES DE ZOOM --- */
+#zoom-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(75, 75, 75, 0.85);
+    padding: 8px 12px;
+    border-radius: 25px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(5px);
+    color: var(--text-light);
+}
+
+#zoom-controls button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--sidebar-hover);
+    color: var(--text-light);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+    padding: 0; /* Reset padding */
+}
+
+#zoom-controls button:hover {
+    background-color: var(--rojo-circo);
+    transform: scale(1.1);
+}
 /* Estilos para el modo búsqueda */
 #board.searching .stickynote {
     opacity: 0.2;

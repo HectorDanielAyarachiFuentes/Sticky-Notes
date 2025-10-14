@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const boardManager = document.querySelector("#board-manager");
     const globalSearchResults = document.querySelector("#global-search-results");
     const trashCan = document.querySelector("#trash-can");
+    const zoomInBtn = document.querySelector("#zoom-in-btn");
+    const zoomOutBtn = document.querySelector("#zoom-out-btn");
+    const zoomResetBtn = document.querySelector("#zoom-reset-btn");
+    const zoomLevelDisplay = document.querySelector("#zoom-level-display");
     const templateContainer = document.querySelector("#template-container");
 
     // --- CONFIGURACIÓN INICIAL ---
@@ -84,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         notes: []
                     }
                 },
+                zoomLevel: 1.0,
                 activeBoardId: initialBoardId
             };
         }
@@ -109,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
 
+        updateZoom(); // Aplicar el zoom guardado al renderizar
         if (currentBoard.notes.length === 0) {
             const welcomeMsg = document.createElement('div');
             welcomeMsg.classList.add('welcome-message');
@@ -120,7 +126,28 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
-    
+
+    // --- FUNCIONES DE ZOOM ---
+    function updateZoom(newZoomLevel) {
+        if (newZoomLevel !== undefined) {
+            // Limitar el zoom entre 20% y 200%
+            appState.zoomLevel = Math.max(0.2, Math.min(2, newZoomLevel));
+        }
+        board.style.transform = `scale(${appState.zoomLevel})`;
+        zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
+        saveState();
+    }
+
+    function handleZoomIn() {
+        updateZoom(appState.zoomLevel + 0.1);
+    }
+    function handleZoomOut() {
+        updateZoom(appState.zoomLevel - 0.1);
+    }
+    function handleZoomReset() {
+        updateZoom(1.0);
+    }
+
     // --- FUNCIONES DE LÓGICA DE LA APP ---
     function switchBoard(boardId, noteToHighlightId = null) {
         if (boardId === appState.activeBoardId) return;
@@ -306,16 +333,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const color = target.dataset.color;
             // **CORRECCIÓN:** Calcular posición inicial relativa al tablero
-            const mouseXInBoard = e.clientX - boardRect.left;
-            const mouseYInBoard = e.clientY - boardRect.top;
+            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
+            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
 
             const newNoteData = {
                 id: `note-${Date.now()}`,
                 content: '',
                 width: 200, height: 200, color: color,
                 rotation: (Math.random() - 0.5) * 8,
-                x: mouseXInBoard - 100, // Centrar la nota en el cursor
-                y: mouseYInBoard - 100,
+                x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar la nota en el cursor, ajustado al zoom
+                y: mouseYInBoard - (100 / appState.zoomLevel),
             };
 
             appState.boards[appState.activeBoardId].notes.push(newNoteData);
@@ -323,8 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData = newNoteData;
             
             // **CORRECCIÓN:** El desfase ahora es desde el centro de la nota
-            offsetX = 100;
-            offsetY = 100;
+            offsetX = 100 / appState.zoomLevel;
+            offsetY = 100 / appState.zoomLevel;
 
             activeNote.classList.add('dragging');
             trashCan.classList.add('visible');
@@ -336,9 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNote = target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
 
-            // **CORRECCIÓN:** Calcular el desfase relativo al tablero
-            const mouseXInBoard = e.clientX - boardRect.left;
-            const mouseYInBoard = e.clientY - boardRect.top;
+            // **CORRECCIÓN:** Calcular el desfase relativo al tablero y AJUSTADO AL ZOOM
+            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
+            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
             offsetX = mouseXInBoard - activeNote.offsetLeft;
             offsetY = mouseYInBoard - activeNote.offsetTop;
 
@@ -355,17 +382,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isResizing) {
             // Lógica de redimensionamiento
-            const newWidth = e.clientX - activeNote.getBoundingClientRect().left;
-            const newHeight = e.clientY - activeNote.getBoundingClientRect().top;
+            const newWidth = (e.clientX - activeNote.getBoundingClientRect().left) / appState.zoomLevel;
+            const newHeight = (e.clientY - activeNote.getBoundingClientRect().top) / appState.zoomLevel;
             activeNoteData.width = Math.max(150, newWidth);
             activeNoteData.height = Math.max(150, newHeight);
             activeNote.style.width = `${activeNoteData.width}px`;
             activeNote.style.height = `${activeNoteData.height}px`;
         } else {
             // Lógica de arrastre
-            // **CORRECCIÓN:** Calcular la nueva posición relativa al tablero
-            const mouseXInBoard = e.clientX - boardRect.left;
-            const mouseYInBoard = e.clientY - boardRect.top;
+            // **CORRECCIÓN:** Calcular la nueva posición relativa al tablero y AJUSTADA AL ZOOM
+            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
+            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
             const newX = mouseXInBoard - offsetX;
             const newY = mouseYInBoard - offsetY;
 
@@ -472,6 +499,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointerdown', handlePointerDown);
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
+        
+        // Eventos de zoom
+        zoomInBtn.addEventListener('click', handleZoomIn);
+        zoomOutBtn.addEventListener('click', handleZoomOut);
+        zoomResetBtn.addEventListener('click', handleZoomReset);
 
         renderBoardList();
         renderActiveBoard();
