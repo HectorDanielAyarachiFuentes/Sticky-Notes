@@ -244,15 +244,20 @@ body {
 }
 
 /* --- TABLERO PRINCIPAL --- */
-#board {
+/* El contenedor del tablero se encarga del fondo y el scroll */
+#board-container {
     position: relative;
     flex-grow: 1; /* Ocupa el espacio restante */
     height: 100%;
-    background-color: var(--fondo-crema);
-    background-image: linear-gradient(45deg, #EADBC8 25%, transparent 25%),
-                      linear-gradient(-45deg, #EADBC8 25%, transparent 25%);
-    background-size: 20px 20px;
+    background-image: repeating-linear-gradient(90deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),repeating-linear-gradient(90deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),linear-gradient(90deg, hsl(226,47%,26%),hsl(226,47%,26%));
     overflow: auto; /* Permite scroll si las notas se salen */
+}
+
+/* El tablero en sí solo contiene las notas y es lo que se escala */
+#board {
+    position: relative; /* Mantenemos la posición para las notas */
+    width: 100%; /* Ocupa todo el contenedor */
+    height: 100%;
 }
 /* --- CONTROLES DE ZOOM --- */
 #zoom-controls {

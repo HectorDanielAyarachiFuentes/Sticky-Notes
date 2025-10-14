@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
+    const boardContainer = document.querySelector("#board-container");
     const board = document.querySelector("#board");
     const palette = document.querySelector("#note-palette");
     const boardList = document.querySelector("#board-list");
@@ -393,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handlePointerDown(e) {
         const target = e.target;
-        const boardRect = board.getBoundingClientRect();
+        const boardRect = boardContainer.getBoundingClientRect();
 
         // CASO 1: Iniciar redimensión
         if (target.classList.contains('resizer')) {
@@ -468,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeNote) return;
         e.preventDefault();
 
-        const boardRect = board.getBoundingClientRect();
+        const boardRect = boardContainer.getBoundingClientRect();
 
         if (isResizing) {
             // Lógica de redimensionamiento
