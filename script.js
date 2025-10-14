@@ -590,12 +590,31 @@ document.addEventListener('DOMContentLoaded', () => {
         // Lógica para los botones de ocultar/mostrar panel
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
-        collapseBtn.addEventListener('click', () => boardManager.classList.add('collapsed'));
-        expander.addEventListener('click', () => boardManager.classList.remove('collapsed'));
 
-        // Reposiciona las líneas cuando la animación del sidebar termina
-        boardManager.addEventListener('transitionend', () => {
-            activeLines.forEach(l => l.line.position());
+        const smoothLineUpdateOnToggle = () => {
+            const duration = 400; // Debe coincidir con la duración de la transición en CSS
+            const startTime = performance.now();
+
+            function animateLines() {
+                const elapsed = performance.now() - startTime;
+                if (elapsed < duration) {
+                    activeLines.forEach(l => l.line.position());
+                    requestAnimationFrame(animateLines);
+                } else {
+                    // Una última actualización para asegurar la posición final perfecta
+                    activeLines.forEach(l => l.line.position());
+                }
+            }
+            requestAnimationFrame(animateLines);
+        };
+
+        collapseBtn.addEventListener('click', () => {
+            boardManager.classList.add('collapsed');
+            smoothLineUpdateOnToggle();
+        });
+        expander.addEventListener('click', () => {
+            boardManager.classList.remove('collapsed');
+            smoothLineUpdateOnToggle();
         });
 
         // Configurar UI
