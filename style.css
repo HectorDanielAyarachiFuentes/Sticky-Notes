@@ -445,6 +445,17 @@ body {
     display: flex; /* Para controlar el hijo de texto */
     flex-direction: column;
 }
+        /* --- NUEVOS ESTILOS PARA TÍTULO Y PESTAÑAS --- */
+        .stickynote-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            outline: none;
+            cursor: text;
+        }
+
         .stickynote.locked {
             cursor: default;
         }
@@ -480,9 +491,20 @@ body {
             z-index: 1000; /* La pone por encima de las demás */
         }
 
+        .stickynote-content-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Clave para que el contenido no se salga */
+        }
+
+        .stickynote-content-container {
+            flex-grow: 1;
+            position: relative; /* Para que los textos se superpongan */
+        }
+
         /* Estilos del área de texto dentro de la nota */
         .stickynote-text {
-            flex-grow: 1; /* Ocupa el espacio disponible */
             background-color: transparent;
             border: none;
             resize: none;
@@ -490,16 +512,49 @@ body {
             font-size: 18px;
             outline: none; /* Sin borde al hacer foco */
             cursor: text; /* Cursor de texto normal */
-            overflow-y: auto; /* Scroll si el contenido es muy largo */
             padding: 5px;
             margin: -5px; /* Compensa el padding para alinear con el borde */
+            /* Para la animación de pestañas */
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out;
+            overflow-y: auto;
+        }
+        .stickynote-text.active {
+            opacity: 1;
+            pointer-events: auto;
         }
         /* Estilo para el placeholder del contenteditable */
-        .stickynote-text:empty:before {
+        .stickynote-text:empty:before,
+        .stickynote-title:empty:before {
             content: attr(placeholder);
             color: #888;
             cursor: text;
             pointer-events: none;
+        }
+
+        .stickynote-tabs {
+            display: flex;
+            flex-shrink: 0; /* Evita que se encoja */
+            margin-top: 10px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 8px;
+        }
+        .stickynote-tab {
+            flex: 1;
+            height: 8px;
+            background-color: rgba(0,0,0,0.1);
+            margin: 0 3px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .stickynote-tab:hover { background-color: rgba(0,0,0,0.2); }
+        .stickynote-tab.active {
+            background-color: var(--azul-carpa);
+            transform: scaleY(1.5);
         }
         /* --- Botón para conectar notas --- */
         .connect-btn {
@@ -650,13 +705,17 @@ body {
     border-radius: 6px;
     border-left: 4px solid var(--rojo-circo);
 }
+.trash-item-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
 .trash-item-content {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     opacity: 0.8;
     margin-bottom: 10px;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 .trash-item-actions {
     display: flex;

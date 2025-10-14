@@ -48,42 +48,42 @@ document.addEventListener('DOMContentLoaded', () => {
         kanban: {
             name: 'Tablero Kanban',
             notes: [
-                { content: '<h3>Por Hacer</h3>', x: 50, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
-                { content: '<h3>En Proceso</h3>', x: 400, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
-                { content: '<h3>Hecho</h3>', x: 750, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+                { title: 'Por Hacer', content: '', x: 50, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+                { title: 'En Proceso', content: '', x: 400, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+                { title: 'Hecho', content: '', x: 750, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
             ]
         },
         swot: {
             name: 'Análisis FODA',
             notes: [
-                { content: '<h3>Fortalezas</h3>', x: 50, y: 50, width: 350, height: 250, color: '#C8E6C9', rotation: -1 },
-                { content: '<h3>Oportunidades</h3>', x: 450, y: 50, width: 350, height: 250, color: '#BBDEFB', rotation: 1 },
-                { content: '<h3>Debilidades</h3>', x: 50, y: 350, width: 350, height: 250, color: '#FFCDD2', rotation: 1 },
-                { content: '<h3>Amenazas</h3>', x: 450, y: 350, width: 350, height: 250, color: '#FFF9C4', rotation: -1.5 },
+                { title: 'Fortalezas', content: '', x: 50, y: 50, width: 350, height: 250, color: '#C8E6C9', rotation: -1 },
+                { title: 'Oportunidades', content: '', x: 450, y: 50, width: 350, height: 250, color: '#BBDEFB', rotation: 1 },
+                { title: 'Debilidades', content: '', x: 50, y: 350, width: 350, height: 250, color: '#FFCDD2', rotation: 1 },
+                { title: 'Amenazas', content: '', x: 450, y: 350, width: 350, height: 250, color: '#FFF9C4', rotation: -1.5 },
             ]
         },
         // El mapa mental es más complejo por los conectores, se deja como base.
         mindmap: {
             name: 'Mapa Mental',
             notes: [
-                { content: '<h2>Idea Central</h2>', x: 400, y: 300, width: 250, height: 150, color: '#B2EBF2', rotation: 0 },
+                { title: 'Idea Central', content: '', x: 400, y: 300, width: 250, height: 150, color: '#B2EBF2', rotation: 0 },
             ]
         },
         eisenhower: {
             name: 'Matriz de Eisenhower',
             notes: [
-                { content: '<h3>Urgente / Importante</h3><p>(Hacer)</p>', x: 50, y: 50, width: 400, height: 300, color: '#FFCDD2', rotation: 0.5 },
-                { content: '<h3>No Urgente / Importante</h3><p>(Planificar)</p>', x: 500, y: 50, width: 400, height: 300, color: '#BBDEFB', rotation: -0.5 },
-                { content: '<h3>Urgente / No Importante</h3><p>(Delegar)</p>', x: 50, y: 400, width: 400, height: 300, color: '#FFF9C4', rotation: -0.5 },
-                { content: '<h3>No Urgente / No Importante</h3><p>(Eliminar)</p>', x: 500, y: 400, width: 400, height: 300, color: '#C8E6C9', rotation: 0.5 },
+                { title: 'Urgente / Importante', content: '(Hacer)', x: 50, y: 50, width: 400, height: 300, color: '#FFCDD2', rotation: 0.5 },
+                { title: 'No Urgente / Importante', content: '(Planificar)', x: 500, y: 50, width: 400, height: 300, color: '#BBDEFB', rotation: -0.5 },
+                { title: 'Urgente / No Importante', content: '(Delegar)', x: 50, y: 400, width: 400, height: 300, color: '#FFF9C4', rotation: -0.5 },
+                { title: 'No Urgente / No Importante', content: '(Eliminar)', x: 500, y: 400, width: 400, height: 300, color: '#C8E6C9', rotation: 0.5 },
             ]
         },
         retro: {
             name: 'Retrospectiva',
             notes: [
-                { content: '<h3>¿Qué salió bien? 👍</h3>', x: 50, y: 20, width: 300, height: 600, color: '#C8E6C9', rotation: 0 },
-                { content: '<h3>¿Qué se puede mejorar? 🤔</h3>', x: 400, y: 20, width: 300, height: 600, color: '#BBDEFB', rotation: 0 },
-                { content: '<h3>Acciones a tomar 🎯</h3>', x: 750, y: 20, width: 300, height: 600, color: '#FFF9C4', rotation: 0 },
+                { title: '¿Qué salió bien? 👍', content: '', x: 50, y: 20, width: 300, height: 600, color: '#C8E6C9', rotation: 0 },
+                { title: '¿Qué se puede mejorar? 🤔', content: '', x: 400, y: 20, width: 300, height: 600, color: '#BBDEFB', rotation: 0 },
+                { title: 'Acciones a tomar 🎯', content: '', x: 750, y: 20, width: 300, height: 600, color: '#FFF9C4', rotation: 0 },
             ]
         }
     };
@@ -117,6 +117,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 board.notes.forEach(note => {
                     if (note.locked === undefined) note.locked = false;
+                    // Migración para títulos y pestañas
+                    if (note.title === undefined) note.title = '';
+                    if (note.tabs === undefined) {
+                        note.tabs = [note.content || '', '', '', '', ''];
+                        note.activeTab = 0;
+                        delete note.content; // Eliminar la propiedad antigua
+                    }
                 });
                 if (!loadedState.trash) {
                     loadedState.trash = [];
@@ -140,7 +147,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     [initialBoardId]: {
                         id: initialBoardId,
                         name: 'Tablero Principal',
-                        notes: [],
+                        notes: [
+                            // Nota de ejemplo con la nueva estructura
+                            // { id: 'note-init', title: '¡Hola!', tabs: ['Este es un ejemplo de nota con pestañas.', 'Contenido de la pestaña 2', '', '', ''], activeTab: 0, x: 100, y: 100, width: 250, height: 250, color: '#FFF9C4', rotation: -2, zIndex: 1, locked: false }
+                        ],
                         connections: [], // Array para las conexiones
                         background: null,
                         // A dónde se aplica el fondo
@@ -362,10 +372,13 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBoard.notes.forEach(note => {
                 // Usamos un div temporal para quitar el HTML y buscar solo en el texto
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = note.content;
+                // Buscar en el título y en todas las pestañas
+                const titleText = note.title || '';
+                const tabsText = note.tabs.join(' ');
+                tempDiv.innerHTML = titleText + ' ' + tabsText;
                 const noteText = tempDiv.textContent || tempDiv.innerText || "";
 
-                if (noteText.toLowerCase().includes(searchTerm)) {
+                if (noteText.toLowerCase().includes(searchTerm) || titleText.toLowerCase().includes(searchTerm)) {
                     // Si la nota está en el tablero ACTIVO, la resaltamos
                     if (currentBoard.id === appState.activeBoardId) {
                         const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
@@ -421,22 +434,75 @@ document.addEventListener('DOMContentLoaded', () => {
             sticky.style.backgroundImage = currentBoard.background;
         }
 
-
-        const content = document.createElement("div");
-        content.contentEditable = true;
-        if (noteData.locked) content.contentEditable = false;
-        content.classList.add("stickynote-text");
-        content.setAttribute("placeholder", "Escribe algo...");
-        content.innerHTML = noteData.content;
-
-        content.addEventListener('blur', () => {
-            const newContent = content.innerHTML;
-            if (noteData.content !== newContent) {
-                noteData.content = newContent;
+        // --- TÍTULO ---
+        const title = document.createElement("div");
+        title.contentEditable = !noteData.locked;
+        title.classList.add("stickynote-title");
+        title.setAttribute("placeholder", "Título...");
+        title.innerHTML = noteData.title || '';
+        title.addEventListener('blur', () => {
+            const newTitle = title.innerHTML;
+            if (noteData.title !== newTitle) {
+                noteData.title = newTitle;
                 saveState();
-                handleSearch(); // Re-evaluar la búsqueda si el contenido cambia
+                handleSearch();
             }
         });
+
+        // --- CONTENEDOR DE PESTAÑAS Y CONTENIDO ---
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'stickynote-content-wrapper';
+
+        const tabContainer = document.createElement('div');
+        tabContainer.className = 'stickynote-tabs';
+
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'stickynote-content-container';
+
+        for (let i = 0; i < 5; i++) {
+            // Crear pestaña
+            const tab = document.createElement('div');
+            tab.className = 'stickynote-tab';
+            tab.dataset.tabIndex = i;
+            if (i === noteData.activeTab) {
+                tab.classList.add('active');
+            }
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Cambiar de pestaña
+                noteData.activeTab = i;
+                saveState();
+                // Re-renderizar solo esta nota (o más fácil, todo el tablero)
+                // Para simplificar, actualizamos clases directamente
+                const currentActiveTab = sticky.querySelector('.stickynote-tab.active');
+                if (currentActiveTab) currentActiveTab.classList.remove('active');
+                tab.classList.add('active');
+                const currentActiveContent = sticky.querySelector('.stickynote-text.active');
+                if (currentActiveContent) currentActiveContent.classList.remove('active');
+                sticky.querySelector(`.stickynote-text[data-tab-index="${i}"]`).classList.add('active');
+            });
+            tabContainer.appendChild(tab);
+
+            // Crear área de contenido para la pestaña
+            const content = document.createElement("div");
+            content.contentEditable = !noteData.locked;
+            content.classList.add("stickynote-text");
+            if (i === noteData.activeTab) {
+                content.classList.add('active');
+            }
+            content.dataset.tabIndex = i;
+            content.setAttribute("placeholder", "Escribe algo...");
+            content.innerHTML = noteData.tabs[i] || '';
+            content.addEventListener('blur', () => {
+                const newContent = content.innerHTML;
+                if (noteData.tabs[i] !== newContent) {
+                    noteData.tabs[i] = newContent;
+                    saveState();
+                    handleSearch();
+                }
+            });
+            contentContainer.appendChild(content);
+        }
 
         const connectBtn = document.createElement("div");
         connectBtn.className = 'connect-btn';
@@ -451,7 +517,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const resizer = document.createElement("div");
         resizer.classList.add("resizer");
-        sticky.appendChild(content);
+
+        sticky.appendChild(title);
+        contentWrapper.appendChild(contentContainer);
+        contentWrapper.appendChild(tabContainer);
+        sticky.appendChild(contentWrapper);
+
         sticky.appendChild(connectBtn);
         sticky.appendChild(resizer);
         board.appendChild(sticky);
@@ -537,7 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const newNoteData = {
                 id: `note-${Date.now()}`,
-                content: '',
+                title: '',
+                tabs: ['', '', '', '', ''],
+                activeTab: 0,
                 width: 200, height: 200, color: color,
                 rotation: (Math.random() - 0.5) * 8,
                 locked: false,
@@ -566,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeNoteData.locked) { activeNote = null; return; }
 
             // Solo prevenimos el comportamiento por defecto (y empezamos a arrastrar) si no es el área de texto.
-            if (!target.classList.contains('stickynote-text')) e.preventDefault();
+            if (!target.classList.contains('stickynote-text') && !target.classList.contains('stickynote-title')) e.preventDefault();
 
             // **CORRECCIÓN:** Calcular el desfase relativo al tablero y AJUSTADO AL ZOOM
             const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
@@ -575,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
             offsetY = mouseYInBoard - activeNote.offsetTop;
 
             bringToFront(activeNote, activeNoteData);
-            if (!target.classList.contains('stickynote-text')) {
+            if (!target.classList.contains('stickynote-text') && !target.classList.contains('stickynote-title')) {
                 activeNote.classList.add('dragging');
                 trashCan.classList.add('visible');
             }
@@ -715,7 +788,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         noteData.locked = !noteData.locked;
         noteElement.classList.toggle('locked');
-        noteElement.querySelector('.stickynote-text').contentEditable = !noteData.locked;
+        noteElement.querySelector('.stickynote-title').contentEditable = !noteData.locked;
+        noteElement.querySelectorAll('.stickynote-text').forEach(el => el.contentEditable = !noteData.locked);
 
         saveState();
         hideContextMenu();
@@ -911,11 +985,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'trash-item';
 
+            const titleText = note.title || 'Nota sin título';
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = note.content;
-            const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim();
+            tempDiv.innerHTML = note.tabs.join(' ');
+            const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim() || 'Nota vacía';
 
             item.innerHTML = `
+                <div class="trash-item-title">${titleText}</div>
                 <div class="trash-item-content">${noteText || 'Nota vacía'}</div>
                 <div class="trash-item-actions">
                     <button class="restore" data-note-id="${note.id}">Restaurar</button>
