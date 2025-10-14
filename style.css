@@ -1,124 +1,215 @@
-        /* Estilos generales del cuerpo y del tablero */
-        body {
-            font-family: 'Nunito', sans-serif; /* Fuente más amigable */
-            background-color: #F8F9FA;
-            margin: 0;
-            overflow: hidden; /* Evita barras de scroll */
-            display: flex; /* Usamos flexbox para el layout */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&family=Kalam&display=swap');
+
+/* --- VARIABLES Y ESTILOS GLOBALES --- */
+:root {
+    --rojo-circo: #E65C5C;
+    --azul-carpa: #5C82E6;
+    --amarillo-luz: #F2D06B;
+    --fondo-crema: #FDF8E1;
+    --texto-principal: #4B4B4B;
+    --sidebar-bg: #4B4B4B;
+    --sidebar-hover: #616161;
+    --text-light: #FDF8E1;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 10px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+body {
+    font-family: 'Roboto Slab', serif;
+    background-color: var(--fondo-crema);
+    margin: 0;
+    display: flex;
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    color: var(--texto-principal);
+}
+
+/* --- PANEL DE GESTIÓN DE TABLEROS --- */
+#board-manager {
+    width: 220px;
+    flex-shrink: 0; /* Evita que se encoja */
+    background-color: var(--sidebar-bg);
+    color: var(--text-light);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    box-shadow: var(--shadow-md);
+    transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative; /* Necesario para posicionar el botón de colapso */
+}
+#board-manager.collapsed { margin-left: -260px; /* width (220) + padding (20*2) */ }
+#board-manager h3 {
+    margin-top: 0;
+    font-weight: 700;
+    border-bottom: 1px solid var(--sidebar-hover);
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#board-manager ul { list-style: none; padding: 0; margin: 20px 0; flex-grow: 1; }
+#board-manager li { padding: 12px 15px; cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease; }
+#board-manager li:hover { background-color: var(--sidebar-hover); }
+#board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
+#board-manager button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--rojo-circo);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+#board-manager button:hover { background-color: var(--azul-carpa); transform: translateY(-2px); }
+#board-manager .icon { font-size: 1.2em; }
+
+/* --- BOTONES PARA OCULTAR/MOSTRAR PANEL --- */
+#sidebar-collapse-btn {
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 24px;
+    line-height: 1;
+    transition: background-color 0.2s ease;
+}
+#sidebar-collapse-btn:hover {
+    background-color: var(--sidebar-hover);
+}
+
+#sidebar-expander {
+    position: absolute;
+    left: 0;
+    top: 50%; /* Oculto por defecto fuera de la pantalla */
+    transform: translateY(-50%) translateX(-100%); /* Oculto por defecto */
+    width: 25px;
+    height: 60px;
+    background-color: var(--sidebar-bg);
+    color: var(--text-light);
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 3px 0px 8px rgba(0,0,0,0.15);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+    z-index: 199;
+}
+#sidebar-expander:hover { background-color: var(--sidebar-hover); }
+
+/* Cuando el panel está colapsado, la manija de expansión se muestra */
+#board-manager.collapsed ~ #sidebar-expander { transform: translateY(-50%) translateX(0); }
+
+/* --- PALETA DE NOTAS --- */
+#note-palette {
+    width: 100px;
+    flex-shrink: 0;
+    padding: 20px 10px;
+    background-color: #EAECEE;
+    box-shadow: var(--shadow-sm);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    border-right: 1px solid #D5D8DC;
+}
+#note-palette h4 {
+    margin: 0 0 10px 0;
+    color: #566573;
+    font-weight: 700;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+/* --- TABLERO PRINCIPAL --- */
+#board {
+    position: relative;
+    flex-grow: 1; /* Ocupa el espacio restante */
+    height: 100%;
+    background-color: var(--fondo-crema);
+    background-image: linear-gradient(45deg, #EADBC8 25%, transparent 25%),
+                      linear-gradient(-45deg, #EADBC8 25%, transparent 25%);
+    background-size: 20px 20px;
+    overflow: auto; /* Permite scroll si las notas se salen */
+}
+
+/* --- NOTAS DE PLANTILLA EN LA PALETA --- */
+.palette-note {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    box-shadow: var(--shadow-sm);
+    cursor: grab;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.palette-note:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+/* --- NOTAS ADHESIVAS EN EL TABLERO --- */
+.stickynote {
+    position: absolute;
+    width: 200px;
+    min-height: 200px;
+    box-shadow: 5px 5px 10px rgba(0,0,0,0.1);
+    padding: 15px;
+    cursor: grab;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    user-select: none;
+    box-sizing: border-box;
+    border: 2px dashed var(--texto-principal);
+    border-radius: 15px 5px 20px 5px; /* ¡Esquinas asimétricas! */
+    display: flex; /* Para controlar el hijo de texto */
+    flex-direction: column;
+}
+        /* Animación "rebote" para notas nuevas */
+        @keyframes rebote {
+          0% { transform: scale(0.8); opacity: 0; }
+          70% { transform: scale(1.1); }
+          100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Panel de gestión de tableros */
-        #board-manager {
-            width: 200px;
-            background-color: #2C3E50; /* Azul marino oscuro, más profesional */
-            color: #fff;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            z-index: 200;
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-        }
-        #board-manager h3 { margin-top: 0; font-weight: 700; }
-        #board-manager ul { list-style: none; padding: 0; margin: 0 0 20px 0; }
-        #board-manager li { padding: 10px; cursor: pointer; border-radius: 4px; }
-        #board-manager li:hover { background-color: #34495E; }
-        #board-manager li.active { background-color: #007bff; font-weight: bold; }
-        #board-manager button {
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px; /* Bordes redondeados */
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-        }
-        #board-manager button:hover { background-color: #0056b3; transform: translateY(-2px); }
-        /* Cajón de plantillas de notas */
-        #note-palette {
-            width: 120px;
-            padding: 20px 10px;
-            background-color: #d8d8d8;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px; /* Espacio entre las notas de plantilla */
-        }
-        #note-palette h4 {
-            margin: 0 0 10px 0;
-            color: #555;
-            font-weight: normal;
-        }
-
-        #board {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background-color: #F8F9FA; /* Blanco roto, más limpio */
-            /* Grilla de puntos, más sutil y moderna */
-            background-image: radial-gradient(circle, #d1d1d1 1px, rgba(0,0,0,0) 1px);
-            background-size: 25px 25px;
-        }
-
-        /* Estilo para las notas de plantilla en el cajón */
-        .palette-note {
-            width: 80px;
-            height: 80px;
-            background-color: #ffc;
-            box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.2);
-            cursor: grab;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .palette-note:hover {
-            transform: scale(1.05);
-            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.25);
-        }
-
-        /* Estilos de las notas adhesivas */
-        .stickynote {
-            position: absolute;
-            width: 200px;
-            min-height: 200px;
-            background-color: #ffc;
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            cursor: grab;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            user-select: none; /* Evita que el texto se seleccione al arrastrar */
-            box-sizing: border-box; /* Asegura que el padding no afecte el ancho/alto total */
-            border-radius: 3px;
-        }
-        /* Animación "pop" para notas nuevas */
-        @keyframes pop-in {
-            from { transform: scale(0.9); opacity: 0.5; }
-            to { transform: scale(1); opacity: 1; }
+        .stickynote.new-note-animation {
+            animation: rebote 0.4s ease-out;
         }
 
         /* Estilo cuando la nota está siendo arrastrada */
         .stickynote.dragging {
             cursor: grabbing;
-            box-shadow: 10px 10px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow-lg);
             z-index: 1000; /* La pone por encima de las demás */
         }
 
         /* Estilos del área de texto dentro de la nota */
         .stickynote-text {
-            width: 100%;
-            height: 100%;
+            flex-grow: 1; /* Ocupa el espacio disponible */
             background-color: transparent;
             border: none;
             resize: none;
-            font-family: 'Georgia', serif;
-            font-size: 16px;
+            font-family: 'Kalam', cursive;
+            font-size: 18px;
             outline: none; /* Sin borde al hacer foco */
             cursor: text; /* Cursor de texto normal */
-            min-height: 170px; /* Altura mínima para el contenido */
             overflow-y: auto; /* Scroll si el contenido es muy largo */
+            padding: 5px;
+            margin: -5px; /* Compensa el padding para alinear con el borde */
+        }
+        /* Estilo para el placeholder del contenteditable */
+        .stickynote-text:empty:before {
+            content: attr(placeholder);
+            color: #888;
+            cursor: text;
+            pointer-events: none;
         }
 
         /* Estilos del manejador para redimensionar la nota */
@@ -129,7 +220,7 @@
             width: 15px;
             height: 15px;
             cursor: nwse-resize;
-            background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.1) 50%);
+            background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.2) 50%);
         }
 
         /* Estilos de la papelera */
@@ -139,57 +230,59 @@
             right: 30px;
             width: 80px;
             height: 80px;
-            background-color: #f5f5f5;
-            border: 2px dashed #aaa;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px dashed #BDBDBD;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1500;
-            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0; /* Oculta por defecto */
             pointer-events: none; /* No interactuable cuando está oculta */
+            backdrop-filter: blur(5px);
         }
         @keyframes shake {
-            0%, 100% { transform: translateX(0) scale(1.2); }
-            25% { transform: translateX(-5px) scale(1.2); }
-            75% { transform: translateX(5px) scale(1.2); }
+            0%, 100% { transform: translateX(0) scale(1.1); }
+            25% { transform: translateX(-4px) scale(1.1); }
+            75% { transform: translateX(4px) scale(1.1); }
         }
 
         /* Estilos para la imagen SVG dentro de la papelera */
         #trash-can img {
-            width: 50px;
-            height: 50px;
-            opacity: 0.7;
+            width: 45px;
+            height: 45px;
+            opacity: 0.6;
             transition: opacity 0.2s ease;
         }
 
-
         /* Estilo cuando una nota se arrastra sobre la papelera */
         #trash-can.active {
-            background-color: #ffdddd;
-            border-color: #ff8a80;
-            animation: shake 0.5s ease-in-out; /* Animación de temblor */
+            background-color: #FFEBEE;
+            border-color: #E57373;
+            border-style: solid;
+            animation: shake 0.4s ease-in-out;
         }
-
         #trash-can.active img {
             opacity: 1;
         }
 
         /* Estilo para hacer visible la papelera */
         #trash-can.visible {
-            opacity: 1;
+            opacity: 0.9;
             pointer-events: all;
+            transform: scale(1.1);
         }
 
         /* Mensaje de bienvenida en el tablero vacío */
         .welcome-message {
             position: absolute;
-            top: 40%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #aaa;
-            font-size: 1.5em;
+            color: #B0BEC5;
+            font-size: 1.8em;
+            text-align: center;
             pointer-events: none; /* Para que no interfiera con los clics */
             user-select: none;
         }

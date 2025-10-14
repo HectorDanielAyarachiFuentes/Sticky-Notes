@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const palette = document.querySelector("#note-palette");
     const boardList = document.querySelector("#board-list");
     const addBoardBtn = document.querySelector("#add-board-btn");
+    const boardManager = document.querySelector("#board-manager");
     const trashCan = document.querySelector("#trash-can");
 
     // --- CONFIGURACIÓN INICIAL ---
@@ -134,7 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
         board.appendChild(sticky);
 
         if (isNew) {
-            sticky.style.animation = 'pop-in 0.2s ease-out';
+            // Añade la clase para la animación y la quita cuando termina
+            sticky.classList.add('new-note-animation');
+            sticky.addEventListener('animationend', () => {
+                sticky.classList.remove('new-note-animation');
+            }, { once: true });
         }
         return sticky;
     }
@@ -230,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData.y = newY;
             activeNote.style.left = `${newX}px`;
             activeNote.style.top = `${newY}px`;
-            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
+            activeNote.style.transform = `scale(1.05)`; // Se endereza al arrastrar
         }
 
         // Lógica de la papelera
@@ -275,8 +280,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
+
+        // Lógica para los botones de ocultar/mostrar panel
+        const collapseBtn = document.querySelector("#sidebar-collapse-btn");
+        const expander = document.querySelector("#sidebar-expander");
+        collapseBtn.addEventListener('click', () => boardManager.classList.add('collapsed'));
+        expander.addEventListener('click', () => boardManager.classList.remove('collapsed'));
+
         
-        addBoardBtn.innerHTML = '<span class="icon">+</span> Nuevo Tablero';
+        addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
 
         noteColors.forEach(color => {
             const paletteNote = document.createElement("div");
