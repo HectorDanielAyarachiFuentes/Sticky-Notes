@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let offsetY = 0;
     let isResizing = false;
 
+    let activeLines = []; // Almacena las instancias de LeaderLine activas
+    let connectionState = { startNoteId: null }; // Para gestionar la creación de conexiones
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
     function saveState() {
         localStorage.setItem('stickyNotesApp', JSON.stringify(appState));
@@ -85,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     [initialBoardId]: {
                         id: initialBoardId,
                         name: 'Tablero Principal',
-                        notes: []
+                        notes: [],
+                        connections: [] // Array para las conexiones
                     }
                 },
                 zoomLevel: 1.0,
@@ -111,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderActiveBoard() {
         board.innerHTML = ''; // Limpiar tablero
+        removeActiveLines(); // Limpiar líneas existentes
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
 
@@ -125,6 +129,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 createStickyNoteElement(noteData);
             });
         }
+        renderConnections();
+    }
+
+    function renderConnections() {
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard.connections) currentBoard.connections = [];
+
+        currentBoard.connections.forEach(conn => {
+            const startEl = board.querySelector(`.stickynote[data-note-id="${conn.from}"]`);
+            const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
+
+            if (startEl && endEl) {
+                const line = new LeaderLine(startEl, endEl, {
+                    color: 'rgba(75, 75, 75, 0.6)',
+                    size: 4,
+                    path: 'fluid',
+                    endPlug: 'arrow1',
+                    startSocket: 'auto',
+                    endSocket: 'auto',
+                });
+                activeLines.push({ line, from: conn.from, to: conn.to });
+            }
+        });
+    }
+    function removeActiveLines() {
+        activeLines.forEach(l => l.line.remove());
+        activeLines = [];
     }
 
     // --- FUNCIONES DE ZOOM ---
@@ -180,7 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.boards[newBoardId] = {
                 id: newBoardId,
                 name: boardName,
-                notes: []
+                notes: [],
+                connections: []
             };
             switchBoard(newBoardId);
         }
@@ -203,7 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.boards[newBoardId] = {
                 id: newBoardId,
                 name: boardName,
-                notes: newNotes
+                notes: newNotes,
+                connections: [] // Las plantillas aún no definen conexiones
             };
             switchBoard(newBoardId);
         }
@@ -292,10 +325,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const connectBtn = document.createElement("div");
+        connectBtn.className = 'connect-btn';
+        connectBtn.innerHTML = '☍'; // Símbolo de enlace
+        connectBtn.title = 'Crear conexión';
+
+        // Evento para el botón de conexión
+        connectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleConnectionClick(noteData.id);
+        });
+
         const resizer = document.createElement("div");
         resizer.classList.add("resizer");
-
         sticky.appendChild(content);
+        sticky.appendChild(connectBtn);
         sticky.appendChild(resizer);
         board.appendChild(sticky);
 
@@ -306,7 +350,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 sticky.classList.remove('new-note-animation');
             }, { once: true });
         }
+
         return sticky;
+    }
+
+    function handleConnectionClick(noteId) {
+        const startNoteEl = board.querySelector(`.stickynote[data-note-id="${connectionState.startNoteId}"]`);
+        if (startNoteEl) startNoteEl.classList.remove('connection-start');
+
+        if (!connectionState.startNoteId) {
+            // Iniciar conexión
+            connectionState.startNoteId = noteId;
+            const noteEl = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
+            noteEl.classList.add('connection-start');
+        } else {
+            // Finalizar conexión
+            if (connectionState.startNoteId !== noteId) {
+                const currentBoard = appState.boards[appState.activeBoardId];
+                currentBoard.connections.push({ from: connectionState.startNoteId, to: noteId });
+                saveState();
+                renderActiveBoard(); // Re-renderizar para mostrar la nueva línea
+            }
+            // Resetear estado de conexión
+            connectionState.startNoteId = null;
+        }
     }
 
     // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) CORREGIDA ---
@@ -323,6 +390,16 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
             activeNote.classList.add('dragging');
             trashCan.classList.add('visible');
+            return;
+        }
+
+        // Si estamos en modo conexión, un clic en una nota crea la conexión
+        if (connectionState.startNoteId && e.target.closest('.stickynote')) {
+            const noteEl = e.target.closest('.stickynote');
+            if (noteEl) {
+                e.preventDefault();
+                handleConnectionClick(noteEl.dataset.noteId);
+            }
             return;
         }
 
@@ -358,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CASO 3: Iniciar arrastre para MOVER una nota existente
-        if (target.closest('.stickynote') && !target.classList.contains('stickynote-text') && !target.classList.contains('resizer')) {
+        if (target.closest('.stickynote') && !target.classList.contains('stickynote-text') && !target.classList.contains('resizer') && !target.classList.contains('connect-btn')) {
             e.preventDefault();
             activeNote = target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
@@ -400,6 +477,12 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData.y = newY;
             activeNote.style.left = `${newX}px`;
             activeNote.style.top = `${newY}px`;
+            // Actualizar líneas conectadas
+            activeLines.forEach(l => {
+                if (l.from === activeNoteData.id || l.to === activeNoteData.id) {
+                    l.line.position();
+                }
+            });
             activeNote.style.transform = `scale(1.05)`; // Se endereza al arrastrar
         }
 
@@ -417,12 +500,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (trashCan.classList.contains('active')) {
             const notes = appState.boards[appState.activeBoardId].notes;
+            const connections = appState.boards[appState.activeBoardId].connections;
             const noteIndex = notes.findIndex(n => n.id === activeNoteData.id);
+            
             if (noteIndex > -1) {
                 notes.splice(noteIndex, 1);
             }
+
+            // Eliminar conexiones asociadas a la nota
+            appState.boards[appState.activeBoardId].connections = connections.filter(
+                conn => conn.from !== activeNoteData.id && conn.to !== activeNoteData.id
+            );
+
             activeNote.remove();
+            // Re-renderizar para eliminar las líneas de la UI
+            renderActiveBoard();
+
         } else {
+            if (!isResizing) activeLines.forEach(l => l.line.position()); // Reposicionar al soltar
             activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
         }
         

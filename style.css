@@ -335,6 +335,32 @@ body {
             cursor: text;
             pointer-events: none;
         }
+        /* --- Botón para conectar notas --- */
+        .connect-btn {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 28px;
+            height: 28px;
+            background-color: var(--azul-carpa);
+            color: white;
+            border-radius: 50%;
+            border: 2px solid var(--fondo-crema);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            opacity: 0; /* Oculto por defecto */
+            z-index: 10;
+        }
+        .stickynote:hover .connect-btn {
+            opacity: 1;
+        }
+        .connect-btn:hover { transform: scale(1.2); background-color: var(--rojo-circo); }
+        .stickynote.connection-start { box-shadow: 0 0 20px 8px var(--azul-carpa); }
 
         /* Estilos del manejador para redimensionar la nota */
         .resizer {
@@ -409,4 +435,9 @@ body {
             text-align: center;
             pointer-events: none; /* Para que no interfiera con los clics */
             user-select: none;
+        }
+
+        /* --- Estilos para Leader-Line --- */
+        .leader-line {
+            z-index: 10; /* Asegura que las líneas sean visibles sobre el fondo */
         }
