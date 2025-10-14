@@ -26,7 +26,7 @@ body {
 
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
 #board-manager {
-    width: 220px;
+    width: 260px;
     flex-shrink: 0; /* Evita que se encoja */
     background-color: var(--sidebar-bg);
     color: var(--text-light);
@@ -38,7 +38,7 @@ body {
     transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     position: relative; /* Necesario para posicionar el botón de colapso */
 }
-#board-manager.collapsed { margin-left: -260px; /* width (220) + padding (20*2) */ }
+#board-manager.collapsed { margin-left: -300px; /* width (260) + padding (20*2) */ }
 #board-manager h3 {
     margin-top: 0;
     font-weight: 700;
@@ -50,10 +50,35 @@ body {
 }
 
 /* --- PESTAÑAS DEL PANEL --- */
-.tab-nav { display: flex; border-bottom: 1px solid var(--sidebar-hover); }
-.tab-btn { flex: 1; background: none !important; border: none !important; color: var(--text-light) !important; padding: 12px 0 !important; cursor: pointer; font-size: 0.95em; border-bottom: 3px solid transparent !important; border-radius: 0 !important; margin-top: 0 !important; transition: all 0.2s ease; opacity: 0.7; }
-.tab-btn:hover { opacity: 1; background-color: var(--sidebar-hover) !important; transform: none !important; }
-.tab-btn.active { border-bottom-color: var(--rojo-circo) !important; font-weight: bold; opacity: 1; }
+.tab-nav {
+    display: flex;
+    border-bottom: 1px solid var(--sidebar-hover);
+    margin-bottom: 15px;
+}
+.tab-btn {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    color: var(--text-light);
+    padding: 15px 5px; /* Aumentamos el espaciado vertical */
+    cursor: pointer;
+    font-size: 1.5em; /* Icono aún más grande */
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+    display: flex; /* Para alinear icono y texto */
+    flex-direction: column;
+    align-items: center;
+    gap: 6px; /* Más espacio entre icono y texto */
+    min-width: 0; /* Permite que el botón se encoja */
+}
+.tab-btn:hover { opacity: 1; background-color: var(--sidebar-hover); }
+.tab-btn.active { background-color: var(--sidebar-hover); border-bottom-color: var(--rojo-circo); font-weight: bold; opacity: 1; }
+.tab-btn .tab-text {
+    font-size: 0.55em; /* Ajustamos el tamaño relativo al icono */
+    font-family: 'Roboto Slab', serif;
+    white-space: nowrap; /* Evita que el texto se parta en dos líneas */
+}
 
 .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
 .tab-content.active { display: flex; }
@@ -63,7 +88,7 @@ body {
     font-weight: bold;
     color: var(--text-light);
     opacity: 0.9;
-    margin: 15px 0 10px 0;
+    margin: 0 0 10px 0;
 }
 /* --- LISTA DE TABLEROS --- */
 #board-manager ul { list-style: none; padding: 0; margin: 15px 0 0 0; flex-grow: 1; overflow-y: auto; max-height: 40vh; /* Controla la altura máxima de la lista */ }
@@ -71,7 +96,7 @@ body {
 #board-manager li:hover { background-color: var(--sidebar-hover); }
 #board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
 
-#board-manager button {
+#board-manager .tab-content button {
     margin-top: 15px; /* Espacio sobre el botón */
     width: 100%;
     padding: 12px;
@@ -87,7 +112,7 @@ body {
     justify-content: center;
     gap: 8px;
 }
-#board-manager #search-input {
+#board-manager #search-input { /* Se mantiene el estilo del input de búsqueda */
     width: 100%;
     padding: 10px;
     margin: 15px 0 0 0;
@@ -129,7 +154,7 @@ body {
     opacity: 0.8;
     font-size: 0.85em;
 }
-#board-manager button:hover { background-color: var(--azul-carpa); transform: translateY(-2px); }
+#board-manager .tab-content button:hover { background-color: var(--azul-carpa); transform: translateY(-2px); }
 #board-manager .icon { font-size: 1.2em; }
 
 /* --- BOTONES PARA OCULTAR/MOSTRAR PANEL --- */
@@ -172,11 +197,10 @@ body {
 
 /* --- SECCIÓN DE PLANTILLAS --- */
 #template-container {
-    margin-top: 15px;
     border-top: 1px solid var(--sidebar-hover);
     padding-top: 15px;
 }
-#template-container p {
+#template-container .tab-title { /* Reutilizamos el estilo de título de pestaña */
     margin: 0 0 10px 0;
     font-size: 0.9em;
     font-weight: normal;
@@ -184,10 +208,10 @@ body {
     opacity: 0.8;
 }
 .template-btn {
-    background-color: var(--azul-carpa) !important; /* Usar !important para sobreescribir el estilo de button */
-    margin-top: 8px !important;
+    background-color: var(--azul-carpa);
+    margin-top: 8px;
 }
-.template-btn:hover { background-color: var(--rojo-circo) !important; }
+.template-btn:hover { background-color: var(--rojo-circo); }
 
 /* --- ESTILOS PARA LA PESTAÑA DE LÍNEAS --- */
 .style-option {
@@ -603,17 +627,17 @@ body {
     gap: 8px;
 }
 .trash-item-actions button {
-    flex: 1;
-    margin-top: 0;
     padding: 6px 10px;
     font-size: 0.8em;
+    margin-top: 0; /* Anular el margen de .tab-content button */
+    flex: 1;
     background-color: var(--sidebar-hover);
 }
 .trash-item-actions button.restore {
     background-color: var(--azul-carpa);
 }
 #empty-trash-btn {
-    background-color: #a61e4d !important;
+    background-color: #a61e4d;
 }
 
 /* --- NOTIFICACIONES (TOASTS) --- */

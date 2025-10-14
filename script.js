@@ -707,23 +707,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleTabSwitching() {
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
+        const tabNav = document.querySelector('.tab-nav');
+        if (!tabNav) return;
 
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabId = button.dataset.tab;
+        tabNav.addEventListener('click', (e) => {
+            const button = e.target.closest('.tab-btn');
+            if (!button || button.classList.contains('active')) return;
 
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
+            const tabId = button.dataset.tab;
 
-                tabContents.forEach(content => content.classList.remove('active'));
-                document.getElementById(`tab-content-${tabId}`).classList.add('active');
+            tabNav.querySelector('.tab-btn.active')?.classList.remove('active');
+            button.classList.add('active');
 
-                if (tabId === 'trash') {
-                    renderTrash();
-                }
-            });
+            boardManager.querySelector('.tab-content.active')?.classList.remove('active');
+            document.getElementById(`tab-content-${tabId}`)?.classList.add('active');
+
+            if (tabId === 'trash') renderTrash();
         });
     }
 
@@ -985,7 +984,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Crear botones de plantillas dinámicamente
         const templateTitle = document.createElement('p');
-        templateTitle.textContent = 'O crea desde una plantilla:';
+        templateTitle.className = 'tab-title';
+        templateTitle.textContent = 'Crear desde plantilla:';
         templateContainer.appendChild(templateTitle);
         Object.keys(boardTemplates).forEach(key => {
             const btn = document.createElement('button');
