@@ -12,7 +12,7 @@
 <body>
 
 <div id="board-manager">
-    <h3>Gestor <span id="sidebar-collapse-btn" title="Ocultar panel">‹</span></h3>
+    <h3>Gestor <span id="sidebar-collapse-btn" title="Ocultar panel"><img src="svg/izquierda.svg" alt="Ocultar"></span></h3>
 
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="boards" title="Tableros">🗂️<span class="tab-text">Tableros</span></button>
@@ -28,7 +28,7 @@
             <div id="global-search-results"></div>
             <ul id="board-list"></ul>
         </div>
-    
+
         <div id="tab-content-create" class="tab-content">
             <button id="add-board-btn">Nuevo Tablero</button>
             <div id="template-container"></div>
@@ -94,10 +94,17 @@
     <div id="sidebar-resizer" title="Redimensionar panel"></div>
 </div>
 
-<div id="sidebar-expander" title="Mostrar panel">›</div>
+<div id="sidebar-expander" title="Mostrar panel"><img src="svg/derecha.svg" alt="Mostrar"></div>
 
 <div id="note-palette">
-    <h4>Arrastra una nota</h4>
+    <div class="palette-header">
+        <span>Crear Nota</span>
+        <button id="pin-palette-btn" title="Fijar paleta">
+            <svg class="pin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 3.535V12a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3.535a5.5 5.5 0 1 1 8 0zM13 2a3.5 3.5 0 1 0-2 0V12h2V2z"/>
+            </svg>
+        </button>
+    </div>
     <!-- Las notas de plantilla se generarán aquí con JS -->
 </div>
 <div id="board-container">

@@ -94,10 +94,10 @@ body {
     overflow: hidden;
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0;
-    transform: translateX(15px);
+    opacity: 0; /* Animación de entrada más sutil */
+    transform: translateY(10px);
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .tab-content.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
 
@@ -178,14 +178,20 @@ body {
 /* --- BOTONES PARA OCULTAR/MOSTRAR PANEL --- */
 #sidebar-collapse-btn {
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 0 5px; /* Ajustado para el nuevo tamaño del icono */
     border-radius: 5px;
-    font-size: 24px;
-    line-height: 1;
     transition: background-color 0.2s ease;
+    display: flex; /* Para centrar el icono */
+    align-items: center;
 }
 #sidebar-collapse-btn:hover {
     background-color: var(--sidebar-hover);
+}
+#sidebar-collapse-btn img {
+    width: 32px;
+    height: 32px;
+    filter: invert(1); /* Para que el SVG negro se vea blanco */
+    opacity: 0.8;
 }
 
 #sidebar-expander {
@@ -193,6 +199,7 @@ body {
     left: 0;
     top: 50%; /* Oculto por defecto fuera de la pantalla */
     transform: translateY(-50%) translateX(-100%); /* Oculto por defecto */
+    transform: translateY(-50%) translateX(-100%);
     width: 25px;
     height: 60px;
     background-color: var(--sidebar-bg);
@@ -202,14 +209,26 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    font-weight: bold;
     box-shadow: 3px 0px 8px rgba(0,0,0,0.15);
+    box-shadow: 2px 0px 8px rgba(0,0,0,0.2);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
     z-index: 199;
 }
 #sidebar-expander:hover { background-color: var(--sidebar-hover); }
+#sidebar-expander:hover {
+    background-color: var(--rojo-circo);
+}
 
+/* Estilos para el SVG dentro del expansor */
+#sidebar-expander img {
+    width: 28px;
+    height: 28px;
+    width: 20px;
+    height: 20px;
+    filter: invert(1); /* Para que el SVG negro se vea blanco */
+    opacity: 0.8;
+    transition: transform 0.2s ease;
+}
 /* Cuando el panel está colapsado, la manija de expansión se muestra */
 #board-manager.collapsed ~ #sidebar-expander { transform: translateY(-50%) translateX(0); }
 
@@ -324,27 +343,65 @@ body {
     border-color: var(--amarillo-luz);
 }
 
-
 /* --- PALETA DE NOTAS --- */
 #note-palette {
-    width: 100px;
+    width: 90px; /* Un poco más estrecho para un look más compacto */
     flex-shrink: 0;
-    padding: 20px 10px;
+    padding: 20px 0; /* Quitamos padding horizontal, lo manejamos dentro */
     background-color: #EAECEE;
     box-shadow: var(--shadow-sm);
     z-index: 100;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 15px;
+    align-items: center; /* Centramos los elementos */
+    gap: 20px; /* Aumentamos el espacio */
     border-right: 1px solid #D5D8DC;
+    transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    overflow: hidden; /* Evita que las notas se salgan al animarse */
 }
-#note-palette h4 {
-    margin: 0 0 10px 0;
+
+/* Cuando el panel está colapsado Y la paleta está fijada, se oculta */
+#board-manager.collapsed ~ #note-palette {
+    margin-left: -120px; /* Ancho de la paleta (100px) + padding (2*10px) */
+}
+/* Si la paleta NO está fijada, se ignora la regla anterior */
+body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
+    margin-left: 0;
+}
+
+.palette-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;    
+    padding: 0 15px; /* Añadimos padding aquí */
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    box-sizing: border-box;
+}
+
+.palette-header span {
+    margin: 0;
     color: #566573;
     font-weight: 700;
     font-size: 0.9em;
-    text-align: center;
+}
+
+#pin-palette-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s, color 0.2s, transform 0.3s ease;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#pin-palette-btn:hover { opacity: 1; }
+#pin-palette-btn.active { opacity: 1; color: var(--rojo-circo); transform: rotate(45deg); }
+
+.pin-icon {
+    width: 20px;
+    height: 20px;
 }
 
 /* --- TABLERO PRINCIPAL --- */
@@ -417,15 +474,37 @@ body {
 
 /* --- NOTAS DE PLANTILLA EN LA PALETA --- */
 .palette-note {
-    width: 60px;
-    height: 60px;
+    width: 55px; /* Ligeramente más pequeño */
+    height: 55px;
     border-radius: 4px;
     box-shadow: var(--shadow-sm);
     cursor: grab;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    position: absolute; /* Clave para el efecto de apilado */
+    transform-origin: bottom center; /* La rotación y escala será desde la base */
+    border: 1px solid rgba(0,0,0,0.1);
 }
-.palette-note:hover {
-    transform: scale(1.1);
+
+/* Efecto de esquina doblada */
+.palette-note {
+    position: relative; /* Necesario para el pseudo-elemento */
+}
+.palette-note::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 15px 15px; /* Triángulo */
+    border-color: transparent transparent #dcdcdc transparent; /* Color de la esquina */
+    transition: border-width 0.2s ease;
+}
+
+/* Animación de abanico al pasar el ratón */
+#note-palette:hover .palette-note {
+    transform: translateY(var(--y-offset)) rotate(var(--r-offset)) scale(1.05);
     box-shadow: var(--shadow-md);
 }
 

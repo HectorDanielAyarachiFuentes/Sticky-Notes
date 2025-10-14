@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const board = document.querySelector("#board");
     const palette = document.querySelector("#note-palette");
     const boardList = document.querySelector("#board-list");
+    const pinPaletteBtn = document.querySelector("#pin-palette-btn");
     const addBoardBtn = document.querySelector("#add-board-btn");
     const searchInput = document.querySelector("#search-input");
     const boardManager = document.querySelector("#board-manager");
@@ -170,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 trash: [], // Papelera de reciclaje
-                zoomLevel: 1.0,
+                zoomLevel: 1.0,                isPalettePinned: true, // Nuevo estado para la paleta
                 activeBoardId: initialBoardId,
                 lineOptions: { // Opciones por defecto para las líneas
                     color: '#4B4B4B', // Gris oscuro en formato HEX
@@ -182,6 +183,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         }
+    }
+
+    // --- FUNCIONES DE LA PALETA DE NOTAS ---
+    function togglePalettePin() {
+        appState.isPalettePinned = !appState.isPalettePinned;
+        updatePaletteState();
+        saveState();
+    }
+
+    function updatePaletteState() {
+        document.body.classList.toggle('palette-pinned', appState.isPalettePinned);
+        pinPaletteBtn.classList.toggle('active', appState.isPalettePinned);
+        pinPaletteBtn.title = appState.isPalettePinned ?
+            'Desfijar paleta (permanecerá visible)' :
+            'Fijar paleta (se ocultará con el panel)';
     }
     
     // --- CONSTANTES GLOBALES ---
@@ -1360,14 +1376,23 @@ document.addEventListener('DOMContentLoaded', () => {
             templateContainer.appendChild(btn);
         });
 
-        noteColors.forEach(color => {
+        // --- MEJORA UX/UI: Crear notas de paleta con efecto abanico ---
+        const totalColors = noteColors.length;
+        const angleSpread = 40; // Grados totales del abanico
+        const ySpread = 150; // Píxeles de separación vertical
+
+        noteColors.forEach((color, index) => {
             const paletteNote = document.createElement("div");
             paletteNote.classList.add("palette-note");
             paletteNote.style.backgroundColor = color;
             paletteNote.dataset.color = color;
+            // Calcular la rotación y el desplazamiento para cada nota
+            const rotation = (index / (totalColors - 1) - 0.5) * angleSpread;
+            paletteNote.style.setProperty('--r-offset', `${rotation}deg`);
+            paletteNote.style.setProperty('--y-offset', `${index * (ySpread / totalColors)}px`);
             palette.appendChild(paletteNote);
         });
-
+        pinPaletteBtn.addEventListener('click', togglePalettePin);
         addBoardBtn.addEventListener('click', addNewBoard);
         searchInput.addEventListener('input', handleSearch);
         document.addEventListener('pointerdown', handlePointerDown);
@@ -1400,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeBackgroundOptions();
         initializeColorPopover();
         initializeSidebarResizing();
-    }
+        updatePaletteState();    }
 
     initializeApp();
 });
