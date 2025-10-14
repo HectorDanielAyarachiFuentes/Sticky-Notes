@@ -198,7 +198,6 @@ body {
     position: absolute;
     left: 0;
     top: 50%; /* Oculto por defecto fuera de la pantalla */
-    transform: translateY(-50%) translateX(-100%); /* Oculto por defecto */
     transform: translateY(-50%) translateX(-100%);
     width: 25px;
     height: 60px;
@@ -209,20 +208,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 3px 0px 8px rgba(0,0,0,0.15);
     box-shadow: 2px 0px 8px rgba(0,0,0,0.2);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
     z-index: 199;
 }
-#sidebar-expander:hover { background-color: var(--sidebar-hover); }
 #sidebar-expander:hover {
     background-color: var(--rojo-circo);
 }
 
 /* Estilos para el SVG dentro del expansor */
 #sidebar-expander img {
-    width: 28px;
-    height: 28px;
     width: 20px;
     height: 20px;
     filter: invert(1); /* Para que el SVG negro se vea blanco */
