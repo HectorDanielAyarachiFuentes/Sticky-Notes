@@ -26,7 +26,7 @@ body {
 
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
 #board-manager {
-    width: 260px;
+    /* El ancho ahora se controla por JS, con un valor inicial y límites */
     flex-shrink: 0; /* Evita que se encoja */
     background-color: var(--sidebar-bg);
     color: var(--text-light);
@@ -38,7 +38,9 @@ body {
     transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     position: relative; /* Necesario para posicionar el botón de colapso */
 }
-#board-manager.collapsed { margin-left: -300px; /* width (260) + padding (20*2) */ }
+/* El margen de colapso ahora se establece dinámicamente con JS */
+/* #board-manager.collapsed { margin-left: -300px; } */
+
 #board-manager h3 {
     margin-top: 0;
     font-weight: 700;
@@ -80,8 +82,24 @@ body {
     white-space: nowrap; /* Evita que el texto se parta en dos líneas */
 }
 
-.tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
-.tab-content.active { display: flex; }
+#tab-content-container {
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden; /* Oculta el contenido que se desborda durante la animación */
+}
+
+.tab-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+    transform: translateX(15px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.tab-content.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
 
 .tab-title {
     font-size: 1em;
@@ -194,6 +212,23 @@ body {
 
 /* Cuando el panel está colapsado, la manija de expansión se muestra */
 #board-manager.collapsed ~ #sidebar-expander { transform: translateY(-50%) translateX(0); }
+
+/* --- TIRADOR PARA REDIMENSIONAR EL PANEL --- */
+#sidebar-resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 201; /* Por encima del contenido del panel */
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+#sidebar-resizer:hover,
+#sidebar-resizer.resizing {
+    background-color: var(--rojo-circo);
+}
 
 /* --- SECCIÓN DE PLANTILLAS --- */
 #template-container {
@@ -639,6 +674,63 @@ body {
 #empty-trash-btn {
     background-color: #a61e4d;
 }
+
+/* --- POPOVER DE PALETA DE COLORES --- */
+#color-picker-popover {
+    position: fixed;
+    z-index: 2001; /* Encima del menú contextual */
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid #ddd;
+    width: 280px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+#color-picker-popover.hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+.popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 15px;
+    border-bottom: 1px solid #eee;
+}
+.popover-header h4 {
+    margin: 0;
+    font-size: 1em;
+    color: var(--texto-principal);
+}
+#close-popover-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #888;
+    padding: 0 5px;
+}
+#close-popover-btn:hover { color: #333; }
+
+#popover-color-palette {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+    gap: 10px;
+    padding: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { border-color: var(--rojo-circo); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--rojo-circo); }
 
 /* --- NOTIFICACIONES (TOASTS) --- */
 #toast-container {

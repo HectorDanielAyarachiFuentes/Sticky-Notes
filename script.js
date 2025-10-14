@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomResetBtn = document.querySelector("#zoom-reset-btn");
     const zoomLevelDisplay = document.querySelector("#zoom-level-display");
     // Controles de estilo de línea
+    const lineOpacityInput = document.querySelector("#line-opacity-input");
     const lineColorInput = document.querySelector("#line-color-input");
     const linePathSelect = document.querySelector("#line-path-select");
     const lineSizeInput = document.querySelector("#line-size-input");
@@ -30,13 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctxDuplicateBtn = document.querySelector("#ctx-duplicate");
     const ctxLockBtn = document.querySelector("#ctx-lock");
     const ctxDeleteBtn = document.querySelector("#ctx-delete");
+    const ctxChangeColorBtn = document.querySelector("#ctx-change-color");
     // Papelera
     const trashListContainer = document.querySelector("#trash-list-container");
     const emptyTrashBtn = document.querySelector("#empty-trash-btn");
     const toastContainer = document.querySelector("#toast-container");
+    // Popover de color
+    const colorPopover = document.querySelector("#color-picker-popover");
+    const popoverPalette = document.querySelector("#popover-color-palette");
+    const closePopoverBtn = document.querySelector("#close-popover-btn");
 
     // --- CONFIGURACIÓN INICIAL ---
-    const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2'];
+    let popoverOriginalColor = null; // Para guardar el color original al previsualizar
+    const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2', '#D7CCC8', '#F8BBD0', '#E1BEE7', '#CFD8DC'];
     const boardTemplates = {
         kanban: {
             name: 'Tablero Kanban',
@@ -89,7 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let offsetY = 0;
     let isResizing = false;
 
-    let contextMenuNoteId = null; // ID de la nota para el menú contextual
+    let contextMenuNoteId = null; // ID de la nota para el menú contextual    
+    let popoverNoteId = null; // ID de la nota para el popover de color
     let maxZIndex = 0; // Para gestionar el apilamiento de las notas
     let activeLines = []; // Almacena las instancias de LeaderLine activas
     let connectionState = { startNoteId: null }; // Para gestionar la creación de conexiones
@@ -143,7 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoomLevel: 1.0,
                 activeBoardId: initialBoardId,
                 lineOptions: { // Opciones por defecto para las líneas
-                    color: 'rgba(75, 75, 75, 0.8)',
+                    color: '#4B4B4B', // Gris oscuro en formato HEX
+                    opacity: 0.8,
+                    sidebarWidth: 260, // Ancho inicial del panel
                     size: 4,
                     path: 'fluid',
                     endPlug: 'arrow1'
@@ -215,9 +225,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
 
             if (startEl && endEl) {
-                const lineOptions = { ...appState.lineOptions }; // Copia de las opciones
+                const { color, opacity, ...restOptions } = appState.lineOptions;
+                
+                // Función para convertir HEX a RGBA
+                const hexToRgba = (hex, alpha) => {
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                };
+
                 const line = new LeaderLine(startEl, endEl, {
-                    ...lineOptions,
+                    ...restOptions,
+                    color: hexToRgba(color, opacity),
                     startSocket: 'auto',
                     endSocket: 'auto'
                 });
@@ -727,14 +747,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initializeLineStyleControls() {
-        const { color, path, size, endPlug } = appState.lineOptions;
+        const { color, opacity, path, size, endPlug } = appState.lineOptions;
         lineColorInput.value = color;
+        lineOpacityInput.value = opacity;
         linePathSelect.value = path;
         lineSizeInput.value = size;
         linePlugSelect.value = endPlug;
 
         const updateLineStyle = () => {
             appState.lineOptions.color = lineColorInput.value;
+            appState.lineOptions.opacity = parseFloat(lineOpacityInput.value);
             appState.lineOptions.path = linePathSelect.value;
             appState.lineOptions.size = parseInt(lineSizeInput.value, 10);
             appState.lineOptions.endPlug = linePlugSelect.value;
@@ -742,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderActiveBoard(); // Re-renderizar para aplicar cambios
         };
 
-        [lineColorInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el => 
+        [lineColorInput, lineOpacityInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el => 
             el.addEventListener('change', updateLineStyle));
     }
 
@@ -944,6 +966,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function initializeSidebarResizing() {
+        const resizer = document.getElementById('sidebar-resizer');
+        if (!resizer) return;
+
+        const minWidth = 220;
+        const maxWidth = 500;
+
+        // Aplicar el ancho guardado al iniciar
+        boardManager.style.width = `${appState.sidebarWidth || 260}px`;
+
+        const handlePointerDown = (e) => {
+            e.preventDefault();
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+
+            const handlePointerMove = (moveEvent) => {
+                let newWidth = moveEvent.clientX;
+                if (newWidth < minWidth) newWidth = minWidth;
+                if (newWidth > maxWidth) newWidth = maxWidth;
+
+                boardManager.style.width = `${newWidth}px`;
+                // Actualizar la posición de las líneas en tiempo real
+                activeLines.forEach(l => l.line.position());
+            };
+
+            const handlePointerUp = () => {
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+
+                appState.sidebarWidth = parseInt(boardManager.style.width, 10);
+                saveState();
+
+                document.removeEventListener('pointermove', handlePointerMove);
+                document.removeEventListener('pointerup', handlePointerUp);
+            };
+
+            document.addEventListener('pointermove', handlePointerMove);
+            document.addEventListener('pointerup', handlePointerUp);
+        };
+
+        resizer.addEventListener('pointerdown', handlePointerDown);
+    }
+
+    // --- LÓGICA DE LA PALETA DE COLORES (POPOVER) ---
+
+    function showColorPopover() {
+        if (!contextMenuNoteId) return;
+
+        const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
+        if (!noteData) return;
+
+        // --- SOLUCIÓN: Guardar el ID en la variable del popover ---
+        popoverNoteId = contextMenuNoteId;
+        popoverOriginalColor = noteData.color; // Guardar color original
+
+        // Resaltar el color actual
+        popoverPalette.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.classList.toggle('active', swatch.dataset.color === noteData.color);
+        });
+        
+        const menuRect = contextMenu.getBoundingClientRect();
+        colorPopover.style.top = `${menuRect.top}px`;
+        colorPopover.style.left = `${menuRect.right + 10}px`;
+        colorPopover.classList.remove('hidden');
+        hideContextMenu(); // Ahora esto es seguro, porque ya guardamos el ID
+    }
+
+    function hideColorPopover() {
+        if (!colorPopover.classList.contains('hidden') && popoverOriginalColor) {
+            // Restaurar el color original si se cierra sin seleccionar
+            // --- SOLUCIÓN: Usar popoverNoteId ---
+            const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
+            if (noteElement) {
+                noteElement.style.backgroundColor = popoverOriginalColor;
+            }
+        }
+        colorPopover.classList.add('hidden');
+        popoverOriginalColor = null;
+        // --- SOLUCIÓN: Limpiar el ID del popover ---
+        popoverNoteId = null;
+    }
+
+    function changeNoteColor(newColor) {
+        // --- SOLUCIÓN: Usar popoverNoteId ---
+        if (!popoverNoteId) return;
+
+        const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === popoverNoteId);
+        const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
+
+        if (noteData && noteElement) {
+            popoverOriginalColor = null; // Marcar que el color ha sido elegido, para no restaurarlo.
+            noteData.color = newColor;
+            noteElement.style.backgroundColor = newColor;
+            saveState();
+        }
+        hideColorPopover();
+    }
+
+    function initializeColorPopover() {
+        // Paleta extendida de colores
+        const extendedColors = [
+            '#FFFFFF', '#F1F3F4', '#CFD8DC', '#E8EAED', '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC', '#D7CCC8'
+        ];
+
+        // Función para previsualizar el color en la nota
+        const previewNoteColor = (color) => {
+            // --- SOLUCIÓN: Usar popoverNoteId ---
+            if (!popoverNoteId) return;
+            const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
+            if (noteElement) {
+                noteElement.style.backgroundColor = color;
+            }
+        };
+
+        extendedColors.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
+            swatch.addEventListener('click', () => changeNoteColor(color));
+            swatch.addEventListener('mouseenter', () => previewNoteColor(color));
+            popoverPalette.appendChild(swatch);
+        });
+
+        // Restablecer el color de la nota cuando el cursor sale de la paleta
+        popoverPalette.addEventListener('mouseleave', () => {
+            if (popoverOriginalColor) previewNoteColor(popoverOriginalColor);
+        });
+
+        ctxChangeColorBtn.addEventListener('click', showColorPopover);
+        closePopoverBtn.addEventListener('click', hideColorPopover);
+    }
+
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
@@ -951,6 +1108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Lógica para los botones de ocultar/mostrar panel
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
+
+        const updateCollapsedMargin = () => {
+            const currentWidth = boardManager.offsetWidth;
+            const padding = parseInt(getComputedStyle(boardManager).paddingLeft, 10) * 2;
+            boardManager.style.setProperty('--collapsed-margin', `-${currentWidth + padding}px`);
+        };
 
         const smoothLineUpdateOnToggle = () => {
             const duration = 400; // Debe coincidir con la duración de la transición en CSS
@@ -970,10 +1133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         collapseBtn.addEventListener('click', () => {
+            boardManager.style.marginLeft = `-${boardManager.offsetWidth}px`;
             boardManager.classList.add('collapsed');
             smoothLineUpdateOnToggle();
         });
         expander.addEventListener('click', () => {
+            boardManager.style.marginLeft = '';
             boardManager.classList.remove('collapsed');
             smoothLineUpdateOnToggle();
         });
@@ -1010,9 +1175,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
         document.addEventListener('contextmenu', handleContextMenu);
+        // Ocultar menús si se hace clic fuera
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('#context-menu')) hideContextMenu();
-        });
+            if (!e.target.closest('#context-menu') && !e.target.closest('#color-picker-popover')) {
+                hideContextMenu();
+                hideColorPopover();
+            }
+        }, true); // Usar captura para que se ejecute antes que otros clics
         ctxDuplicateBtn.addEventListener('click', duplicateNote);
         ctxLockBtn.addEventListener('click', toggleLockNote);
         ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
@@ -1028,6 +1197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderActiveBoard();
         initializeLineStyleControls();
         initializeBackgroundOptions();
+        initializeColorPopover();
+        initializeSidebarResizing();
     }
 
     initializeApp();

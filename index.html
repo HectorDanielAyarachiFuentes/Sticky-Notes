@@ -22,68 +22,76 @@
         <button class="tab-btn" data-tab="trash" title="Papelera">🗑️<span class="tab-text">Papelera</span></button>
     </div>
 
-    <div id="tab-content-boards" class="tab-content active">
-        <input type="search" id="search-input" placeholder="🔎 Buscar en tableros...">
-        <div id="global-search-results"></div>
-        <ul id="board-list"></ul>
-    </div>
-
-    <div id="tab-content-create" class="tab-content">
-        <button id="add-board-btn">Nuevo Tablero</button>
-        <div id="template-container"></div>
-    </div>
-
-    <div id="tab-content-lines" class="tab-content">
-        <p class="tab-title">Estilos de Conexión</p>
-        <div class="style-option">
-            <label for="line-color-input">Color</label>
-            <input type="color" id="line-color-input">
+    <div id="tab-content-container">
+        <div id="tab-content-boards" class="tab-content active">
+            <input type="search" id="search-input" placeholder="🔎 Buscar en tableros...">
+            <div id="global-search-results"></div>
+            <ul id="board-list"></ul>
         </div>
-        <div class="style-option">
-            <label for="line-path-select">Trazado</label>
-            <select id="line-path-select">
-                <option value="fluid">Fluido</option>
-                <option value="straight">Recto</option>
-                <option value="arc">Arco</option>
-                <option value="grid">Cuadrícula</option>
-            </select>
+    
+        <div id="tab-content-create" class="tab-content">
+            <button id="add-board-btn">Nuevo Tablero</button>
+            <div id="template-container"></div>
         </div>
-        <div class="style-option">
-            <label for="line-size-input">Grosor</label>
-            <input type="range" id="line-size-input" min="1" max="15" step="1">
-        </div>
-        <div class="style-option">
-            <label for="line-plug-select">Punta</label>
-            <select id="line-plug-select">
-                <option value="arrow1">Flecha 1</option>
-                <option value="arrow2">Flecha 2</option>
-                <option value="arrow3">Flecha 3</option>
-                <option value="disc">Círculo</option>
-                <option value="square">Cuadrado</option>
-            </select>
-        </div>
-    </div>
-
-    <div id="tab-content-background" class="tab-content">
-        <p class="tab-title">Fondos del Tablero</p>
-        <div class="style-option">
-            <label>Aplicar a:</label>
-            <div class="checkbox-group">
-                <input type="checkbox" id="bg-apply-board" checked><label for="bg-apply-board">Tablero</label>
-                <input type="checkbox" id="bg-apply-notes"><label for="bg-apply-notes">Notas</label>
+    
+        <div id="tab-content-lines" class="tab-content">
+            <p class="tab-title">Estilos de Conexión</p>
+            <div class="style-option">
+                <label for="line-color-input">Color</label>
+                <input type="color" id="line-color-input">
+            </div>
+            <div class="style-option">
+                <label for="line-opacity-input">Opacidad</label>
+                <input type="range" id="line-opacity-input" min="0.1" max="1" step="0.1">
+            </div>
+            <div class="style-option">
+                <label for="line-path-select">Trazado</label>
+                <select id="line-path-select">
+                    <option value="fluid">Fluido</option>
+                    <option value="straight">Recto</option>
+                    <option value="arc">Arco</option>
+                    <option value="grid">Cuadrícula</option>
+                </select>
+            </div>
+            <div class="style-option">
+                <label for="line-size-input">Grosor</label>
+                <input type="range" id="line-size-input" min="1" max="15" step="1">
+            </div>
+            <div class="style-option">
+                <label for="line-plug-select">Punta</label>
+                <select id="line-plug-select">
+                    <option value="arrow1">Flecha 1</option>
+                    <option value="arrow2">Flecha 2</option>
+                    <option value="arrow3">Flecha 3</option>
+                    <option value="disc">Círculo</option>
+                    <option value="square">Cuadrado</option>
+                </select>
             </div>
         </div>
-        <button id="reset-background-btn">Fondo por Defecto</button>
-        <div id="background-options-container">
-            <!-- Las opciones de fondo se generarán aquí -->
+    
+        <div id="tab-content-background" class="tab-content">
+            <p class="tab-title">Fondos del Tablero</p>
+            <div class="style-option">
+                <label>Aplicar a:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="bg-apply-board" checked><label for="bg-apply-board">Tablero</label>
+                    <input type="checkbox" id="bg-apply-notes"><label for="bg-apply-notes">Notas</label>
+                </div>
+            </div>
+            <button id="reset-background-btn">Fondo por Defecto</button>
+            <div id="background-options-container">
+                <!-- Las opciones de fondo se generarán aquí -->
+            </div>
+        </div>
+    
+        <div id="tab-content-trash" class="tab-content">
+            <p class="tab-title">Notas Eliminadas</p>
+            <button id="empty-trash-btn">Vaciar Papelera</button>
+            <div id="trash-list-container"></div>
         </div>
     </div>
 
-    <div id="tab-content-trash" class="tab-content">
-        <p class="tab-title">Notas Eliminadas</p>
-        <button id="empty-trash-btn">Vaciar Papelera</button>
-        <div id="trash-list-container"></div>
-    </div>
+    <div id="sidebar-resizer" title="Redimensionar panel"></div>
 </div>
 
 <div id="sidebar-expander" title="Mostrar panel">›</div>
@@ -108,6 +116,7 @@
 <div id="context-menu" class="hidden">
     <ul>
         <li id="ctx-duplicate">Duplicar Nota</li>
+        <li id="ctx-change-color">Cambiar Color</li>
         <li id="ctx-lock">Bloquear Nota</li>
         <li class="separator"></li>
         <li id="ctx-delete">Eliminar Nota</li>
@@ -115,6 +124,15 @@
 </div>
 
 <!-- Contenedor para Notificaciones (Toasts) -->
+<!-- Paleta de colores como un Popover -->
+<div id="color-picker-popover" class="hidden">
+    <div class="popover-header">
+        <h4>Elige un Color</h4>
+        <button id="close-popover-btn">&times;</button>
+    </div>
+    <div id="popover-color-palette"></div>
+</div>
+
 <div id="toast-container"></div>
 <script src="leader-line.min.js"></script>
 <script type="module" src="script.js"></script>
