@@ -590,14 +590,14 @@ body {
             justify-content: center;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            opacity: 0; /* El texto está oculto por defecto */
+            opacity: 1; /* El texto es visible por defecto */
         }
         .stickynote-tab-part[data-part="title"] {
             margin-right: 2px; /* Espacio en lugar de línea */
         }
-        /* Cuando la parte está vacía, mostramos el texto SÓLO al pasar el ratón por encima */
-        .stickynote-tab:hover .stickynote-tab-part.empty {
-            opacity: 1;
+        /* Cuando la parte está vacía, el texto tiene menos opacidad */
+        .stickynote-tab-part.empty {
+            opacity: 0.5;
         }
         /* Cuando está llena, le damos un fondo */
         .stickynote-tab-part.filled { background-color: rgba(0,0,0,0.4); }
