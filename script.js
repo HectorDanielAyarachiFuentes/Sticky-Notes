@@ -593,6 +593,11 @@ document.addEventListener('DOMContentLoaded', () => {
         collapseBtn.addEventListener('click', () => boardManager.classList.add('collapsed'));
         expander.addEventListener('click', () => boardManager.classList.remove('collapsed'));
 
+        // Reposiciona las líneas cuando la animación del sidebar termina
+        boardManager.addEventListener('transitionend', () => {
+            activeLines.forEach(l => l.line.position());
+        });
+
         // Configurar UI
         addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
         handleTabSwitching();
