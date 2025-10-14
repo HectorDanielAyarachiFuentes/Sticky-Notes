@@ -563,16 +563,44 @@ body {
         .stickynote-tab {
             flex: 1;
             position: relative; /* Necesario para el pseudo-elemento ::after */
+            display: flex; /* ¡NUEVO! Para contener las dos partes */
             height: 6px;
             /* --- MEJORA UX: Estilo de contorno para pestañas vacías --- */
             background-color: transparent;
             border: 2px solid rgba(0,0,0,0.15);
             margin: 0 2px;
             border-radius: 3px;
+            padding: 0; /* Resetear padding */
             cursor: pointer;
             /* --- MEJORA UX: Transición más elástica --- */
             transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s ease, border-color 0.3s ease;
         }
+
+        /* --- RE-DISEÑO: Pestañas inteligentes con texto --- */
+        .stickynote-tab-part {
+            flex: 1;
+            height: 100%;
+            transition: all 0.3s ease;
+            background-color: transparent; /* Por defecto, son transparentes */
+            color: rgba(0,0,0,0.4);
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0; /* El texto está oculto por defecto */
+        }
+        .stickynote-tab-part[data-part="title"] {
+            margin-right: 2px; /* Espacio en lugar de línea */
+        }
+        /* Cuando la parte está vacía, mostramos el texto SÓLO al pasar el ratón por encima */
+        .stickynote-tab:hover .stickynote-tab-part.empty {
+            opacity: 1;
+        }
+        /* Cuando está llena, le damos un fondo */
+        .stickynote-tab-part.filled { background-color: rgba(0,0,0,0.4); }
 
         /* --- MEJORA UX: Efecto "Lupa" al pasar el ratón --- */
         /* 1. Al pasar por el contenedor, todas las pestañas crecen un poco */
@@ -588,15 +616,14 @@ body {
 
         /* 3. La pestaña activa siempre es más grande */
         .stickynote-tab.active {
-            background-color: var(--azul-carpa);
             border-color: var(--azul-carpa);
             height: 12px;
         }
-
-        /* --- MEJORA UX: Estilo "relleno" para pestañas con contenido --- */
-        .stickynote-tab.has-content {
-            background-color: rgba(0,0,0,0.15);
+        /* Cuando la pestaña está activa, ambas partes se pintan del color activo */
+        .stickynote-tab.active .stickynote-tab-part {
+            background-color: var(--azul-carpa) !important;
         }
+
         /* --- Botón para conectar notas --- */
         .connect-btn {
             position: absolute;

@@ -458,6 +458,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (noteData.tabs[noteData.activeTab].title !== newTitle) {
                 noteData.tabs[noteData.activeTab].title = newTitle;
                 saveState();
+
+                // Actualizar la parte del título de la pestaña activa
+                const activeTabElement = sticky.querySelector(`.stickynote-tab[data-tab-index="${noteData.activeTab}"]`);
+                const titlePart = activeTabElement.querySelector('.stickynote-tab-part[data-part="title"]');
+                titlePart.classList.toggle('filled', !!newTitle.trim());
+                titlePart.classList.toggle('empty', !newTitle.trim());
+
                 handleSearch();
             }
         });
@@ -477,10 +484,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const tab = document.createElement('div');
             tab.className = 'stickynote-tab';
             tab.dataset.tabIndex = i;
-            // Mejora UX: Añadir clase si la pestaña tiene contenido
-            if (noteData.tabs[i] && (noteData.tabs[i].content.trim() !== '' || noteData.tabs[i].title.trim() !== '')) {
-                tab.classList.add('has-content');
-            }
+
+            // --- RE-DISEÑO: Pestaña inteligente con texto ---
+            const tabTitlePart = document.createElement('span');
+            tabTitlePart.className = 'stickynote-tab-part';
+            tabTitlePart.dataset.part = 'title';
+            tabTitlePart.textContent = 'Título';
+            tabTitlePart.classList.add(noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty');
+
+            const tabContentPart = document.createElement('span');
+            tabContentPart.className = 'stickynote-tab-part';
+            tabContentPart.dataset.part = 'content';
+            tabContentPart.textContent = 'Cuerpo';
+            tabContentPart.classList.add(noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty');
+
+            tab.appendChild(tabTitlePart);
+            tab.appendChild(tabContentPart);
 
             if (i === noteData.activeTab) {
                 tab.classList.add('active');
@@ -525,11 +544,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (noteData.tabs[i].content !== newContent) {
                     noteData.tabs[i].content = newContent;
                     saveState();
-                    // Mejora UX: Actualizar el indicador de contenido de la pestaña
+                    // Actualizar la parte de contenido de la pestaña (UX)
                     const tabEl = sticky.querySelector(`.stickynote-tab[data-tab-index="${i}"]`);
-                    const hasContent = newContent.trim() !== '' || noteData.tabs[i].title.trim() !== '';
-                    if (tabEl) tabEl.classList.toggle('has-content', hasContent);
-
+                    if (tabEl) {
+                        const contentPart = tabEl.querySelector('.stickynote-tab-part[data-part="content"]');
+                        contentPart.classList.toggle('filled', !!newContent.trim());
+                        contentPart.classList.toggle('empty', !newContent.trim());
+                    }
                     handleSearch();
                 }
             });
@@ -847,7 +868,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (noteData.activeTab === tabIndex) {
                 titleElement.innerHTML = '';
             }
-            tabElement.classList.remove('has-content');
+            // Actualizar las dos partes de la pestaña a 'empty'
+            const titlePart = tabElement.querySelector('.stickynote-tab-part[data-part="title"]');
+            const contentPart = tabElement.querySelector('.stickynote-tab-part[data-part="content"]');
+            titlePart.className = 'stickynote-tab-part empty';
+            contentPart.className = 'stickynote-tab-part empty';
             contentElement.classList.remove('clearing-out'); // Limpiar clase para futuras animaciones
         }, { once: true }); // El listener se ejecuta solo una vez
     }
