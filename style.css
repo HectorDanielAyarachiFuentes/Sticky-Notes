@@ -58,6 +58,13 @@ body {
 .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
 .tab-content.active { display: flex; }
 
+.tab-title {
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-light);
+    opacity: 0.9;
+    margin: 15px 0 10px 0;
+}
 /* --- LISTA DE TABLEROS --- */
 #board-manager ul { list-style: none; padding: 0; margin: 15px 0 0 0; flex-grow: 1; overflow-y: auto; max-height: 40vh; /* Controla la altura máxima de la lista */ }
 #board-manager li { padding: 12px 15px; cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease; }
@@ -181,6 +188,38 @@ body {
     margin-top: 8px !important;
 }
 .template-btn:hover { background-color: var(--rojo-circo) !important; }
+
+/* --- ESTILOS PARA LA PESTAÑA DE LÍNEAS --- */
+.style-option {
+    margin-bottom: 18px;
+}
+.style-option label {
+    display: block;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+.style-option input[type="color"],
+.style-option select,
+.style-option input[type="range"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--sidebar-hover);
+    background-color: #3a3a3a;
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+}
+.style-option input[type="color"] {
+    padding: 4px;
+    height: 40px;
+}
+.style-option input[type="range"] {
+    padding: 0;
+    background: transparent;
+}
+
 
 /* --- PALETA DE NOTAS --- */
 #note-palette {

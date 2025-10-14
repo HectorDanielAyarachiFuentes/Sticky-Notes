@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomOutBtn = document.querySelector("#zoom-out-btn");
     const zoomResetBtn = document.querySelector("#zoom-reset-btn");
     const zoomLevelDisplay = document.querySelector("#zoom-level-display");
+    // Controles de estilo de línea
+    const lineColorInput = document.querySelector("#line-color-input");
+    const linePathSelect = document.querySelector("#line-path-select");
+    const lineSizeInput = document.querySelector("#line-size-input");
+    const linePlugSelect = document.querySelector("#line-plug-select");
     const templateContainer = document.querySelector("#template-container");
 
     // --- CONFIGURACIÓN INICIAL ---
@@ -92,7 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 zoomLevel: 1.0,
-                activeBoardId: initialBoardId
+                activeBoardId: initialBoardId,
+                lineOptions: { // Opciones por defecto para las líneas
+                    color: 'rgba(75, 75, 75, 0.8)',
+                    size: 4,
+                    path: 'fluid',
+                    endPlug: 'arrow1'
+                }
             };
         }
     }
@@ -141,13 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
 
             if (startEl && endEl) {
+                const lineOptions = { ...appState.lineOptions }; // Copia de las opciones
                 const line = new LeaderLine(startEl, endEl, {
-                    color: 'rgba(75, 75, 75, 0.6)',
-                    size: 4,
-                    path: 'fluid',
-                    endPlug: 'arrow1',
+                    ...lineOptions,
                     startSocket: 'auto',
-                    endSocket: 'auto',
+                    endSocket: 'auto'
                 });
                 activeLines.push({ line, from: conn.from, to: conn.to });
             }
@@ -554,6 +563,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function initializeLineStyleControls() {
+        const { color, path, size, endPlug } = appState.lineOptions;
+        lineColorInput.value = color;
+        linePathSelect.value = path;
+        lineSizeInput.value = size;
+        linePlugSelect.value = endPlug;
+
+        const updateLineStyle = () => {
+            appState.lineOptions.color = lineColorInput.value;
+            appState.lineOptions.path = linePathSelect.value;
+            appState.lineOptions.size = parseInt(lineSizeInput.value, 10);
+            appState.lineOptions.endPlug = linePlugSelect.value;
+            saveState();
+            renderActiveBoard(); // Re-renderizar para aplicar cambios
+        };
+
+        [lineColorInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el => 
+            el.addEventListener('change', updateLineStyle));
+    }
+
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
@@ -602,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderBoardList();
         renderActiveBoard();
+        initializeLineStyleControls();
     }
 
     initializeApp();

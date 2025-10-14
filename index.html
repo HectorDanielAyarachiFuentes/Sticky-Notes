@@ -17,6 +17,7 @@
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="boards">Tableros</button>
         <button class="tab-btn" data-tab="create">Crear</button>
+        <button class="tab-btn" data-tab="lines">Líneas</button>
     </div>
 
     <div id="tab-content-boards" class="tab-content active">
@@ -28,6 +29,37 @@
     <div id="tab-content-create" class="tab-content">
         <button id="add-board-btn">Nuevo Tablero</button>
         <div id="template-container"></div>
+    </div>
+
+    <div id="tab-content-lines" class="tab-content">
+        <p class="tab-title">Estilos de Conexión</p>
+        <div class="style-option">
+            <label for="line-color-input">Color</label>
+            <input type="color" id="line-color-input">
+        </div>
+        <div class="style-option">
+            <label for="line-path-select">Trazado</label>
+            <select id="line-path-select">
+                <option value="fluid">Fluido</option>
+                <option value="straight">Recto</option>
+                <option value="arc">Arco</option>
+                <option value="grid">Cuadrícula</option>
+            </select>
+        </div>
+        <div class="style-option">
+            <label for="line-size-input">Grosor</label>
+            <input type="range" id="line-size-input" min="1" max="15" step="1">
+        </div>
+        <div class="style-option">
+            <label for="line-plug-select">Punta</label>
+            <select id="line-plug-select">
+                <option value="arrow1">Flecha 1</option>
+                <option value="arrow2">Flecha 2</option>
+                <option value="arrow3">Flecha 3</option>
+                <option value="disc">Círculo</option>
+                <option value="square">Cuadrado</option>
+            </select>
+        </div>
     </div>
 </div>
 
