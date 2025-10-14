@@ -1,24 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const board = document.querySelector("#board");
     const palette = document.querySelector("#note-palette");
-    const boardManager = document.querySelector("#board-manager");
     const boardList = document.querySelector("#board-list");
     const addBoardBtn = document.querySelector("#add-board-btn");
     const trashCan = document.querySelector("#trash-can");
-    const noteColors = ['#ffc', '#cfc', '#ccf', '#fcc', '#cff'];
 
-    // --- GESTIÓN DE ESTADO ---
-    let appState = {
-        boards: {},
-        activeBoardId: null
-    };
+    // --- CONFIGURACIÓN INICIAL ---
+    const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2'];
 
-    let activeNote = null;
-    let activeNoteData = null; // Referencia al objeto de la nota en el estado
+    // --- GESTIÓN DE ESTADO DE LA APLICACIÓN ---
+    let appState = {};
+    let activeNote = null;      // Elemento del DOM que se está arrastrando/redimensionando
+    let activeNoteData = null;  // Objeto de la nota en el 'appState'
     let offsetX = 0;
     let offsetY = 0;
     let isResizing = false;
 
+    // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
     function saveState() {
         localStorage.setItem('stickyNotesApp', JSON.stringify(appState));
     }
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RENDERIZADO DE LA UI ---
+    // --- FUNCIONES DE RENDERIZADO DE LA UI ---
     function renderBoardList() {
         boardList.innerHTML = '';
         Object.values(appState.boards).forEach(b => {
@@ -59,15 +58,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderActiveBoard() {
-        board.innerHTML = ''; // Limpiar el tablero
-        const activeBoard = appState.boards[appState.activeBoardId];
-        if (activeBoard && activeBoard.notes) {
-            activeBoard.notes.forEach(noteData => {
+        board.innerHTML = ''; // Limpiar tablero
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard) return;
+
+        if (currentBoard.notes.length === 0) {
+            const welcomeMsg = document.createElement('div');
+            welcomeMsg.classList.add('welcome-message');
+            welcomeMsg.textContent = '¡Bienvenido! Arrastra una nota para comenzar.';
+            board.appendChild(welcomeMsg);
+        } else {
+            currentBoard.notes.forEach(noteData => {
                 createStickyNoteElement(noteData);
             });
         }
     }
-
+    
+    // --- FUNCIONES DE LÓGICA DE LA APP ---
     function switchBoard(boardId) {
         if (boardId === appState.activeBoardId) return;
         appState.activeBoardId = boardId;
@@ -85,52 +92,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: boardName,
                 notes: []
             };
-            switchBoard(newBoardId); // Cambia al nuevo tablero
+            switchBoard(newBoardId);
         }
     }
 
-    function initializeApp() {
-        loadState();
-        renderBoardList();
-        renderActiveBoard();
-    }
-
-    // --- INICIALIZACIÓN ---
-    initializeApp();
-
-    // --- 1. Crear las plantillas de notas en el cajón ---
-    noteColors.forEach(color => {
-        const paletteNote = document.createElement("div");
-        paletteNote.classList.add("palette-note");
-        paletteNote.style.backgroundColor = color;
-        paletteNote.dataset.color = color; // Guardamos el color para usarlo después
-        palette.appendChild(paletteNote);
-    });
-
-    addBoardBtn.addEventListener('click', addNewBoard);
-
-    // --- Función para convertir URLs en enlaces ---
-    function autoLink(element) {
+    function autoLink(text) {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
-        // Usamos un TreeWalker para procesar solo los nodos de texto
-        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.parentElement.tagName === 'A') continue; // Ya es un enlace
-
-            const text = node.textContent;
-            if (urlRegex.test(text)) {
-                const fragment = document.createDocumentFragment();
-                fragment.innerHTML = text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
-                node.replaceWith(...fragment.childNodes);
-            }
-        }
+        return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
     }
-    // --- 2. Función para crear una nueva nota adhesiva en el tablero ---
-    function createStickyNoteElement(noteData) {
+
+    function createStickyNoteElement(noteData, isNew = false) {
         const sticky = document.createElement("div");
         sticky.classList.add("stickynote");
-        sticky.dataset.noteId = noteData.id; // Vincular DOM con el estado
+        sticky.dataset.noteId = noteData.id;
         sticky.style.left = `${noteData.x}px`;
         sticky.style.top = `${noteData.y}px`;
         sticky.style.width = `${noteData.width}px`;
@@ -144,11 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
         content.setAttribute("placeholder", "Escribe algo...");
         content.innerHTML = noteData.content;
 
-        // Lógica para auto-enlazar URLs al escribir o pegar
-        content.addEventListener('input', () => {
-            autoLink(content);
-            noteData.content = content.innerHTML;
-            saveState();
+        content.addEventListener('blur', () => {
+            const newContent = content.innerHTML;
+            if (noteData.content !== newContent) {
+                noteData.content = newContent;
+                saveState();
+            }
         });
 
         const resizer = document.createElement("div");
@@ -158,123 +133,167 @@ document.addEventListener('DOMContentLoaded', () => {
         sticky.appendChild(resizer);
         board.appendChild(sticky);
 
+        if (isNew) {
+            sticky.style.animation = 'pop-in 0.2s ease-out';
+        }
         return sticky;
     }
 
-    // --- 3. Lógica para arrastrar y soltar ---
-    document.addEventListener('pointerdown', (e) => {
-        const target = e.target;
+    // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) CORREGIDA ---
 
-        // CASO 0: Iniciar redimensión de una nota
+    function handlePointerDown(e) {
+        const target = e.target;
+        const boardRect = board.getBoundingClientRect();
+
+        // CASO 1: Iniciar redimensión
         if (target.classList.contains('resizer')) {
+            e.preventDefault();
             isResizing = true;
             activeNote = target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
-            activeNote.classList.add('dragging'); // Reutilizamos el estilo para z-index
-            return; // No hacer nada más
+            activeNote.classList.add('dragging');
+            trashCan.classList.add('visible');
+            return;
         }
-        // CASO A: Iniciar arrastre desde el cajón para CREAR una nota
-        if (target.classList.contains('palette-note') && !target.closest('.stickynote')) {
-            // La condición !target.closest('.stickynote') evita que se cree una nota
-            // si por accidente el cajón está sobre una nota existente.
+
+        // CASO 2: Iniciar arrastre para CREAR una nota nueva
+        if (target.classList.contains('palette-note')) {
+            e.preventDefault();
+            board.querySelector('.welcome-message')?.remove();
 
             const color = target.dataset.color;
+            // **CORRECCIÓN:** Calcular posición inicial relativa al tablero
+            const mouseXInBoard = e.clientX - boardRect.left;
+            const mouseYInBoard = e.clientY - boardRect.top;
+
             const newNoteData = {
                 id: `note-${Date.now()}`,
                 content: '',
-                x: e.clientX,
-                y: e.clientY,
-                width: 200,
-                height: 200,
-                color: color,
-                rotation: (Math.random() - 0.5) * 10
+                width: 200, height: 200, color: color,
+                rotation: (Math.random() - 0.5) * 8,
+                x: mouseXInBoard - 100, // Centrar la nota en el cursor
+                y: mouseYInBoard - 100,
             };
 
             appState.boards[appState.activeBoardId].notes.push(newNoteData);
-            saveState();
-
-            activeNote = createStickyNoteElement(newNoteData);
+            activeNote = createStickyNoteElement(newNoteData, true);
             activeNoteData = newNoteData;
+            
+            // **CORRECCIÓN:** El desfase ahora es desde el centro de la nota
+            offsetX = 100;
+            offsetY = 100;
+
             activeNote.classList.add('dragging');
+            trashCan.classList.add('visible');
+        }
 
-            // Centramos la nota nueva en el cursor
-            offsetX = activeNote.offsetWidth / 2;
-            offsetY = activeNote.offsetHeight / 2;
-
-            // Movemos la nota a la posición inicial correcta
-            activeNote.style.left = `${e.clientX - offsetX}px`;
-            activeNote.style.top = `${e.clientY - offsetY}px`;
-
-        // CASO B: Iniciar arrastre de una nota existente en el tablero para MOVERLA
-        } else if (target.classList.contains('stickynote') && !target.classList.contains('stickynote-text')) {
-            // Solo se puede mover si se hace clic en la nota, no en el área de texto.
-
+        // CASO 3: Iniciar arrastre para MOVER una nota existente
+        if (target.closest('.stickynote') && !target.classList.contains('stickynote-text') && !target.classList.contains('resizer')) {
+            e.preventDefault();
             activeNote = target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
+
+            // **CORRECCIÓN:** Calcular el desfase relativo al tablero
+            const mouseXInBoard = e.clientX - boardRect.left;
+            const mouseYInBoard = e.clientY - boardRect.top;
+            offsetX = mouseXInBoard - activeNote.offsetLeft;
+            offsetY = mouseYInBoard - activeNote.offsetTop;
+
             activeNote.classList.add('dragging');
-
-            // Calcula el desfase entre el clic y la esquina superior izquierda de la nota
-            offsetX = e.clientX - activeNote.getBoundingClientRect().left;
-            offsetY = e.clientY - activeNote.getBoundingClientRect().top;
+            trashCan.classList.add('visible');
         }
-    });
+    }
 
-    document.addEventListener('pointermove', (e) => {
+    function handlePointerMove(e) {
         if (!activeNote) return;
+        e.preventDefault();
+
+        const boardRect = board.getBoundingClientRect();
 
         if (isResizing) {
             // Lógica de redimensionamiento
-            const noteRect = activeNote.getBoundingClientRect();
-            const newWidth = e.clientX - noteRect.left;
-            const newHeight = e.clientY - noteRect.top;
-            const finalWidth = Math.max(150, newWidth);
-            const finalHeight = Math.max(150, newHeight);
+            const newWidth = e.clientX - activeNote.getBoundingClientRect().left;
+            const newHeight = e.clientY - activeNote.getBoundingClientRect().top;
+            activeNoteData.width = Math.max(150, newWidth);
+            activeNoteData.height = Math.max(150, newHeight);
+            activeNote.style.width = `${activeNoteData.width}px`;
+            activeNote.style.height = `${activeNoteData.height}px`;
+        } else {
+            // Lógica de arrastre
+            // **CORRECCIÓN:** Calcular la nueva posición relativa al tablero
+            const mouseXInBoard = e.clientX - boardRect.left;
+            const mouseYInBoard = e.clientY - boardRect.top;
+            const newX = mouseXInBoard - offsetX;
+            const newY = mouseYInBoard - offsetY;
 
-            activeNote.style.width = `${finalWidth}px`;
-            activeNote.style.height = `${finalHeight}px`;
-
-            activeNoteData.width = finalWidth;
-            activeNoteData.height = finalHeight;
-
-        } else { // Lógica de arrastre
-            // Mover la nota
-            activeNoteData.x = e.clientX - offsetX;
-            activeNoteData.y = e.clientY - offsetY;
-            activeNote.style.left = `${activeNoteData.x}px`;
-            activeNote.style.top = `${activeNoteData.y}px`;
-            
-            // Comprobar si la nota está sobre la papelera
-            const trashRect = trashCan.getBoundingClientRect();
-            if (
-                e.clientX > trashRect.left &&
-                e.clientX < trashRect.right &&
-                e.clientY > trashRect.top &&
-                e.clientY < trashRect.bottom
-            ) {
-                trashCan.classList.add('active');
-            } else {
-                trashCan.classList.remove('active');
-            }
+            activeNoteData.x = newX;
+            activeNoteData.y = newY;
+            activeNote.style.left = `${newX}px`;
+            activeNote.style.top = `${newY}px`;
+            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
         }
-    });
 
-    document.addEventListener('pointerup', (e) => {
-        if (activeNote) { // Si hay una nota activa (moviendo o redimensionando)
-            // Si la nota se suelta sobre la papelera activa, se elimina
-            if (trashCan.classList.contains('active')) {
-                const notes = appState.boards[appState.activeBoardId].notes;
-                const noteIndex = notes.findIndex(n => n.id === activeNote.dataset.noteId);
-                if (noteIndex > -1) {
-                    notes.splice(noteIndex, 1);
-                }
-                activeNote.remove();
-            }
-            activeNote.classList.remove('dragging');
-            saveState(); // Guardar el estado final (posición, tamaño o eliminación)
-            isResizing = false;
-            activeNote = null;
-            activeNoteData = null;
+        // Lógica de la papelera
+        const trashRect = trashCan.getBoundingClientRect();
+        if (e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom) {
+            trashCan.classList.add('active');
+        } else {
             trashCan.classList.remove('active');
         }
-    });
+    }
+
+    function handlePointerUp() {
+        if (!activeNote) return;
+
+        if (trashCan.classList.contains('active')) {
+            const notes = appState.boards[appState.activeBoardId].notes;
+            const noteIndex = notes.findIndex(n => n.id === activeNoteData.id);
+            if (noteIndex > -1) {
+                notes.splice(noteIndex, 1);
+            }
+            activeNote.remove();
+        } else {
+            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
+        }
+        
+        activeNote.classList.remove('dragging');
+        trashCan.classList.remove('visible', 'active');
+        
+        // Limpiar variables de estado
+        activeNote = null;
+        activeNoteData = null;
+        isResizing = false;
+        offsetX = 0;
+        offsetY = 0;
+        
+        saveState();
+        if (appState.boards[appState.activeBoardId].notes.length === 0) {
+            renderActiveBoard(); // Volver a mostrar mensaje de bienvenida si es necesario
+        }
+    }
+
+    // --- INICIALIZACIÓN DE LA APP ---
+    function initializeApp() {
+        loadState();
+        
+        addBoardBtn.innerHTML = '<span class="icon">+</span> Nuevo Tablero';
+
+        noteColors.forEach(color => {
+            const paletteNote = document.createElement("div");
+            paletteNote.classList.add("palette-note");
+            paletteNote.style.backgroundColor = color;
+            paletteNote.dataset.color = color;
+            palette.appendChild(paletteNote);
+        });
+
+        addBoardBtn.addEventListener('click', addNewBoard);
+        document.addEventListener('pointerdown', handlePointerDown);
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
+
+        renderBoardList();
+        renderActiveBoard();
+    }
+
+    initializeApp();
 });

@@ -1,7 +1,7 @@
         /* Estilos generales del cuerpo y del tablero */
         body {
-            font-family: sans-serif;
-            background-color: #f0f0f0;
+            font-family: 'Nunito', sans-serif; /* Fuente más amigable */
+            background-color: #F8F9FA;
             margin: 0;
             overflow: hidden; /* Evita barras de scroll */
             display: flex; /* Usamos flexbox para el layout */
@@ -10,20 +10,30 @@
         /* Panel de gestión de tableros */
         #board-manager {
             width: 200px;
-            background-color: #333;
+            background-color: #2C3E50; /* Azul marino oscuro, más profesional */
             color: #fff;
             padding: 20px;
             display: flex;
             flex-direction: column;
             z-index: 200;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
         }
-        #board-manager h3 { margin-top: 0; }
+        #board-manager h3 { margin-top: 0; font-weight: 700; }
         #board-manager ul { list-style: none; padding: 0; margin: 0 0 20px 0; }
         #board-manager li { padding: 10px; cursor: pointer; border-radius: 4px; }
-        #board-manager li:hover { background-color: #444; }
+        #board-manager li:hover { background-color: #34495E; }
         #board-manager li.active { background-color: #007bff; font-weight: bold; }
-        #board-manager button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-
+        #board-manager button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        #board-manager button:hover { background-color: #0056b3; transform: translateY(-2px); }
         /* Cajón de plantillas de notas */
         #note-palette {
             width: 120px;
@@ -36,15 +46,20 @@
             align-items: center;
             gap: 20px; /* Espacio entre las notas de plantilla */
         }
+        #note-palette h4 {
+            margin: 0 0 10px 0;
+            color: #555;
+            font-weight: normal;
+        }
 
         #board {
             position: relative;
             width: 100vw;
             height: 100vh;
-            background: #e2e2e2;
-            background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-color: #F8F9FA; /* Blanco roto, más limpio */
+            /* Grilla de puntos, más sutil y moderna */
+            background-image: radial-gradient(circle, #d1d1d1 1px, rgba(0,0,0,0) 1px);
+            background-size: 25px 25px;
         }
 
         /* Estilo para las notas de plantilla en el cajón */
@@ -59,6 +74,10 @@
             justify-content: center;
             align-items: center;
         }
+        .palette-note:hover {
+            transform: scale(1.05);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.25);
+        }
 
         /* Estilos de las notas adhesivas */
         .stickynote {
@@ -72,12 +91,17 @@
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             user-select: none; /* Evita que el texto se seleccione al arrastrar */
             box-sizing: border-box; /* Asegura que el padding no afecte el ancho/alto total */
+            border-radius: 3px;
+        }
+        /* Animación "pop" para notas nuevas */
+        @keyframes pop-in {
+            from { transform: scale(0.9); opacity: 0.5; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         /* Estilo cuando la nota está siendo arrastrada */
         .stickynote.dragging {
             cursor: grabbing;
-            transform: scale(1.05); /* La agranda ligeramente */
             box-shadow: 10px 10px 25px rgba(0, 0, 0, 0.3);
             z-index: 1000; /* La pone por encima de las demás */
         }
@@ -88,7 +112,7 @@
             height: 100%;
             background-color: transparent;
             border: none;
-            resize: none; /* El usuario no puede redimensionarla manualmente */
+            resize: none;
             font-family: 'Georgia', serif;
             font-size: 16px;
             outline: none; /* Sin borde al hacer foco */
@@ -123,6 +147,13 @@
             align-items: center;
             z-index: 1500;
             transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+            opacity: 0; /* Oculta por defecto */
+            pointer-events: none; /* No interactuable cuando está oculta */
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) scale(1.2); }
+            25% { transform: translateX(-5px) scale(1.2); }
+            75% { transform: translateX(5px) scale(1.2); }
         }
 
         /* Estilos para la imagen SVG dentro de la papelera */
@@ -136,11 +167,29 @@
 
         /* Estilo cuando una nota se arrastra sobre la papelera */
         #trash-can.active {
-            transform: scale(1.2);
             background-color: #ffdddd;
             border-color: #ff8a80;
+            animation: shake 0.5s ease-in-out; /* Animación de temblor */
         }
 
         #trash-can.active img {
             opacity: 1;
+        }
+
+        /* Estilo para hacer visible la papelera */
+        #trash-can.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Mensaje de bienvenida en el tablero vacío */
+        .welcome-message {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #aaa;
+            font-size: 1.5em;
+            pointer-events: none; /* Para que no interfiera con los clics */
+            user-select: none;
         }
