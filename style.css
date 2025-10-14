@@ -220,6 +220,51 @@ body {
     background: transparent;
 }
 
+.checkbox-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.checkbox-group input[type="checkbox"] {
+    margin-right: 5px;
+}
+.checkbox-group label {
+    margin-bottom: 0; /* Anular el margen de .style-option label */
+    cursor: pointer;
+}
+
+/* --- ESTILOS PARA LA PESTAÑA DE FONDOS --- */
+#background-options-container {
+    margin-top: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.background-category {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sidebar-hover);
+}
+.background-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+.background-preview:hover {
+    transform: scale(1.1);
+}
+.background-preview.active {
+    border-color: var(--amarillo-luz);
+}
+
 
 /* --- PALETA DE NOTAS --- */
 #note-palette {
@@ -340,6 +385,23 @@ body {
     display: flex; /* Para controlar el hijo de texto */
     flex-direction: column;
 }
+        .stickynote.locked {
+            cursor: default;
+        }
+        .stickynote.locked .resizer,
+        .stickynote.locked .connect-btn,
+        .stickynote.locked .stickynote-text {
+            pointer-events: none;
+        }
+        .stickynote.locked::before {
+            content: '🔒';
+            position: absolute; top: 8px; left: 8px; font-size: 16px; opacity: 0.6; z-index: 15;
+        }
+        /* Cuando una nota tiene un fondo de imagen, el color de fondo se quita */
+        .stickynote[style*="background-image"] {
+            background-color: transparent !important;
+        }
+
         /* Animación "rebote" para notas nuevas */
         @keyframes rebote {
           0% { transform: scale(0.8); opacity: 0; }
@@ -485,3 +547,97 @@ body {
         .leader-line {
             z-index: 10; /* Asegura que las líneas sean visibles sobre el fondo */
         }
+
+/* --- MENÚ CONTEXTUAL --- */
+#context-menu {
+    position: fixed;
+    z-index: 2000;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 8px 0;
+    min-width: 180px;
+    border: 1px solid #eee;
+}
+#context-menu.hidden {
+    display: none;
+}
+#context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#context-menu li {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#context-menu li:hover { background-color: #f0f0f0; }
+#context-menu li.separator { height: 1px; background-color: #eee; padding: 0; margin: 5px 0; }
+
+/* --- PESTAÑA DE PAPELERA --- */
+#trash-list-container {
+    margin-top: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.trash-item {
+    background-color: #3a3a3a;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid var(--rojo-circo);
+}
+.trash-item-content {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+.trash-item-actions {
+    display: flex;
+    gap: 8px;
+}
+.trash-item-actions button {
+    flex: 1;
+    margin-top: 0;
+    padding: 6px 10px;
+    font-size: 0.8em;
+    background-color: var(--sidebar-hover);
+}
+.trash-item-actions button.restore {
+    background-color: var(--azul-carpa);
+}
+#empty-trash-btn {
+    background-color: #a61e4d !important;
+}
+
+/* --- NOTIFICACIONES (TOASTS) --- */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.toast {
+    background-color: rgba(30, 30, 30, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: var(--shadow-lg);
+    animation: toast-fade-in-out 4s ease-in-out forwards;
+    backdrop-filter: blur(5px);
+}
+@keyframes toast-fade-in-out {
+    0%, 100% { opacity: 0; transform: translateY(20px); }
+    10%, 90% { opacity: 1; transform: translateY(0); }
+}

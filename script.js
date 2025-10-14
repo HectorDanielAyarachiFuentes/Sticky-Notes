@@ -19,6 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const lineSizeInput = document.querySelector("#line-size-input");
     const linePlugSelect = document.querySelector("#line-plug-select");
     const templateContainer = document.querySelector("#template-container");
+    // Pestaña de fondos
+    const backgroundOptionsContainer = document.querySelector("#background-options-container");
+    const resetBackgroundBtn = document.querySelector("#reset-background-btn");
+    const bgApplyToBoardCheckbox = document.querySelector("#bg-apply-board");
+    const bgApplyToNotesCheckbox = document.querySelector("#bg-apply-notes");
+
+    // Menú contextual
+    const contextMenu = document.querySelector("#context-menu");
+    const ctxDuplicateBtn = document.querySelector("#ctx-duplicate");
+    const ctxLockBtn = document.querySelector("#ctx-lock");
+    const ctxDeleteBtn = document.querySelector("#ctx-delete");
+    // Papelera
+    const trashListContainer = document.querySelector("#trash-list-container");
+    const emptyTrashBtn = document.querySelector("#empty-trash-btn");
+    const toastContainer = document.querySelector("#toast-container");
 
     // --- CONFIGURACIÓN INICIAL ---
     const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2'];
@@ -74,6 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let offsetY = 0;
     let isResizing = false;
 
+    let contextMenuNoteId = null; // ID de la nota para el menú contextual
+    let maxZIndex = 0; // Para gestionar el apilamiento de las notas
     let activeLines = []; // Almacena las instancias de LeaderLine activas
     let connectionState = { startNoteId: null }; // Para gestionar la creación de conexiones
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
@@ -84,7 +101,29 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadState() {
         const savedState = localStorage.getItem('stickyNotesApp');
         if (savedState) {
-            appState = JSON.parse(savedState);
+            const loadedState = JSON.parse(savedState);
+            // Migración: Asegurarse de que los tableros viejos tengan la nueva propiedad
+            Object.values(loadedState.boards).forEach(board => {
+                if (!board.backgroundApplyTo) {
+                    board.backgroundApplyTo = { board: true, notes: false };
+                }
+                board.notes.forEach(note => {
+                    if (note.locked === undefined) note.locked = false;
+                });
+                if (!loadedState.trash) {
+                    loadedState.trash = [];
+                }
+                // Migración para zIndex y cálculo del maxZIndex
+                board.notes.forEach(note => {
+                    if (note.zIndex === undefined) {
+                        note.zIndex = ++maxZIndex;
+                    } else if (note.zIndex > maxZIndex) {
+                        maxZIndex = note.zIndex;
+                    }
+                });
+            });
+            appState = loadedState;
+
         } else {
             // Estado inicial si no hay nada guardado
             const initialBoardId = `board-${Date.now()}`;
@@ -94,9 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: initialBoardId,
                         name: 'Tablero Principal',
                         notes: [],
-                        connections: [] // Array para las conexiones
+                        connections: [], // Array para las conexiones
+                        background: null,
+                        // A dónde se aplica el fondo
+                        backgroundApplyTo: { board: true, notes: false }
                     }
                 },
+                trash: [], // Papelera de reciclaje
                 zoomLevel: 1.0,
                 activeBoardId: initialBoardId,
                 lineOptions: { // Opciones por defecto para las líneas
@@ -108,6 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
     }
+    
+    // --- CONSTANTES GLOBALES ---
+    const DEFAULT_BOARD_BACKGROUND = `repeating-linear-gradient(90deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),repeating-linear-gradient(90deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),linear-gradient(90deg, hsl(226,47%,26%),hsl(226,47%,26%))`;
+
+
 
     // --- FUNCIONES DE RENDERIZADO DE LA UI ---
     function renderBoardList() {
@@ -129,6 +177,20 @@ document.addEventListener('DOMContentLoaded', () => {
         removeActiveLines(); // Limpiar líneas existentes
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
+
+        // Sincronizar checkboxes de aplicación de fondo
+        bgApplyToBoardCheckbox.checked = currentBoard.backgroundApplyTo.board;
+        bgApplyToNotesCheckbox.checked = currentBoard.backgroundApplyTo.notes;
+
+        // Aplicar fondo al tablero si corresponde
+        if (currentBoard.backgroundApplyTo.board) {
+            boardContainer.style.background = currentBoard.background || DEFAULT_BOARD_BACKGROUND;
+        } else {
+            boardContainer.style.background = DEFAULT_BOARD_BACKGROUND;
+        }
+
+        // Actualizar la previsualización activa
+        updateActiveBackgroundPreview(currentBoard.background);
 
         updateZoom(); // Aplicar el zoom guardado al renderizar
         if (currentBoard.notes.length === 0) {
@@ -226,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: newBoardId,
                 name: boardName,
                 notes: [],
-                connections: []
+                connections: [],
+                background: null // Fondo por defecto para nuevos tableros
             };
             switchBoard(newBoardId);
         }
@@ -243,6 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...note,
                 id: `note-${Date.now()}-${index}`,
                 // Si la plantilla no especifica rotación, se añade una aleatoria
+                zIndex: ++maxZIndex,
+                locked: false,
                 rotation: note.rotation !== undefined ? note.rotation : (Math.random() - 0.5) * 4,
             }));
 
@@ -250,7 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: newBoardId,
                 name: boardName,
                 notes: newNotes,
-                connections: [] // Las plantillas aún no definen conexiones
+                connections: [], // Las plantillas aún no definen conexiones
+                background: null,
+                backgroundApplyTo: { board: true, notes: false }
             };
             switchBoard(newBoardId);
         }
@@ -316,6 +383,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function createStickyNoteElement(noteData, isNew = false) {
         const sticky = document.createElement("div");
         sticky.classList.add("stickynote");
+        if (noteData.locked) {
+            sticky.classList.add("locked");
+        }
         sticky.dataset.noteId = noteData.id;
         sticky.style.left = `${noteData.x}px`;
         sticky.style.top = `${noteData.y}px`;
@@ -323,9 +393,18 @@ document.addEventListener('DOMContentLoaded', () => {
         sticky.style.height = `${noteData.height}px`;
         sticky.style.backgroundColor = noteData.color;
         sticky.style.transform = `rotate(${noteData.rotation}deg)`;
+        sticky.style.zIndex = noteData.zIndex;
+
+        // Aplicar fondo de tablero a la nota si está activado
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (currentBoard.backgroundApplyTo.notes && currentBoard.background) {
+            sticky.style.backgroundImage = currentBoard.background;
+        }
+
 
         const content = document.createElement("div");
         content.contentEditable = true;
+        if (noteData.locked) content.contentEditable = false;
         content.classList.add("stickynote-text");
         content.setAttribute("placeholder", "Escribe algo...");
         content.innerHTML = noteData.content;
@@ -390,6 +469,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function bringToFront(noteElement, noteData) {
+        if (noteData.zIndex >= maxZIndex) return; // Ya está al frente
+        noteData.zIndex = ++maxZIndex;
+        noteElement.style.zIndex = noteData.zIndex;
+        saveState();
+    }
+
     // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) CORREGIDA ---
 
     function handlePointerDown(e) {
@@ -402,6 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isResizing = true;
             activeNote = target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
+            if (activeNoteData.locked) { isResizing = false; activeNote = null; return; }
+            bringToFront(activeNote, activeNoteData);
             activeNote.classList.add('dragging');
             trashCan.classList.add('visible');
             return;
@@ -432,6 +520,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 content: '',
                 width: 200, height: 200, color: color,
                 rotation: (Math.random() - 0.5) * 8,
+                locked: false,
+                zIndex: ++maxZIndex,
                 x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar la nota en el cursor, ajustado al zoom
                 y: mouseYInBoard - (100 / appState.zoomLevel),
             };
@@ -449,10 +539,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CASO 3: Iniciar arrastre para MOVER una nota existente
-        if (target.closest('.stickynote') && !target.classList.contains('stickynote-text') && !target.classList.contains('resizer') && !target.classList.contains('connect-btn')) {
-            e.preventDefault();
-            activeNote = target.closest('.stickynote');
+        const noteToDrag = target.closest('.stickynote');
+        if (noteToDrag && !target.classList.contains('resizer') && !target.classList.contains('connect-btn')) {
+            activeNote = noteToDrag;
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
+            if (activeNoteData.locked) { activeNote = null; return; }
+
+            // Solo prevenimos el comportamiento por defecto (y empezamos a arrastrar) si no es el área de texto.
+            if (!target.classList.contains('stickynote-text')) e.preventDefault();
 
             // **CORRECCIÓN:** Calcular el desfase relativo al tablero y AJUSTADO AL ZOOM
             const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
@@ -460,13 +554,16 @@ document.addEventListener('DOMContentLoaded', () => {
             offsetX = mouseXInBoard - activeNote.offsetLeft;
             offsetY = mouseYInBoard - activeNote.offsetTop;
 
-            activeNote.classList.add('dragging');
-            trashCan.classList.add('visible');
+            bringToFront(activeNote, activeNoteData);
+            if (!target.classList.contains('stickynote-text')) {
+                activeNote.classList.add('dragging');
+                trashCan.classList.add('visible');
+            }
         }
     }
 
     function handlePointerMove(e) {
-        if (!activeNote) return;
+        if (!activeNote || (activeNoteData && activeNoteData.locked)) return;
         e.preventDefault();
 
         const boardRect = boardContainer.getBoundingClientRect();
@@ -497,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     l.line.position();
                 }
             });
-            activeNote.style.transform = `scale(1.05)`; // Se endereza al arrastrar
+            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`; // Mantener rotación al arrastrar
         }
 
         // Lógica de la papelera
@@ -513,23 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeNote) return;
 
         if (trashCan.classList.contains('active')) {
-            const notes = appState.boards[appState.activeBoardId].notes;
-            const connections = appState.boards[appState.activeBoardId].connections;
-            const noteIndex = notes.findIndex(n => n.id === activeNoteData.id);
-            
-            if (noteIndex > -1) {
-                notes.splice(noteIndex, 1);
-            }
-
-            // Eliminar conexiones asociadas a la nota
-            appState.boards[appState.activeBoardId].connections = connections.filter(
-                conn => conn.from !== activeNoteData.id && conn.to !== activeNoteData.id
-            );
-
-            activeNote.remove();
-            // Re-renderizar para eliminar las líneas de la UI
-            renderActiveBoard();
-
+            moveNoteToTrash(activeNoteData.id);
         } else {
             if (!isResizing) activeLines.forEach(l => l.line.position()); // Reposicionar al soltar
             activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
@@ -551,6 +632,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleWheelRotate(e) {
+        // Rotar la nota activa con la rueda del ratón mientras se arrastra
+        if (!activeNote || isResizing || (activeNoteData && activeNoteData.locked)) return;
+
+        e.preventDefault(); // Evitar el scroll de la página
+
+        const rotationIncrement = e.deltaY > 0 ? 2 : -2; // Grados a rotar por cada "tick" de la rueda
+        activeNoteData.rotation = (activeNoteData.rotation + rotationIncrement) % 360;
+
+        activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
+    }
+    
+    // --- LÓGICA DEL MENÚ CONTEXTUAL ---
+    function handleContextMenu(e) {
+        const noteElement = e.target.closest('.stickynote');
+        if (noteElement) {
+            e.preventDefault();
+            contextMenuNoteId = noteElement.dataset.noteId;
+            
+            const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
+            ctxLockBtn.textContent = noteData.locked ? 'Desbloquear Nota' : 'Bloquear Nota';
+
+            contextMenu.style.top = `${e.clientY}px`;
+            contextMenu.style.left = `${e.clientX}px`;
+            contextMenu.classList.remove('hidden');
+        } else {
+            hideContextMenu();
+        }
+    }
+
+    function hideContextMenu() {
+        contextMenu.classList.add('hidden');
+        contextMenuNoteId = null;
+    }
+
+    function duplicateNote() {
+        if (!contextMenuNoteId) return;
+        const originalNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
+        if (!originalNoteData) return;
+
+        const newNoteData = {
+            ...originalNoteData, // Copia todas las propiedades
+            id: `note-${Date.now()}`,
+            x: originalNoteData.x + 20, // Pequeño desfase
+            y: originalNoteData.y + 20,
+            zIndex: ++maxZIndex,
+            locked: false // La nota duplicada nunca está bloqueada
+        };
+
+        appState.boards[appState.activeBoardId].notes.push(newNoteData);
+        createStickyNoteElement(newNoteData, true);
+        saveState();
+        hideContextMenu();
+    }
+
+    function toggleLockNote() {
+        if (!contextMenuNoteId) return;
+        const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
+        const noteElement = board.querySelector(`.stickynote[data-note-id="${contextMenuNoteId}"]`);
+        if (!noteData || !noteElement) return;
+
+        noteData.locked = !noteData.locked;
+        noteElement.classList.toggle('locked');
+        noteElement.querySelector('.stickynote-text').contentEditable = !noteData.locked;
+
+        saveState();
+        hideContextMenu();
+    }
+
+    function deleteNoteFromContext() {
+        if (!contextMenuNoteId) return;
+        moveNoteToTrash(contextMenuNoteId);
+    }
+
     function handleTabSwitching() {
         const tabButtons = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -564,6 +719,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 tabContents.forEach(content => content.classList.remove('active'));
                 document.getElementById(`tab-content-${tabId}`).classList.add('active');
+
+                if (tabId === 'trash') {
+                    renderTrash();
+                }
             });
         });
     }
@@ -586,6 +745,204 @@ document.addEventListener('DOMContentLoaded', () => {
 
         [lineColorInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el => 
             el.addEventListener('change', updateLineStyle));
+    }
+
+    function buildGradient(colors) {
+        return `linear-gradient(45deg, ${colors.join(', ')})`;
+    }
+
+    function createBackgroundPreviews(title, gradients, isRaw = false) {
+        const categoryTitle = document.createElement('p');
+        categoryTitle.className = 'tab-title';
+        categoryTitle.textContent = title;
+        backgroundOptionsContainer.appendChild(categoryTitle);
+
+        const categoryContainer = document.createElement('div');
+        categoryContainer.className = 'background-category';
+
+        gradients.forEach(grad => {
+            const preview = document.createElement('div');
+            preview.className = 'background-preview';
+            
+            const backgroundValue = isRaw ? grad : buildGradient(grad.colors);
+            preview.style.background = backgroundValue;
+            preview.dataset.background = backgroundValue;
+            preview.title = isRaw ? 'Fondo de rayas' : grad.name;
+
+            preview.addEventListener('click', () => {
+                applyBackground(backgroundValue);
+            });
+
+            categoryContainer.appendChild(preview);
+        });
+        backgroundOptionsContainer.appendChild(categoryContainer);
+    }
+
+    async function initializeBackgroundOptions() {
+        try {
+            const [gradientsRes, stripesRes] = await Promise.all([
+                fetch('fondo/gradients.json'),
+                fetch('fondo/gradientesraya.json')
+            ]);
+
+            if (gradientsRes.ok) {
+                const gradients = await gradientsRes.json();
+                createBackgroundPreviews('Gradientes', gradients, false);
+            }
+            if (stripesRes.ok) {
+                const stripes = await stripesRes.json();
+                createBackgroundPreviews('Rayas', stripes, true);
+            }
+
+        } catch (error) {
+            console.error("Error al cargar los fondos:", error);
+            backgroundOptionsContainer.innerHTML = '<p>No se pudieron cargar los fondos.</p>';
+        }
+
+        resetBackgroundBtn.addEventListener('click', () => applyBackground(null));
+        // Añadir listeners a los checkboxes para aplicar cambios inmediatamente
+        bgApplyToBoardCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
+        bgApplyToNotesCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
+    }
+
+    function applyBackground(backgroundValue) {
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard) return;
+
+        // Guardar la configuración de a qué se aplica
+        currentBoard.backgroundApplyTo = {
+            board: bgApplyToBoardCheckbox.checked,
+            notes: bgApplyToNotesCheckbox.checked
+        };
+
+        currentBoard.background = backgroundValue;
+
+        // Aplicar al tablero
+        if (currentBoard.backgroundApplyTo.board) {
+            boardContainer.style.background = backgroundValue || DEFAULT_BOARD_BACKGROUND;
+        } else {
+            boardContainer.style.background = DEFAULT_BOARD_BACKGROUND; // Restaurar si no se aplica
+        }
+
+        // Aplicar a todas las notas del tablero actual
+        document.querySelectorAll('.stickynote').forEach(noteEl => {
+            noteEl.style.backgroundImage = currentBoard.backgroundApplyTo.notes ? backgroundValue : '';
+        });
+
+        saveState();
+        updateActiveBackgroundPreview(backgroundValue);
+    }
+
+    function updateActiveBackgroundPreview(backgroundValue) {
+        document.querySelectorAll('.background-preview').forEach(p => {
+            if (p.dataset.background === backgroundValue || (!backgroundValue && !p.dataset.background)) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+    }
+
+    // --- LÓGICA DE LA PAPELERA Y NOTIFICACIONES ---
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+
+        // El toast se elimina a sí mismo después de que la animación termina
+        toast.addEventListener('animationend', () => {
+            toast.remove();
+        });
+    }
+
+    function moveNoteToTrash(noteId) {
+        const boardId = appState.activeBoardId;
+        const notes = appState.boards[boardId].notes;
+        const noteIndex = notes.findIndex(n => n.id === noteId);
+
+        if (noteIndex > -1) {
+            const [noteToTrash] = notes.splice(noteIndex, 1);
+            noteToTrash.originalBoardId = boardId; // Guardar de dónde vino
+            appState.trash.push(noteToTrash);
+
+            // Eliminar conexiones asociadas
+            appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
+                conn => conn.from !== noteId && conn.to !== noteId
+            );
+
+            saveState();
+            renderActiveBoard(); // Re-renderizar el tablero actual
+            showToast('Nota movida a la papelera.');
+        }
+        hideContextMenu();
+    }
+
+    function renderTrash() {
+        trashListContainer.innerHTML = '';
+        if (appState.trash.length === 0) {
+            trashListContainer.innerHTML = '<p style="opacity: 0.7; text-align: center;">La papelera está vacía.</p>';
+            return;
+        }
+
+        appState.trash.forEach(note => {
+            const item = document.createElement('div');
+            item.className = 'trash-item';
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = note.content;
+            const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim();
+
+            item.innerHTML = `
+                <div class="trash-item-content">${noteText || 'Nota vacía'}</div>
+                <div class="trash-item-actions">
+                    <button class="restore" data-note-id="${note.id}">Restaurar</button>
+                    <button data-note-id="${note.id}">Borrar</button>
+                </div>
+            `;
+            trashListContainer.appendChild(item);
+        });
+
+        trashListContainer.querySelectorAll('.restore').forEach(btn => {
+            btn.addEventListener('click', () => restoreNote(btn.dataset.noteId));
+        });
+        trashListContainer.querySelectorAll('button:not(.restore)').forEach(btn => {
+            btn.addEventListener('click', () => deletePermanently(btn.dataset.noteId));
+        });
+    }
+
+    function restoreNote(noteId) {
+        const trashIndex = appState.trash.findIndex(n => n.id === noteId);
+        if (trashIndex > -1) {
+            const [noteToRestore] = appState.trash.splice(trashIndex, 1);
+            const targetBoard = appState.boards[noteToRestore.originalBoardId];
+            if (targetBoard) {
+                targetBoard.notes.push(noteToRestore);
+                delete noteToRestore.originalBoardId; // Limpiar la propiedad
+                saveState();
+                renderTrash();
+                // Si la nota pertenece al tablero actual, re-renderizarlo
+                if (targetBoard.id === appState.activeBoardId) {
+                    renderActiveBoard();
+                }
+                showToast('Nota restaurada.');
+            }
+        }
+    }
+
+    function deletePermanently(noteId) {
+        appState.trash = appState.trash.filter(n => n.id !== noteId);
+        saveState();
+        renderTrash();
+    }
+
+    function emptyTrash() {
+        if (confirm('¿Estás seguro de que quieres vaciar la papelera? Esta acción no se puede deshacer.')) {
+            appState.trash = [];
+            saveState();
+            renderTrash();
+        }
     }
 
     // --- INICIALIZACIÓN DE LA APP ---
@@ -652,6 +1009,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointerdown', handlePointerDown);
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
+        document.addEventListener('contextmenu', handleContextMenu);
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#context-menu')) hideContextMenu();
+        });
+        ctxDuplicateBtn.addEventListener('click', duplicateNote);
+        ctxLockBtn.addEventListener('click', toggleLockNote);
+        ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
+        emptyTrashBtn.addEventListener('click', emptyTrash);
+        document.addEventListener('wheel', handleWheelRotate, { passive: false });
         
         // Eventos de zoom
         zoomInBtn.addEventListener('click', handleZoomIn);
@@ -661,6 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBoardList();
         renderActiveBoard();
         initializeLineStyleControls();
+        initializeBackgroundOptions();
     }
 
     initializeApp();

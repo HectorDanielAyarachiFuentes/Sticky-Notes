@@ -18,6 +18,8 @@
         <button class="tab-btn active" data-tab="boards">Tableros</button>
         <button class="tab-btn" data-tab="create">Crear</button>
         <button class="tab-btn" data-tab="lines">Líneas</button>
+        <button class="tab-btn" data-tab="background">Fondo</button>
+        <button class="tab-btn" data-tab="trash">Papelera</button>
     </div>
 
     <div id="tab-content-boards" class="tab-content active">
@@ -61,6 +63,27 @@
             </select>
         </div>
     </div>
+
+    <div id="tab-content-background" class="tab-content">
+        <p class="tab-title">Fondos del Tablero</p>
+        <div class="style-option">
+            <label>Aplicar a:</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="bg-apply-board" checked><label for="bg-apply-board">Tablero</label>
+                <input type="checkbox" id="bg-apply-notes"><label for="bg-apply-notes">Notas</label>
+            </div>
+        </div>
+        <button id="reset-background-btn">Fondo por Defecto</button>
+        <div id="background-options-container">
+            <!-- Las opciones de fondo se generarán aquí -->
+        </div>
+    </div>
+
+    <div id="tab-content-trash" class="tab-content">
+        <p class="tab-title">Notas Eliminadas</p>
+        <button id="empty-trash-btn">Vaciar Papelera</button>
+        <div id="trash-list-container"></div>
+    </div>
 </div>
 
 <div id="sidebar-expander" title="Mostrar panel">›</div>
@@ -81,6 +104,18 @@
 </div>
 <div id="trash-can"><img src="svg/trash-full-svgrepo-com.svg" alt="Papelera"></div>
 
+<!-- Menú Contextual Personalizado -->
+<div id="context-menu" class="hidden">
+    <ul>
+        <li id="ctx-duplicate">Duplicar Nota</li>
+        <li id="ctx-lock">Bloquear Nota</li>
+        <li class="separator"></li>
+        <li id="ctx-delete">Eliminar Nota</li>
+    </ul>
+</div>
+
+<!-- Contenedor para Notificaciones (Toasts) -->
+<div id="toast-container"></div>
 <script src="leader-line.min.js"></script>
 <script type="module" src="script.js"></script>
 
