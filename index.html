@@ -1,22 +1,27 @@
 <!DOCTYPE html>
-<html lang="es" >
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=javascript:void(0);">
-
-  <title>CodePen - Sticky Notes</title>
-  <link rel="stylesheet" href="./style.css">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de Notas Adhesivas</title>
+    <link rel="stylesheet" href="style.css">
+    
 </head>
 <body>
-<!-- partial:index.partial.html -->
-<main id="board"></main>
-<!-- partial -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Draggable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/InertiaPlugin.min.js"></script>
-<script src="./script.js"></script>
+
+<div id="board-manager">
+    <h3>Mis Tableros</h3>
+    <ul id="board-list"></ul>
+    <button id="add-board-btn">Nuevo Tablero</button>
+</div>
+
+<div id="note-palette">
+    <!-- Las notas de plantilla se generarán aquí con JS -->
+</div>
+<div id="board"></div>
+<div id="trash-can"><img src="svg/trash-full-svgrepo-com.svg" alt="Papelera"></div>
+
+<script type="module" src="script.js"></script>
 
 </body>
 </html>
