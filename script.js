@@ -8,9 +8,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const boardManager = document.querySelector("#board-manager");
     const globalSearchResults = document.querySelector("#global-search-results");
     const trashCan = document.querySelector("#trash-can");
+    const templateContainer = document.querySelector("#template-container");
 
     // --- CONFIGURACIÓN INICIAL ---
     const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2'];
+    const boardTemplates = {
+        kanban: {
+            name: 'Tablero Kanban',
+            notes: [
+                { content: '<h3>Por Hacer</h3>', x: 50, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+                { content: '<h3>En Proceso</h3>', x: 400, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+                { content: '<h3>Hecho</h3>', x: 750, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
+            ]
+        },
+        swot: {
+            name: 'Análisis FODA',
+            notes: [
+                { content: '<h3>Fortalezas</h3>', x: 50, y: 50, width: 350, height: 250, color: '#C8E6C9', rotation: -1 },
+                { content: '<h3>Oportunidades</h3>', x: 450, y: 50, width: 350, height: 250, color: '#BBDEFB', rotation: 1 },
+                { content: '<h3>Debilidades</h3>', x: 50, y: 350, width: 350, height: 250, color: '#FFCDD2', rotation: 1 },
+                { content: '<h3>Amenazas</h3>', x: 450, y: 350, width: 350, height: 250, color: '#FFF9C4', rotation: -1.5 },
+            ]
+        },
+        // El mapa mental es más complejo por los conectores, se deja como base.
+        mindmap: {
+            name: 'Mapa Mental',
+            notes: [
+                { content: '<h2>Idea Central</h2>', x: 400, y: 300, width: 250, height: 150, color: '#B2EBF2', rotation: 0 },
+            ]
+        }
+    };
 
     // --- GESTIÓN DE ESTADO DE LA APLICACIÓN ---
     let appState = {};
@@ -110,6 +137,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: newBoardId,
                 name: boardName,
                 notes: []
+            };
+            switchBoard(newBoardId);
+        }
+    }
+
+    function createBoardFromTemplate(templateType) {
+        const template = boardTemplates[templateType];
+        if (!template) return;
+
+        const boardName = prompt(`Nombre para el tablero "${template.name}":`, template.name);
+        if (boardName) {
+            const newBoardId = `board-${Date.now()}`;
+            const newNotes = template.notes.map((note, index) => ({
+                ...note,
+                id: `note-${Date.now()}-${index}`,
+                // Si la plantilla no especifica rotación, se añade una aleatoria
+                rotation: note.rotation !== undefined ? note.rotation : (Math.random() - 0.5) * 4,
+            }));
+
+            appState.boards[newBoardId] = {
+                id: newBoardId,
+                name: boardName,
+                notes: newNotes
             };
             switchBoard(newBoardId);
         }
@@ -348,6 +398,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleTabSwitching() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`tab-content-${tabId}`).classList.add('active');
+            });
+        });
+    }
+
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
@@ -358,8 +425,22 @@ document.addEventListener('DOMContentLoaded', () => {
         collapseBtn.addEventListener('click', () => boardManager.classList.add('collapsed'));
         expander.addEventListener('click', () => boardManager.classList.remove('collapsed'));
 
-        
+        // Configurar UI
         addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
+        handleTabSwitching();
+
+        // Crear botones de plantillas dinámicamente
+        const templateTitle = document.createElement('p');
+        templateTitle.textContent = 'O crea desde una plantilla:';
+        templateContainer.appendChild(templateTitle);
+        Object.keys(boardTemplates).forEach(key => {
+            const btn = document.createElement('button');
+            btn.className = 'template-btn';
+            btn.dataset.template = key;
+            btn.textContent = boardTemplates[key].name;
+            btn.addEventListener('click', () => createBoardFromTemplate(key));
+            templateContainer.appendChild(btn);
+        });
 
         noteColors.forEach(color => {
             const paletteNote = document.createElement("div");

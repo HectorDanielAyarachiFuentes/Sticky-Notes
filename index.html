@@ -12,11 +12,23 @@
 <body>
 
 <div id="board-manager">
-    <h3>Mis Tableros <span id="sidebar-collapse-btn" title="Ocultar panel">‹</span></h3>
-    <ul id="board-list"></ul>
-    <input type="search" id="search-input" placeholder="🔎 Buscar en tablero...">
-    <div id="global-search-results"></div>
-    <button id="add-board-btn">Nuevo Tablero</button>
+    <h3>Gestor <span id="sidebar-collapse-btn" title="Ocultar panel">‹</span></h3>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="boards">Tableros</button>
+        <button class="tab-btn" data-tab="create">Crear</button>
+    </div>
+
+    <div id="tab-content-boards" class="tab-content active">
+        <input type="search" id="search-input" placeholder="🔎 Buscar en tableros...">
+        <div id="global-search-results"></div>
+        <ul id="board-list"></ul>
+    </div>
+
+    <div id="tab-content-create" class="tab-content">
+        <button id="add-board-btn">Nuevo Tablero</button>
+        <div id="template-container"></div>
+    </div>
 </div>
 
 <div id="sidebar-expander" title="Mostrar panel">›</div>

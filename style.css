@@ -48,10 +48,22 @@ body {
     justify-content: space-between;
     align-items: center;
 }
-#board-manager ul { list-style: none; padding: 0; margin: 20px 0; flex-grow: 1; }
+
+/* --- PESTAÑAS DEL PANEL --- */
+.tab-nav { display: flex; border-bottom: 1px solid var(--sidebar-hover); }
+.tab-btn { flex: 1; background: none !important; border: none !important; color: var(--text-light) !important; padding: 12px 0 !important; cursor: pointer; font-size: 0.95em; border-bottom: 3px solid transparent !important; border-radius: 0 !important; margin-top: 0 !important; transition: all 0.2s ease; opacity: 0.7; }
+.tab-btn:hover { opacity: 1; background-color: var(--sidebar-hover) !important; transform: none !important; }
+.tab-btn.active { border-bottom-color: var(--rojo-circo) !important; font-weight: bold; opacity: 1; }
+
+.tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
+.tab-content.active { display: flex; }
+
+/* --- LISTA DE TABLEROS --- */
+#board-manager ul { list-style: none; padding: 0; margin: 15px 0 0 0; flex-grow: 1; overflow-y: auto; max-height: 40vh; /* Controla la altura máxima de la lista */ }
 #board-manager li { padding: 12px 15px; cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease; }
 #board-manager li:hover { background-color: var(--sidebar-hover); }
 #board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
+
 #board-manager button {
     margin-top: 15px; /* Espacio sobre el botón */
     width: 100%;
@@ -71,7 +83,7 @@ body {
 #board-manager #search-input {
     width: 100%;
     padding: 10px;
-    margin: 10px 0 0 0;
+    margin: 15px 0 0 0;
     border-radius: 6px;
     border: 1px solid var(--sidebar-hover);
     background-color: #3a3a3a;
@@ -89,7 +101,7 @@ body {
 /* --- Resultados de Búsqueda Global --- */
 #global-search-results {
     margin-top: 10px;
-    max-height: 250px;
+    max-height: 200px; /* Ajustado para el nuevo layout */
     overflow-y: auto;
 }
 .search-result-item {
@@ -150,6 +162,25 @@ body {
 
 /* Cuando el panel está colapsado, la manija de expansión se muestra */
 #board-manager.collapsed ~ #sidebar-expander { transform: translateY(-50%) translateX(0); }
+
+/* --- SECCIÓN DE PLANTILLAS --- */
+#template-container {
+    margin-top: 15px;
+    border-top: 1px solid var(--sidebar-hover);
+    padding-top: 15px;
+}
+#template-container p {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+    font-weight: normal;
+    color: var(--text-light);
+    opacity: 0.8;
+}
+.template-btn {
+    background-color: var(--azul-carpa) !important; /* Usar !important para sobreescribir el estilo de button */
+    margin-top: 8px !important;
+}
+.template-btn:hover { background-color: var(--rojo-circo) !important; }
 
 /* --- PALETA DE NOTAS --- */
 #note-palette {
