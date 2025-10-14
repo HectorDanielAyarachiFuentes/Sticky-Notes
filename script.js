@@ -175,6 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         board.style.transform = `scale(${appState.zoomLevel})`;
         zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
+        // ¡CORRECCIÓN! Actualizar la posición de todas las líneas al hacer zoom.
+        activeLines.forEach(l => {
+            l.line.position();
+        });
         saveState();
     }
 
