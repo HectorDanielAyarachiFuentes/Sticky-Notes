@@ -367,8 +367,9 @@ body {
 #zoom-controls {
     position: fixed;
     bottom: 30px;
-    left: 30px;
+    left: 50%;
     z-index: 1500;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 8px;
