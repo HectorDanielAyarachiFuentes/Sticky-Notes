@@ -36,6 +36,23 @@ document.addEventListener('DOMContentLoaded', () => {
             notes: [
                 { content: '<h2>Idea Central</h2>', x: 400, y: 300, width: 250, height: 150, color: '#B2EBF2', rotation: 0 },
             ]
+        },
+        eisenhower: {
+            name: 'Matriz de Eisenhower',
+            notes: [
+                { content: '<h3>Urgente / Importante</h3><p>(Hacer)</p>', x: 50, y: 50, width: 400, height: 300, color: '#FFCDD2', rotation: 0.5 },
+                { content: '<h3>No Urgente / Importante</h3><p>(Planificar)</p>', x: 500, y: 50, width: 400, height: 300, color: '#BBDEFB', rotation: -0.5 },
+                { content: '<h3>Urgente / No Importante</h3><p>(Delegar)</p>', x: 50, y: 400, width: 400, height: 300, color: '#FFF9C4', rotation: -0.5 },
+                { content: '<h3>No Urgente / No Importante</h3><p>(Eliminar)</p>', x: 500, y: 400, width: 400, height: 300, color: '#C8E6C9', rotation: 0.5 },
+            ]
+        },
+        retro: {
+            name: 'Retrospectiva',
+            notes: [
+                { content: '<h3>¿Qué salió bien? 👍</h3>', x: 50, y: 20, width: 300, height: 600, color: '#C8E6C9', rotation: 0 },
+                { content: '<h3>¿Qué se puede mejorar? 🤔</h3>', x: 400, y: 20, width: 300, height: 600, color: '#BBDEFB', rotation: 0 },
+                { content: '<h3>Acciones a tomar 🎯</h3>', x: 750, y: 20, width: 300, height: 600, color: '#FFF9C4', rotation: 0 },
+            ]
         }
     };
 
