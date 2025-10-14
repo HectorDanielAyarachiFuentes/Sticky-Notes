@@ -117,12 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 board.notes.forEach(note => {
                     if (note.locked === undefined) note.locked = false;
-                    // Migración para títulos y pestañas
-                    if (note.title === undefined) note.title = '';
+                    // Migración para la nueva estructura de pestañas (título + contenido)
                     if (note.tabs === undefined) {
-                        note.tabs = [note.content || '', '', '', '', ''];
+                        // Si la nota viene del formato antiguo (title + content) o (title + tabs[string])
+                        const oldTabsContent = note.content ? [note.content, '', '', '', ''] : (note.tabs || ['', '', '', '', '']);
+                        note.tabs = oldTabsContent.map((content, index) => ({
+                            // La primera pestaña hereda el título principal, las demás quedan vacías.
+                            title: index === 0 ? (note.title || '') : '',
+                            content: content || ''
+                        }));
                         note.activeTab = 0;
-                        delete note.content; // Eliminar la propiedad antigua
+                        delete note.content; // Eliminar propiedades antiguas
+                        delete note.title;
                     }
                 });
                 if (!loadedState.trash) {
@@ -372,13 +378,13 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBoard.notes.forEach(note => {
                 // Usamos un div temporal para quitar el HTML y buscar solo en el texto
                 const tempDiv = document.createElement('div');
-                // Buscar en el título y en todas las pestañas
-                const titleText = note.title || '';
-                const tabsText = note.tabs.join(' ');
-                tempDiv.innerHTML = titleText + ' ' + tabsText;
+                // Buscar en todos los títulos y contenidos de todas las pestañas
+                const searchableText = note.tabs.map(tab => `${tab.title} ${tab.content}`).join(' ');
+
+                tempDiv.innerHTML = searchableText;
                 const noteText = tempDiv.textContent || tempDiv.innerText || "";
 
-                if (noteText.toLowerCase().includes(searchTerm) || titleText.toLowerCase().includes(searchTerm)) {
+                if (noteText.toLowerCase().includes(searchTerm)) {
                     // Si la nota está en el tablero ACTIVO, la resaltamos
                     if (currentBoard.id === appState.activeBoardId) {
                         const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
@@ -439,11 +445,12 @@ document.addEventListener('DOMContentLoaded', () => {
         title.contentEditable = !noteData.locked;
         title.classList.add("stickynote-title");
         title.setAttribute("placeholder", "Título...");
-        title.innerHTML = noteData.title || '';
+        // Mostrar el título de la pestaña activa
+        title.innerHTML = noteData.tabs[noteData.activeTab].title || '';
         title.addEventListener('blur', () => {
             const newTitle = title.innerHTML;
-            if (noteData.title !== newTitle) {
-                noteData.title = newTitle;
+            if (noteData.tabs[noteData.activeTab].title !== newTitle) {
+                noteData.tabs[noteData.activeTab].title = newTitle;
                 saveState();
                 handleSearch();
             }
@@ -464,6 +471,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const tab = document.createElement('div');
             tab.className = 'stickynote-tab';
             tab.dataset.tabIndex = i;
+            // Mejora UX: Añadir clase si la pestaña tiene contenido
+            if (noteData.tabs[i] && (noteData.tabs[i].content.trim() !== '' || noteData.tabs[i].title.trim() !== '')) {
+                tab.classList.add('has-content');
+            }
+
             if (i === noteData.activeTab) {
                 tab.classList.add('active');
             }
@@ -472,14 +484,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Cambiar de pestaña
                 noteData.activeTab = i;
                 saveState();
-                // Re-renderizar solo esta nota (o más fácil, todo el tablero)
-                // Para simplificar, actualizamos clases directamente
+                
+                // Actualizar clases de pestañas y contenido
                 const currentActiveTab = sticky.querySelector('.stickynote-tab.active');
                 if (currentActiveTab) currentActiveTab.classList.remove('active');
                 tab.classList.add('active');
                 const currentActiveContent = sticky.querySelector('.stickynote-text.active');
                 if (currentActiveContent) currentActiveContent.classList.remove('active');
                 sticky.querySelector(`.stickynote-text[data-tab-index="${i}"]`).classList.add('active');
+
+                // ¡NUEVO! Actualizar el título principal de la nota
+                title.innerHTML = noteData.tabs[i].title || '';
             });
             tabContainer.appendChild(tab);
 
@@ -492,12 +507,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             content.dataset.tabIndex = i;
             content.setAttribute("placeholder", "Escribe algo...");
-            content.innerHTML = noteData.tabs[i] || '';
+            content.innerHTML = noteData.tabs[i].content || '';
             content.addEventListener('blur', () => {
                 const newContent = content.innerHTML;
-                if (noteData.tabs[i] !== newContent) {
-                    noteData.tabs[i] = newContent;
+                if (noteData.tabs[i].content !== newContent) {
+                    noteData.tabs[i].content = newContent;
                     saveState();
+                    // Mejora UX: Actualizar el indicador de contenido de la pestaña
+                    const tabEl = sticky.querySelector(`.stickynote-tab[data-tab-index="${i}"]`);
+                    const hasContent = newContent.trim() !== '' || noteData.tabs[i].title.trim() !== '';
+                    if (tabEl) tabEl.classList.toggle('has-content', hasContent);
+
                     handleSearch();
                 }
             });
@@ -608,8 +628,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const newNoteData = {
                 id: `note-${Date.now()}`,
-                title: '',
-                tabs: ['', '', '', '', ''],
+                // Nueva estructura de pestañas
+                tabs: Array(5).fill(null).map(() => ({
+                    title: '',
+                    content: ''
+                })),
                 activeTab: 0,
                 width: 200, height: 200, color: color,
                 rotation: (Math.random() - 0.5) * 8,
@@ -766,8 +789,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!originalNoteData) return;
 
         const newNoteData = {
-            ...originalNoteData, // Copia todas las propiedades
             id: `note-${Date.now()}`,
+            ...JSON.parse(JSON.stringify(originalNoteData)), // Deep copy para las pestañas
             x: originalNoteData.x + 20, // Pequeño desfase
             y: originalNoteData.y + 20,
             zIndex: ++maxZIndex,
@@ -985,9 +1008,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'trash-item';
 
-            const titleText = note.title || 'Nota sin título';
+            const activeTabData = note.tabs[note.activeTab] || { title: '', content: '' };
+            const titleText = activeTabData.title || 'Nota sin título';
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = note.tabs.join(' ');
+            tempDiv.innerHTML = note.tabs.map(t => t.content).join(' ');
             const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim() || 'Nota vacía';
 
             item.innerHTML = `
