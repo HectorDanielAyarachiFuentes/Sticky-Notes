@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctxLockBtn = document.querySelector("#ctx-lock");
     const ctxDeleteBtn = document.querySelector("#ctx-delete");
     const ctxChangeColorBtn = document.querySelector("#ctx-change-color");
+    // Menú contextual de pestañas
+    const tabContextMenu = document.querySelector("#tab-context-menu");
+    const ctxTabDeleteBtn = document.querySelector("#ctx-tab-delete");
+
     // Papelera
     const trashListContainer = document.querySelector("#trash-list-container");
     const emptyTrashBtn = document.querySelector("#empty-trash-btn");
@@ -97,6 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isResizing = false;
 
     let contextMenuNoteId = null; // ID de la nota para el menú contextual    
+    let contextMenuTabInfo = null; // {noteId, tabIndex} para el menú de pestañas
+
     let popoverNoteId = null; // ID de la nota para el popover de color
     let maxZIndex = 0; // Para gestionar el apilamiento de las notas
     let activeLines = []; // Almacena las instancias de LeaderLine activas
@@ -479,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (i === noteData.activeTab) {
                 tab.classList.add('active');
             }
-            tab.addEventListener('click', (e) => {
+            tab.addEventListener('click', (e) => { // Clic izquierdo para cambiar de pestaña
                 e.stopPropagation();
                 // Cambiar de pestaña
                 noteData.activeTab = i;
@@ -495,6 +501,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // ¡NUEVO! Actualizar el título principal de la nota
                 title.innerHTML = noteData.tabs[i].title || '';
+            });
+            tab.addEventListener('contextmenu', (e) => { // Clic derecho para menú
+                e.preventDefault();
+                e.stopPropagation();
+                contextMenuTabInfo = { noteId: noteData.id, tabIndex: i };
+                showTabContextMenu(e.clientX, e.clientY);
             });
             tabContainer.appendChild(tab);
 
@@ -762,9 +774,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- LÓGICA DEL MENÚ CONTEXTUAL ---
     function handleContextMenu(e) {
+        // Primero, verificar si el clic es en una pestaña de nota
+        const tabElement = e.target.closest('.stickynote-tab');
+        if (tabElement) {
+            // El evento 'contextmenu' en la pestaña ya se maneja al crearla.
+            // Prevenimos que se abra el menú contextual principal.
+            e.preventDefault();
+            return;
+        }
+
+        // Si no es una pestaña, verificar si es en una nota
         const noteElement = e.target.closest('.stickynote');
         if (noteElement) {
             e.preventDefault();
+            hideTabContextMenu(); // Ocultar el otro menú por si acaso
             contextMenuNoteId = noteElement.dataset.noteId;
             
             const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
@@ -774,8 +797,59 @@ document.addEventListener('DOMContentLoaded', () => {
             contextMenu.style.left = `${e.clientX}px`;
             contextMenu.classList.remove('hidden');
         } else {
+            // Si se hace clic en cualquier otro lugar, ocultar ambos menús
             hideContextMenu();
+            hideTabContextMenu();
         }
+    }
+
+    function showTabContextMenu(x, y) {
+        hideContextMenu(); // Ocultar el menú principal
+        tabContextMenu.style.top = `${y}px`;
+        tabContextMenu.style.left = `${x}px`;
+        tabContextMenu.classList.remove('hidden');
+    }
+
+    function hideTabContextMenu() {
+        tabContextMenu.classList.add('hidden');
+        contextMenuTabInfo = null;
+    }
+
+    function clearTab() {
+        if (!contextMenuTabInfo) return;
+        const { noteId, tabIndex } = contextMenuTabInfo;
+        hideTabContextMenu(); // Ocultar menú inmediatamente
+
+        const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === noteId);
+        const noteElement = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
+        if (!noteData || !noteElement) return;
+
+        // UX: Pedir confirmación antes de borrar
+        if (!confirm('¿Estás seguro de que quieres limpiar el título y el contenido de esta pestaña?')) {
+            return;
+        }
+
+        const titleElement = noteElement.querySelector('.stickynote-title');
+        const contentElement = noteElement.querySelector(`.stickynote-text[data-tab-index="${tabIndex}"]`);
+        const tabElement = noteElement.querySelector(`.stickynote-tab[data-tab-index="${tabIndex}"]`);
+
+        // Aplicar animación de desvanecimiento
+        contentElement.classList.add('clearing-out');
+
+        // Esperar a que la animación termine para limpiar los datos
+        contentElement.addEventListener('animationend', () => {
+            // Limpiar datos en el estado de la aplicación
+            noteData.tabs[tabIndex] = { title: '', content: '' };
+            saveState();
+
+            // Limpiar el DOM
+            contentElement.innerHTML = '';
+            if (noteData.activeTab === tabIndex) {
+                titleElement.innerHTML = '';
+            }
+            tabElement.classList.remove('has-content');
+            contentElement.classList.remove('clearing-out'); // Limpiar clase para futuras animaciones
+        }, { once: true }); // El listener se ejecuta solo una vez
     }
 
     function hideContextMenu() {
@@ -1277,14 +1351,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('contextmenu', handleContextMenu);
         // Ocultar menús si se hace clic fuera
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('#context-menu') && !e.target.closest('#color-picker-popover')) {
+            if (!e.target.closest('#context-menu') && !e.target.closest('#tab-context-menu') && !e.target.closest('#color-picker-popover')) {
                 hideContextMenu();
+                hideTabContextMenu();
                 hideColorPopover();
             }
         }, true); // Usar captura para que se ejecute antes que otros clics
         ctxDuplicateBtn.addEventListener('click', duplicateNote);
         ctxLockBtn.addEventListener('click', toggleLockNote);
         ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
+        ctxTabDeleteBtn.addEventListener('click', clearTab);
         emptyTrashBtn.addEventListener('click', emptyTrash);
         document.addEventListener('wheel', handleWheelRotate, { passive: false });
         

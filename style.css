@@ -535,6 +535,19 @@ body {
             pointer-events: none;
         }
 
+        /* --- NUEVO: Animación para limpiar pestaña --- */
+        @keyframes fadeOutContent {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+        .stickynote-text.clearing-out { animation: fadeOutContent 0.3s ease-out forwards; }
+
         .stickynote-tabs {
             display: flex;
             flex-shrink: 0; /* Evita que se encoja */
@@ -692,30 +705,33 @@ body {
         }
 
 /* --- MENÚ CONTEXTUAL --- */
-#context-menu {
+#context-menu, #tab-context-menu {
     position: fixed;
     z-index: 2000;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     padding: 8px 0;
-    min-width: 180px;
+    min-width: 170px;
     border: 1px solid #eee;
 }
-#context-menu.hidden {
+#context-menu.hidden, #tab-context-menu.hidden {
     display: none;
 }
-#context-menu ul {
+#context-menu ul, #tab-context-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-#context-menu li {
+#context-menu li, #tab-context-menu li {
     padding: 10px 20px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
-#context-menu li:hover { background-color: #f0f0f0; }
+#context-menu li:hover, #tab-context-menu li:hover { background-color: #f0f0f0; }
 #context-menu li.separator { height: 1px; background-color: #eee; padding: 0; margin: 5px 0; }
 
 /* --- PESTAÑA DE PAPELERA --- */
