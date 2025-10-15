@@ -109,6 +109,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 
+    /**
+     * Determina si un color de fondo es oscuro para decidir el color del texto.
+     * @param {string} hexColor - El color en formato #RRGGBB.
+     * @returns {boolean} - True si el color es oscuro, false si es claro.
+     */
+    function isColorDark(hexColor) {
+        if (!hexColor || hexColor.length < 7) return false; // Manejar colores inválidos
+        // Quitar el #
+        const hex = hexColor.replace('#', '');
+        // Convertir a RGB
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        // Fórmula de luminancia YIQ (un estándar para la percepción humana)
+        const luminance = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return luminance < 128; // El umbral 128 es un buen punto de partida (0-255)
+    }
     // --- CONFIGURACIÓN INICIAL ---
     let popoverOriginalColor = null; // Para guardar el color original al previsualizar
     const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2', '#D7CCC8', '#F8BBD0', '#E1BEE7', '#CFD8DC'];
@@ -518,6 +535,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sticky.style.backgroundColor = noteData.color;
         sticky.style.transform = `rotate(${noteData.rotation}deg)`;
         sticky.style.zIndex = noteData.zIndex;
+
+        // --- MEJORA DE CONTRASTE ---
+        // Añadir clase si el fondo es oscuro para cambiar el color del texto
+        if (isColorDark(noteData.color)) {
+            sticky.classList.add('dark-theme');
+        }
 
         // Aplicar fondo de tablero a la nota si está activado
         const currentBoard = appState.boards[appState.activeBoardId];
@@ -1339,6 +1362,11 @@ document.addEventListener('DOMContentLoaded', () => {
             popoverOriginalColor = null; // Marcar que el color ha sido elegido, para no restaurarlo.
             noteData.color = newColor;
             noteElement.style.backgroundColor = newColor;
+            
+            // --- MEJORA DE CONTRASTE ---
+            // Actualizar la clase de tema claro/oscuro al cambiar el color
+            noteElement.classList.toggle('dark-theme', isColorDark(newColor));
+
             saveState();
         }
         hideColorPopover();
@@ -1357,6 +1385,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
             if (noteElement) {
                 noteElement.style.backgroundColor = color;
+                // --- MEJORA DE CONTRASTE ---
+                // Actualizar la clase de tema claro/oscuro también en la previsualización
+                noteElement.classList.toggle('dark-theme', isColorDark(color));
             }
         };
 
@@ -1372,7 +1403,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Restablecer el color de la nota cuando el cursor sale de la paleta
         popoverPalette.addEventListener('mouseleave', () => {
-            if (popoverOriginalColor) previewNoteColor(popoverOriginalColor);
+            if (popoverOriginalColor) {
+                // Al salir, restauramos el color y también el tema de contraste original
+                const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
+                if (noteElement) previewNoteColor(popoverOriginalColor);
+            }
         });
 
         ctxChangeColorBtn.addEventListener('click', showColorPopover);

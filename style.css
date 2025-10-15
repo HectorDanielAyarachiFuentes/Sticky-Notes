@@ -636,6 +636,28 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             pointer-events: none;
         }
 
+        /* --- MEJORA DE CONTRASTE: Tema oscuro para notas con fondo oscuro --- */
+        .stickynote.dark-theme {
+            color: #f0f0f0; /* Color de texto principal claro */
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+        .stickynote.dark-theme .stickynote-title {
+            color: #ffffff;
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+        .stickynote.dark-theme .stickynote-text {
+            color: #f0f0f0;
+        }
+        .stickynote.dark-theme .stickynote-text:empty:before,
+        .stickynote.dark-theme .stickynote-title:empty:before {
+            color: #aaa; /* Placeholder un poco más claro */
+        }
+        .stickynote.dark-theme .stickynote-tabs {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+        .stickynote.dark-theme .stickynote-tab {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
         /* --- NUEVO: Animación para limpiar pestaña --- */
         @keyframes fadeOutContent {
             from {
