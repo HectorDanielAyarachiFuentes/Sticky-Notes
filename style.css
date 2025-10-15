@@ -526,6 +526,11 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     box-shadow: var(--shadow-md);
     z-index: 10; /* Se pone por encima de las demás al hacer hover */
 }
+.palette-note.dark-theme {
+    /* Borde claro para notas oscuras en la paleta, mejorando contraste */
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
 .palette-note:active {
     cursor: grabbing;
 }
@@ -650,13 +655,24 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         }
         .stickynote.dark-theme .stickynote-text:empty:before,
         .stickynote.dark-theme .stickynote-title:empty:before {
-            color: #aaa; /* Placeholder un poco más claro */
+            color: #bbb; /* Placeholder más claro para mejor contraste */
         }
         .stickynote.dark-theme .stickynote-tabs {
             border-top-color: rgba(255, 255, 255, 0.2);
         }
         .stickynote.dark-theme .stickynote-tab {
-            border-color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        /* --- NUEVO: Contraste para las partes de la pestaña inteligente --- */
+        .stickynote.dark-theme .stickynote-tab-part {
+            color: #fff; /* Texto blanco */
+        }
+        .stickynote.dark-theme .stickynote-tab-part.filled {
+            background-color: rgba(255, 255, 255, 0.4); /* Fondo claro semitransparente */
+        }
+        .stickynote.dark-theme .stickynote-tabs:hover .stickynote-tab:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.1);
         }
         /* --- NUEVO: Animación para limpiar pestaña --- */
         @keyframes fadeOutContent {
@@ -983,8 +999,12 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     border: 2px solid transparent;
     transition: all 0.2s ease;
 }
-.color-swatch:hover { transform: scale(1.15); }
-.color-swatch.active { border-color: var(--rojo-circo); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--rojo-circo); }
+.color-swatch:hover {
+    transform: scale(1.15);
+}
+/* El borde activo ahora se adapta al color de fondo */
+.color-swatch.active.light-bg { border-color: #333; }
+.color-swatch.active.dark-bg { border-color: #fff; }
 
 /* --- NOTIFICACIONES (TOASTS) --- */
 #toast-container {

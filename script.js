@@ -1325,9 +1325,12 @@ document.addEventListener('DOMContentLoaded', () => {
         popoverOriginalColor = noteData.color; // Guardar color original
 
         // Resaltar el color actual
-        popoverPalette.querySelectorAll('.color-swatch').forEach(swatch => {
-            swatch.classList.toggle('active', swatch.dataset.color === noteData.color);
-        });
+        for (const swatch of popoverPalette.children) {
+            const isActive = swatch.dataset.color === noteData.color;
+            swatch.classList.toggle('active', isActive);
+            swatch.classList.toggle('light-bg', isActive && !isColorDark(swatch.dataset.color));
+            swatch.classList.toggle('dark-bg', isActive && isColorDark(swatch.dataset.color));
+        }
         
         const menuRect = contextMenu.getBoundingClientRect();
         colorPopover.style.top = `${menuRect.top}px`;
@@ -1375,7 +1378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeColorPopover() {
         // Paleta extendida de colores
         const extendedColors = [
-            '#FFFFFF', '#F1F3F4', '#CFD8DC', '#E8EAED', '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC', '#D7CCC8'
+            '#FFFFFF', '#F1F3F4', '#CFD8DC', '#E8EAED', '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC', '#D7CCC8', '#424242', '#000000'
         ];
 
         // Función para previsualizar el color en la nota
@@ -1523,6 +1526,11 @@ document.addEventListener('DOMContentLoaded', () => {
             paletteNote.classList.add("palette-note");
             paletteNote.style.backgroundColor = color;
             paletteNote.dataset.color = color;
+
+            // --- MEJORA DE CONTRASTE EN PALETA ---
+            if (isColorDark(color)) {
+                paletteNote.classList.add('dark-theme');
+            }
             
             // Aumentamos el desplazamiento vertical para mayor separación
             paletteNote.style.top = `${index * 25}px`;
