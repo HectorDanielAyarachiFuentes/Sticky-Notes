@@ -375,6 +375,7 @@ body {
     border-right: 1px solid #D5D8DC;
     transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     overflow: hidden; /* Evita que las notas se salgan al animarse */
+    position: relative; /* ¡CLAVE! Para que el indicador de scroll se posicione dentro de la paleta */
 }
 
 
@@ -443,13 +444,17 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     position: absolute;
     bottom: 10px;
     left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.2em;
-    color: #999;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none; /* No interfiere con el drag & drop */
     animation: bounce 1.5s infinite;
+    z-index: 5; /* Asegura que esté sobre las notas de la paleta */
+}
+
+.scroll-indicator img {
+    width: 32px; /* Ajusta el tamaño del SVG según necesites */
+    height: 32px;
+    opacity: 0.6;
 }
 
 @keyframes bounce {

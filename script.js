@@ -1610,6 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- MEJORA UX/UI: Paleta de notas con scroll infinito y circular ---
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
+        const scrollIndicator = paletteScrollContainer.nextElementSibling;
         
         // 1. Generar una paleta de colores rica con matices
         const rainbowColors = [
@@ -1638,11 +1639,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Duplicar la paleta (más veces) para un scroll infinito más robusto
         const extendedColors = [...fullPalette, ...fullPalette, ...fullPalette, ...fullPalette];
 
+        // Función para mostrar/ocultar el indicador de scroll
+        const updateScrollIndicator = () => {
+            const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
+            // Mostrar si no se ha llegado al final del scroll
+            const isScrollable = scrollHeight > clientHeight;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // Pequeño umbral
+            scrollIndicator.style.opacity = (isScrollable && !isAtBottom) ? '1' : '0';
+        };
+
         // 3. Lógica para el scroll circular
         paletteScrollContainer.addEventListener('scroll', () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
             const scrollContentHeight = scrollHeight / 4; // Altura de un bloque de colores
-
+            updateScrollIndicator();
             // Si el scroll se acerca al final, lo movemos al bloque anterior
             if (scrollTop + clientHeight >= scrollContentHeight * 3) {
                 paletteScrollContainer.scrollTop -= scrollContentHeight;
@@ -1673,6 +1683,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 4. Posicionar el scroll en el medio para empezar
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
+        // 5. Actualizar el indicador de scroll al inicio
+        // Usamos un pequeño timeout para asegurar que el DOM está completamente renderizado
+        setTimeout(updateScrollIndicator, 100);
 
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         addBoardBtn.addEventListener('click', addNewBoard);
