@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const popoverPalette = document.querySelector("#popover-color-palette");
     const closePopoverBtn = document.querySelector("#close-popover-btn");
 
+    // Modal "Sobre mí"
+    const aboutBtn = document.querySelector("#about-btn");
+    const aboutModal = document.querySelector("#about-modal");
+    const closeAboutModalBtn = aboutModal.querySelector(".modal-close-btn");
+
     // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
 
     /**
@@ -1426,6 +1431,21 @@ document.addEventListener('DOMContentLoaded', () => {
         closePopoverBtn.addEventListener('click', hideColorPopover);
     }
 
+    // --- LÓGICA DEL MODAL "SOBRE MÍ" ---
+    function initializeAboutModal() {
+        aboutBtn.addEventListener('click', () => {
+            aboutModal.classList.remove('hidden');
+        });
+
+        const closeModal = () => aboutModal.classList.add('hidden');
+
+        closeAboutModalBtn.addEventListener('click', closeModal);
+        // Cerrar también si se hace clic en el fondo oscuro
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) closeModal();
+        });
+    }
+
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
@@ -1585,7 +1605,9 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeBackgroundOptions();
         initializeColorPopover();
         initializeSidebarResizing();
-        updatePaletteState();    }
+        updatePaletteState();
+        initializeAboutModal();
+    }
 
     initializeApp();
 });

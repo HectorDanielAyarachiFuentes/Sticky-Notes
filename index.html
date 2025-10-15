@@ -30,7 +30,12 @@
 <body>
 
 <div id="board-manager">
-    <h3>Gestor <span id="sidebar-collapse-btn" title="Ocultar panel"><img src="svg/izquierda.svg" alt="Ocultar"></span></h3>
+    <h3>
+        Gestor 
+        <button id="about-btn" title="Sobre mí">
+            <img src="svg/sobremi.svg" alt="Sobre mí">
+        </button>
+        <span id="sidebar-collapse-btn" title="Ocultar panel"><img src="svg/izquierda.svg" alt="Ocultar"></span></h3>
 
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="boards" title="Tableros">🗂️<span class="tab-text">Tableros</span></button>
@@ -166,6 +171,19 @@
         <button id="close-popover-btn">&times;</button>
     </div>
     <div id="popover-color-palette"></div>
+</div>
+
+<!-- Modal "Sobre Mí" -->
+<div id="about-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <button class="modal-close-btn">&times;</button>
+        <h2>Sobre la Aplicación</h2>
+        <img src="img-about/dulceflamengo.png" alt="Mascota de la aplicación" class="about-modal-img">
+        <p><strong>Sticky Notes v1.0</strong></p>
+        <p>Hola, soy Héctor Daniel Ayarachi Fuentes, el desarrollador de esta aplicación de notas adhesivas.</p>
+        <p>Este proyecto fue creado con HTML, CSS y JavaScript puro, como una forma de practicar y demostrar mis habilidades en desarrollo web front-end.</p>
+        <p>Puedes encontrar más de mis proyectos en mi <a href="https://github.com/HectorDanielAyarachiFuentes" target="_blank" rel="noopener noreferrer">perfil de GitHub</a>.</p>
+    </div>
 </div>
 
 <div id="toast-container"></div>
