@@ -46,6 +46,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const popoverPalette = document.querySelector("#popover-color-palette");
     const closePopoverBtn = document.querySelector("#close-popover-btn");
 
+    // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
+
+    /**
+     * Convierte un color HEX a HSL.
+     * @param {string} hex - El color en formato #RRGGBB.
+     * @returns {Array<number>} - Un array [h, s, l].
+     */
+    function hexToHsl(hex) {
+        let r = parseInt(hex.slice(1, 3), 16) / 255;
+        let g = parseInt(hex.slice(3, 5), 16) / 255;
+        let b = parseInt(hex.slice(5, 7), 16) / 255;
+
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0; // achromatic
+        } else {
+            let d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return [h, s, l];
+    }
+
+    /**
+     * Convierte un color HSL a HEX.
+     * @param {number} h - Hue (0-1).
+     * @param {number} s - Saturation (0-1).
+     * @param {number} l - Lightness (0-1).
+     * @returns {string} - El color en formato #RRGGBB.
+     */
+    function hslToHex(h, s, l) {
+        let r, g, b;
+        if (s === 0) {
+            r = g = b = l; // achromatic
+        } else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            let p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1 / 3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1 / 3);
+        }
+        const toHex = x => {
+            const hex = Math.round(x * 255).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        };
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
     // --- CONFIGURACIÓN INICIAL ---
     let popoverOriginalColor = null; // Para guardar el color original al previsualizar
     const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2', '#D7CCC8', '#F8BBD0', '#E1BEE7', '#CFD8DC'];
@@ -1376,16 +1439,47 @@ document.addEventListener('DOMContentLoaded', () => {
             templateContainer.appendChild(btn);
         });
 
-        // --- MEJORA UX/UI: Paleta de notas apiladas y con scroll ---
+        // --- MEJORA UX/UI: Paleta de notas con scroll infinito y circular ---
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
-        // Usamos la paleta extendida para que el scroll tenga sentido
-        let extendedColors = [
-            '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCDD2', '#F8BBD0', '#E1BEE7', 
-            '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', 
-            '#C8E6C9', '#DCEDC8', '#F0F4C3', '#D7CCC8', '#CFD8DC', '#FFFFFF'
+        
+        // 1. Generar una paleta de colores rica con matices
+        const rainbowColors = [
+            '#ff7979', // Rojo pastel
+            '#ffbe76', // Naranja pastel
+            '#f6e58d', // Amarillo pastel
+            '#badc58', // Verde lima
+            '#7ed6df', // Turquesa
+            '#54a0ff', // Azul cielo
+            '#be2edd'  // Violeta
         ];
-        // Duplicamos la lista para dar la sensación de scroll infinito
-        extendedColors = [...extendedColors, ...extendedColors];
+        
+        const fullPalette = [];
+        rainbowColors.forEach(color => {
+            const [h, s, l] = hexToHsl(color);
+            // Generar 2 tonos más claros y 2 más oscuros
+            for (let i = -2; i <= 2; i++) {
+                // Ajustar la luminosidad, asegurando que se mantenga entre 15% y 95%
+                const newL = Math.max(0.15, Math.min(0.95, l + i * 0.08));
+                fullPalette.push(hslToHex(h, s, newL));
+            }
+        });
+
+        // 2. Duplicar la paleta (más veces) para un scroll infinito más robusto
+        const extendedColors = [...fullPalette, ...fullPalette, ...fullPalette, ...fullPalette];
+
+        // 3. Lógica para el scroll circular
+        paletteScrollContainer.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
+            const scrollContentHeight = scrollHeight / 4; // Altura de un bloque de colores
+
+            // Si el scroll se acerca al final, lo movemos al bloque anterior
+            if (scrollTop + clientHeight >= scrollContentHeight * 3) {
+                paletteScrollContainer.scrollTop -= scrollContentHeight;
+            } // Si el scroll se acerca al principio, lo movemos al bloque siguiente
+            else if (scrollTop <= scrollContentHeight) {
+                paletteScrollContainer.scrollTop += scrollContentHeight;
+            }
+        }, { passive: true });
 
         extendedColors.forEach((color, index) => {
             const paletteNote = document.createElement("div");
@@ -1400,6 +1494,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             paletteScrollContainer.appendChild(paletteNote);
         });
+        
+        // 4. Posicionar el scroll en el medio para empezar
+        paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
 
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         addBoardBtn.addEventListener('click', addNewBoard);
