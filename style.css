@@ -1130,7 +1130,9 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Alinea el modal arriba para evitar cortes */
+    overflow-y: auto; /* Permite el scroll si el contenido es muy alto */
+    padding: 20px 0; /* Añade un poco de espacio vertical */
     z-index: 4000;
     opacity: 1;
     transition: opacity 0.3s ease;
@@ -1161,8 +1163,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     background: linear-gradient(145deg, #fdf8e1, #f9f2d0);
     padding: 0; /* Quitamos el padding para un control total */
     border-radius: 16px;
-    width: 90%; /* Asegura que no se desborde en pantallas pequeñas */
-    max-width: 420px;
+    width: 90%;
+    max-width: 650px; /* Hacemos el modal más ancho */
     text-align: center;
     overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
     font-family: 'Nunito', sans-serif; /* Usamos una fuente más suave */
@@ -1175,13 +1177,13 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .modal-header {
-    background-color: rgba(75, 75, 75, 0.05);
-    padding: 30px 20px;
+    background-color: rgba(75, 75, 75, 0.03);
+    padding: 25px 20px 20px; /* Reducimos el padding */
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .modal-body {
-    padding: 25px 35px;
+    padding: 20px 30px; /* Reducimos el padding */
 }
 
 .modal-footer {
@@ -1214,15 +1216,15 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 .about-image-container { /* Ahora es el contenedor del canvas y la imagen */
     position: relative;
-    width: 160px;
-    height: 160px;
-    margin: 20px auto;
+    width: 120px; /* Hacemos el contenedor más pequeño */
+    height: 120px;
+    margin: 10px auto 15px; /* Reducimos el margen */
 }
 
 .about-modal-img {
     display: block;
-    width: 140px;
-    height: 140px;
+    width: 100px; /* Hacemos la imagen más pequeña */
+    height: 100px;
     margin: 0;
     border-radius: 50%;
     object-fit: cover;
@@ -1247,13 +1249,13 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .modal-title {
     margin-top: 0;
     margin-bottom: 5px;
-    color: var(--rojo-circo);
+    color: #D35400; /* Un tono de rojo-naranja un poco más sutil */
     font-family: 'Roboto Slab', serif;
-    font-size: 1.8em;
+    font-size: 1.6em; /* Reducimos el tamaño de la fuente */
 }
 
 .modal-subtitle {
-    margin: 0;
+    margin: 0 0 5px 0; /* Añadimos un pequeño margen inferior */
     font-size: 1.1em;
     color: #666;
     font-weight: normal;
@@ -1266,10 +1268,13 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 .skills-container {
     margin-top: 25px;
+    display: flex; /* Usamos flexbox para alinear horizontalmente */
+    align-items: center;
+    gap: 20px;
 }
 
 .skills-container h3 {
-    font-family: 'Roboto Slab', serif;
+    font-family: 'Roboto Slab', serif; /* Mantenemos la fuente del título */
     font-size: 1.1em;
     color: var(--texto-principal);
     margin-bottom: 15px;
@@ -1310,14 +1315,14 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .skill-item img {
-    width: 48px;
-    height: 48px;
+    width: 40px; /* Reducimos el tamaño de los iconos */
+    height: 40px;
     filter: grayscale(30%);
     transition: all 0.3s ease;
 }
 
 .skill-item:hover img {
-    filter: grayscale(0%);
+    filter: none; /* Mejor forma de quitar el filtro */
     transform: scale(1.1);
 }
 
