@@ -457,10 +457,43 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     opacity: 0.6;
 }
 
+/* --- NUEVO: Indicador de scroll hacia arriba --- */
+.scroll-indicator-up {
+    position: absolute;
+    top: 55px; /* Justo debajo del header de la paleta */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    animation: bounce-up 1.5s infinite;
+    z-index: 5;
+}
+
+.scroll-indicator-up img {
+    width: 32px;
+    height: 32px;
+    opacity: 0.6;
+}
+
+#note-palette:hover .scroll-indicator-up {
+    opacity: 1;
+}
+
 @keyframes bounce {
     0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
     40% { transform: translate(-50%, -5px); }
     60% { transform: translate(-50%, 5px); }
+}
+
+#note-palette:hover .scroll-indicator {
+    opacity: 1;
+}
+
+@keyframes bounce-up {
+    0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
+    40% { transform: translate(-50%, 5px); }
+    60% { transform: translate(-50%, -5px); }
 }
 
 #note-palette:hover .scroll-indicator {

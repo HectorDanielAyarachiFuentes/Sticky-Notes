@@ -1610,6 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- MEJORA UX/UI: Paleta de notas con scroll infinito y circular ---
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
+        const scrollIndicatorUp = paletteScrollContainer.previousElementSibling;
         const scrollIndicator = paletteScrollContainer.nextElementSibling;
         
         // 1. Generar una paleta de colores rica con matices
@@ -1642,10 +1643,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Función para mostrar/ocultar el indicador de scroll
         const updateScrollIndicator = () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
-            // Mostrar si no se ha llegado al final del scroll
             const isScrollable = scrollHeight > clientHeight;
+            
+            // Indicador hacia abajo: se muestra si hay scroll y no se ha llegado al final.
             const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // Pequeño umbral
             scrollIndicator.style.opacity = (isScrollable && !isAtBottom) ? '1' : '0';
+            // Indicador hacia arriba: se muestra si hay scroll y no se está en el principio.
+            scrollIndicatorUp.style.opacity = (isScrollable && scrollTop > 10) ? '1' : '0';
         };
 
         // 3. Lógica para el scroll circular
