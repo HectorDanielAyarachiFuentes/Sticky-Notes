@@ -406,9 +406,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .palette-create-icon {
     width: 30px;
     height: 30px;
-    /* Filtro para cambiar el color del SVG a uno más acorde con la paleta */
-    filter: invert(38%) sepia(11%) saturate(597%) hue-rotate(162deg) brightness(94%) contrast(88%);
     opacity: 0.7;
+    transition: opacity 0.2s ease;
 }
 
 .palette-header span {
@@ -431,6 +430,10 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     align-items: center;
     justify-content: center;
 }
+.palette-title-container:hover .palette-create-icon {
+    opacity: 1;
+}
+
 #pin-palette-btn:hover { opacity: 1; background-color: #D5D8DC; }
 #pin-palette-btn.active { opacity: 1; color: var(--rojo-circo); background-color: #D5D8DC; transform: rotate(45deg); }
 
