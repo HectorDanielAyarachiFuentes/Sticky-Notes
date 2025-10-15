@@ -1156,13 +1156,18 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transform: scale(0.9);
 }
 
-/* --- ESTILOS DEL MODAL "SOBRE MÍ" (REDiseñado) --- */
-.modal-content {
+/* --- ESTILOS DEL MODAL "SOBRE MÍ" --- */
+#about-modal .modal-content {
     background: linear-gradient(145deg, #fdf8e1, #f9f2d0);
     padding: 0; /* Quitamos el padding para un control total */
     border-radius: 16px;
     width: 90%; /* Asegura que no se desborde en pantallas pequeñas */
     max-width: 420px;
+    /* --- MEJORA: Adaptabilidad vertical --- */
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh; /* Límite para que no ocupe toda la pantalla */
+    /* --- FIN MEJORA --- */
     text-align: center;
     overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
     font-family: 'Nunito', sans-serif; /* Usamos una fuente más suave */
@@ -1170,18 +1175,20 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .modal-overlay.hidden .modal-content {
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(15px);
     opacity: 0;
 }
 
 .modal-header {
     background-color: rgba(75, 75, 75, 0.05);
-    padding: 30px 20px;
+    padding: 20px 20px 15px 20px; /* Reducimos padding vertical */
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .modal-body {
-    padding: 25px 35px;
+    padding: 20px 35px; /* Reducimos padding vertical */
+    flex-grow: 1; /* Permite que esta área crezca si hay espacio */
+    overflow-y: auto; /* Añadido como fallback por si el contenido es demasiado grande */
 }
 
 .modal-footer {
@@ -1214,15 +1221,14 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 .about-image-container { /* Ahora es el contenedor del canvas y la imagen */
     position: relative;
-    width: 160px;
-    height: 160px;
-    margin: 20px auto;
+    width: 140px; /* Reducido para ahorrar espacio */
+    height: 140px;
+    margin: 0 auto 15px auto; /* Reducido margen inferior */
 }
 
 .about-modal-img {
-    display: block;
-    width: 140px;
-    height: 140px;
+    width: 120px; /* Reducido para un look más fino */
+    height: 120px;
     margin: 0;
     border-radius: 50%;
     object-fit: cover;
@@ -1247,7 +1253,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .modal-title {
     margin-top: 0;
     margin-bottom: 5px;
-    color: var(--rojo-circo);
+    color: #d65a5a; /* Un rojo un poco más sobrio */
     font-family: 'Roboto Slab', serif;
     font-size: 1.8em;
 }
@@ -1265,7 +1271,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .skills-container {
-    margin-top: 25px;
+    margin-top: 20px; /* Reducido */
 }
 
 .skills-container h3 {
@@ -1359,6 +1365,14 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         gap: 15px; /* Menos espacio entre habilidades */
     }
 }
+
+/* Media Query para pantallas de baja altura */
+@media (max-height: 700px) {
+    #about-modal .modal-content {
+        font-size: 14px; /* Reducimos la fuente base para que todo quepa */
+    }
+}
+
 
 @keyframes toast-fade-in-out {
     0%, 100% { opacity: 0; transform: translateY(20px); }
