@@ -1376,22 +1376,31 @@ document.addEventListener('DOMContentLoaded', () => {
             templateContainer.appendChild(btn);
         });
 
-        // --- MEJORA UX/UI: Crear notas de paleta con efecto abanico ---
-        const totalColors = noteColors.length;
-        const angleSpread = 40; // Grados totales del abanico
-        const ySpread = 150; // Píxeles de separación vertical
+        // --- MEJORA UX/UI: Paleta de notas apiladas y con scroll ---
+        const paletteScrollContainer = document.querySelector("#palette-scroll-container");
+        // Usamos la paleta extendida para que el scroll tenga sentido
+        let extendedColors = [
+            '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCDD2', '#F8BBD0', '#E1BEE7', 
+            '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', 
+            '#C8E6C9', '#DCEDC8', '#F0F4C3', '#D7CCC8', '#CFD8DC', '#FFFFFF'
+        ];
+        // Duplicamos la lista para dar la sensación de scroll infinito
+        extendedColors = [...extendedColors, ...extendedColors];
 
-        noteColors.forEach((color, index) => {
+        extendedColors.forEach((color, index) => {
             const paletteNote = document.createElement("div");
             paletteNote.classList.add("palette-note");
             paletteNote.style.backgroundColor = color;
             paletteNote.dataset.color = color;
-            // Calcular la rotación y el desplazamiento para cada nota
-            const rotation = (index / (totalColors - 1) - 0.5) * angleSpread;
-            paletteNote.style.setProperty('--r-offset', `${rotation}deg`);
-            paletteNote.style.setProperty('--y-offset', `${index * (ySpread / totalColors)}px`);
-            palette.appendChild(paletteNote);
+            
+            // Aumentamos el desplazamiento vertical para mayor separación
+            paletteNote.style.top = `${index * 25}px`;
+            // Una rotación sutil y aleatoria para un look más natural
+            paletteNote.style.transform = `rotate(${(Math.random() - 0.5) * 6}deg)`;
+
+            paletteScrollContainer.appendChild(paletteNote);
         });
+
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         addBoardBtn.addEventListener('click', addNewBoard);
         searchInput.addEventListener('input', handleSearch);

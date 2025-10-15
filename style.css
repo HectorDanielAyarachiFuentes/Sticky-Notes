@@ -342,11 +342,11 @@ body {
 #note-palette {
     width: 90px; /* Un poco más estrecho para un look más compacto */
     flex-shrink: 0;
-    padding: 20px 0; /* Quitamos padding horizontal, lo manejamos dentro */
+    padding-top: 20px; /* Solo padding superior */
     background-color: #EAECEE;
     box-shadow: var(--shadow-sm);
     z-index: 100;
-    display: flex;
+    display: flex; /* Cambiado para el nuevo layout */
     flex-direction: column;
     align-items: center; /* Centramos los elementos */
     gap: 20px; /* Aumentamos el espacio */
@@ -354,6 +354,7 @@ body {
     transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     overflow: hidden; /* Evita que las notas se salgan al animarse */
 }
+
 
 /* Cuando el panel está colapsado Y la paleta está fijada, se oculta */
 #board-manager.collapsed ~ #note-palette {
@@ -378,6 +379,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     color: #566573;
     font-weight: 700;
     font-size: 0.9em;
+    text-align: center;
 }
 
 #pin-palette-btn {
@@ -397,6 +399,45 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .pin-icon {
     width: 20px;
     height: 20px;
+}
+
+/* --- NUEVO: Contenedor con scroll para las notas de la paleta --- */
+#palette-scroll-container {
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    width: 100%;
+    position: relative; /* Para posicionar las notas dentro */
+    overflow-y: auto; /* Habilita el scroll vertical */
+    padding: 20px 0; /* Más padding para el efecto de desvanecimiento */
+    /* --- NUEVO: Máscara para el efecto de scroll infinito --- */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+/* Ocultar la barra de scroll por defecto */
+#palette-scroll-container::-webkit-scrollbar { display: none; }
+#palette-scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- NUEVO: Indicador de scroll --- */
+.scroll-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2em;
+    color: #999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none; /* No interfiere con el drag & drop */
+    animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
+    40% { transform: translate(-50%, -5px); }
+    60% { transform: translate(-50%, 5px); }
+}
+
+#note-palette:hover .scroll-indicator {
+    opacity: 1;
 }
 
 /* --- TABLERO PRINCIPAL --- */
@@ -466,41 +507,27 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     z-index: 999;
 }
 
-
 /* --- NOTAS DE PLANTILLA EN LA PALETA --- */
 .palette-note {
-    width: 55px; /* Ligeramente más pequeño */
-    height: 55px;
+    width: 60px;
+    height: 60px;
     border-radius: 4px;
     box-shadow: var(--shadow-sm);
     cursor: grab;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    position: absolute; /* Clave para el efecto de apilado */
-    transform-origin: bottom center; /* La rotación y escala será desde la base */
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    position: absolute; /* Posicionadas absolutamente dentro del contenedor de scroll */
+    left: 50%;
+    margin-left: -30px; /* Centrado horizontal */
     border: 1px solid rgba(0,0,0,0.1);
 }
 
-/* Efecto de esquina doblada */
-.palette-note {
-    position: relative; /* Necesario para el pseudo-elemento */
-}
-.palette-note::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 0 15px 15px; /* Triángulo */
-    border-color: transparent transparent #dcdcdc transparent; /* Color de la esquina */
-    transition: border-width 0.2s ease;
-}
-
-/* Animación de abanico al pasar el ratón */
-#note-palette:hover .palette-note {
-    transform: translateY(var(--y-offset)) rotate(var(--r-offset)) scale(1.05);
+.palette-note:hover {
+    transform: scale(1.1) !important; /* !important para sobreescribir la rotación inicial */
     box-shadow: var(--shadow-md);
+    z-index: 10; /* Se pone por encima de las demás al hacer hover */
+}
+.palette-note:active {
+    cursor: grabbing;
 }
 
 /* --- NOTAS ADHESIVAS EN EL TABLERO --- */
