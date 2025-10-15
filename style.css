@@ -450,6 +450,26 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     pointer-events: none; /* No interfiere con el drag & drop */
     z-index: 5; /* Asegura que esté sobre las notas de la paleta */
 }
+/* --- NUEVO: Animación de rebote para la flecha --- */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0) translateX(-50%);
+    }
+    50% {
+        transform: translateY(8px) translateX(-50%); /* Baja un poco más para un rebote más notorio */
+    }
+}
+
+/* --- NUEVO: Animación de rebote para la flecha de arriba --- */
+@keyframes bounce-up {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0) translateX(-50%);
+    }
+    50% {
+        transform: translateY(-8px) translateX(-50%);
+    }
+}
+
 
 .scroll-indicator img {
     width: 32px; /* Ajusta el tamaño del SVG según necesites */
@@ -475,12 +495,23 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     opacity: 0.6;
 }
 
-#note-palette:hover .scroll-indicator-up {
-    opacity: 1;
+/* La visibilidad ahora se controla desde JS, no con hover */
+/* #note-palette:hover .scroll-indicator-up { opacity: 1; } */
+
+
+/* Se activa la animación al pasar el ratón sobre la paleta (antiguo) */
+/* #note-palette:hover .scroll-indicator {
+    animation: bounce 2s infinite;
+} */
+
+/* NUEVO: La animación se activa con una clase desde JS al hacer scroll */
+.scroll-indicator.scrolling-down {
+    animation: bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Curva de rebote suave */
 }
 
-#note-palette:hover .scroll-indicator {
-    opacity: 1;
+/* NUEVO: La animación para la flecha de arriba se activa con JS */
+.scroll-indicator-up.scrolling-up {
+    animation: bounce-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Misma curva para consistencia */
 }
 
 /* --- TABLERO PRINCIPAL --- */

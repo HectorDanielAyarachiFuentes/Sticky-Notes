@@ -1612,6 +1612,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const scrollIndicatorUp = paletteScrollContainer.previousElementSibling;
         const scrollIndicator = paletteScrollContainer.nextElementSibling;
         
+        let lastScrollTop = 0; // Para detectar la dirección del scroll
+
         // 1. Generar una paleta de colores rica con matices
         const rainbowColors = [
             '#ff7979', // Rojo pastel
@@ -1654,11 +1656,29 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Lógica para el scroll circular
         paletteScrollContainer.addEventListener('scroll', () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
+
+            // --- NUEVO: Lógica para detectar dirección y animar la flecha ---
+            if (scrollTop > lastScrollTop && scrollTop > 0) {
+                // Scroll hacia abajo
+                scrollIndicator.classList.add('scrolling-down');
+                // Quitar la clase después de la animación para poder volver a activarla
+                setTimeout(() => scrollIndicator.classList.remove('scrolling-down'), 500);
+            } else if (scrollTop < lastScrollTop) {
+                // Scroll hacia arriba
+                scrollIndicatorUp.classList.add('scrolling-up');
+                // Quitar la clase después de la animación
+                setTimeout(() => scrollIndicatorUp.classList.remove('scrolling-up'), 500);
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Para manejar el rebote en iOS/Mac
+            // --- FIN NUEVO ---
+
             const scrollContentHeight = scrollHeight / 4; // Altura de un bloque de colores
             updateScrollIndicator();
+
             // Si el scroll se acerca al final, lo movemos al bloque anterior
             if (scrollTop + clientHeight >= scrollContentHeight * 3) {
                 paletteScrollContainer.scrollTop -= scrollContentHeight;
+                lastScrollTop = paletteScrollContainer.scrollTop; // Actualizar después del salto
             } // Si el scroll se acerca al principio, lo movemos al bloque siguiente
             else if (scrollTop <= scrollContentHeight) {
                 paletteScrollContainer.scrollTop += scrollContentHeight;
