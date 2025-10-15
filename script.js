@@ -51,19 +51,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const aboutModal = document.querySelector("#about-modal");
     const closeAboutModalBtn = aboutModal.querySelector(".modal-close-btn");
     const aboutModalAudio = document.querySelector("#about-modal-audio");
-    const audioVisualizer = document.querySelector("#audio-visualizer");
+    const audioVisualizerCanvas = document.querySelector("#audio-visualizer");
 
-    // --- NUEVO: Configuración de Web Audio API ---
+    // --- Configuración de Web Audio API para el modal "Sobre Mí" ---
     let audioContext;
     let analyser;
     let source;
     let dataArray;
-    let flares;
-    let lastFlareTime = 0;
-    let flareCooldown = 30; // ms. ¡Aún menos espera para una ráfaga de rayos!
-    let currentFlareIndex = 0;
+    let particles = [];
+    const PARTICLE_COUNT = 128; // Número de partículas en el anillo
+    let canvasCtx;
+    let isVisualizerActive = false;
 
-    // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
+
+        // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
 
     /**
      * Convierte un color HEX a HSL.
@@ -1443,73 +1444,99 @@ document.addEventListener('DOMContentLoaded', () => {
         closePopoverBtn.addEventListener('click', hideColorPopover);
     }
 
-    // --- NUEVO: Lógica del visualizador de audio ---
+    // --- Lógica del visualizador de audio con Canvas (Modal "Sobre Mí") ---
     function setupAudioVisualizer() {
         if (audioContext) return; // Evitar inicializar múltiples veces
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         source = audioContext.createMediaElementSource(aboutModalAudio);
+        canvasCtx = audioVisualizerCanvas.getContext('2d');
 
         source.connect(analyser);
         analyser.connect(audioContext.destination);
 
-        analyser.fftSize = 64; // Tamaño pequeño para un análisis más general (menos detalle)
+        analyser.fftSize = 256;
         const bufferLength = analyser.frequencyBinCount;
         dataArray = new Uint8Array(bufferLength);
 
-        // Capturar los elementos de destello
-        flares = audioVisualizer.querySelectorAll('.flare-wrapper');
-    }
-
-    function drawVisualizer() {
-        if (aboutModal.classList.contains('hidden')) {
-            return; // Detener si el modal está cerrado
+        // Inicializar partículas
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const angle = (i / PARTICLE_COUNT) * Math.PI * 2;
+            particles.push({
+                angle,
+                radius: 80, // Radio base del anillo
+                energy: 0,
+                color: `hsl(${i / PARTICLE_COUNT * 360}, 100%, 70%)`
+            });
         }
 
-        requestAnimationFrame(drawVisualizer);
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+    }
+
+    function resizeCanvas() {
+        const container = audioVisualizerCanvas.parentElement;
+        if (!container) return;
+        const size = Math.min(container.clientWidth, container.clientHeight);
+        audioVisualizerCanvas.width = size;
+        audioVisualizerCanvas.height = size;
+    }
+
+    function animateVisualizer() {
+        if (!isVisualizerActive) return;
+
+        requestAnimationFrame(animateVisualizer);
 
         analyser.getByteFrequencyData(dataArray);
 
-        // Calcular un promedio de la energía de las frecuencias bajas (graves y medios-bajos)
-        let sum = 0;
-        for (let i = 0; i < 8; i++) { // Nos enfocamos en las primeras 8 bandas de frecuencia
-            sum += dataArray[i];
-        }
-        let average = sum / 8;
+        canvasCtx.clearRect(0, 0, audioVisualizerCanvas.width, audioVisualizerCanvas.height);
+        const centerX = audioVisualizerCanvas.width / 2;
+        const centerY = audioVisualizerCanvas.height / 2;
 
-        const now = Date.now();
-        // Si hay un "pico" en la música y ha pasado el tiempo de enfriamiento
-        if (average > 130 && now - lastFlareTime > flareCooldown) { // Umbral más bajo para más disparos
-            lastFlareTime = now;
+        particles.forEach((p, i) => {
+            // Mapear la frecuencia a la partícula
+            const dataIndex = Math.floor(i * (dataArray.length / PARTICLE_COUNT));
+            const dataValue = dataArray[dataIndex];
 
-            const flareWrapper = flares[currentFlareIndex];
-            if (flareWrapper) {
-                // Asignar una rotación aleatoria y disparar la animación
-                flareWrapper.style.transform = `rotate(${Math.random() * 360}deg)`;
-                flareWrapper.classList.add('animate');
-                flareWrapper.addEventListener('animationend', () => flareWrapper.classList.remove('animate'), { once: true });
-                currentFlareIndex = (currentFlareIndex + 1) % flares.length; // Pasar al siguiente destello
-            }
-        }
+            // La energía de la partícula decae suavemente
+            p.energy = Math.max(dataValue / 4, p.energy * 0.92);
+
+            const displayRadius = p.radius + p.energy;
+            const x = centerX + Math.cos(p.angle) * displayRadius;
+            const y = centerY + Math.sin(p.angle) * displayRadius;
+
+            // Dibujar la partícula
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 2, 0, Math.PI * 2);
+            canvasCtx.fillStyle = p.color;
+            canvasCtx.globalAlpha = Math.min(1, p.energy / 30); // La opacidad depende de la energía
+            canvasCtx.fill();
+        });
+
+        canvasCtx.globalAlpha = 1; // Restaurar opacidad global
     }
 
     // --- LÓGICA DEL MODAL "SOBRE MÍ" ---
     function initializeAboutModal() {
         aboutBtn.addEventListener('click', () => {
             // Mostrar modal y reproducir música
-            setupAudioVisualizer(); // Asegurarse de que el audio context esté listo
+            if (!audioContext) {
+                setupAudioVisualizer(); // Asegurarse de que el audio context esté listo
+            }
             aboutModal.classList.remove('hidden');
+            isVisualizerActive = true;
             aboutModalAudio.play().catch(error => {
                 // Los navegadores pueden bloquear el autoplay si no hay interacción previa.
                 // Esto evita un error en la consola en esos casos.
                 console.log("La reproducción automática fue bloqueada por el navegador.");
             });
-            drawVisualizer(); // Iniciar la animación del visualizador
+            animateVisualizer(); // Iniciar la animación del visualizador
         });
 
         const closeModal = () => {
             aboutModal.classList.add('hidden');
+            isVisualizerActive = false;
             aboutModalAudio.pause(); // Pausar la música
             aboutModalAudio.currentTime = 0; // Reiniciar para la próxima vez
         };

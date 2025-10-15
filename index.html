@@ -177,49 +177,30 @@
 <div id="about-modal" class="modal-overlay hidden">
     <div class="modal-content">
         <audio id="about-modal-audio" src="musica/dulcehermosa.mp3" loop></audio>
-        <div class="dancing-notes-container">
-            <div class="dancing-note note-1"></div>
-            <div class="dancing-note note-2"></div>
-            <div class="dancing-note note-3"></div>
-        </div>
         <button class="modal-close-btn">&times;</button>
-        <h2>Sobre la Aplicación</h2>
-        <div class="about-image-container">
-            <img src="img-about/dulceflamengo.png" alt="Mascota de la aplicación" class="about-modal-img">
-            <div id="audio-visualizer">
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <!-- Más rayos para un efecto más intenso -->
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper"><div class="flare"></div></div>
-                <div class="flare-wrapper">
-                    <div class="flare"></div>
+        <div class="modal-header">
+            <div class="about-image-container">
+                <canvas id="audio-visualizer"></canvas>
+                <img src="img-about/dulceflamengo.png" alt="Mascota de la aplicación" class="about-modal-img">
+            </div>
+            <h2 class="modal-title">Héctor Daniel Ayarachi Fuentes</h2>
+            <p class="modal-subtitle">Desarrollador Front-End</p>
+        </div>
+        <div class="modal-body">
+            <p><strong>Sticky Notes v1.0</strong> es un proyecto personal creado para demostrar y practicar mis habilidades en desarrollo web.</p>
+            <div class="skills-container">
+                <h3>Tecnologías Utilizadas</h3>
+                <div class="skills-list">
+                    <div class="skill-item"><img src="svg/html5.svg" alt="HTML5"><span>HTML5</span></div>
+                    <div class="skill-item"><img src="svg/css3.svg" alt="CSS3"><span>CSS3</span></div>
+                    <div class="skill-item"><img src="svg/js.svg" alt="JavaScript"><span>JavaScript</span></div>
                 </div>
             </div>
         </div>
-        <p><strong>Sticky Notes v1.0</strong></p>
-        <p>Hola, soy Héctor Daniel Ayarachi Fuentes, el desarrollador de esta aplicación de notas adhesivas.</p>
-        <p>Este proyecto fue creado con HTML, CSS y JavaScript puro, como una forma de practicar y demostrar mis habilidades en desarrollo web front-end.</p>
-        <p>Puedes encontrar más de mis proyectos en mi <a href="https://github.com/HectorDanielAyarachiFuentes" target="_blank" rel="noopener noreferrer">perfil de GitHub</a>.</p>
+        <div class="modal-footer">
+            <p>Encuentra más de mis proyectos en</p>
+            <a href="https://github.com/HectorDanielAyarachiFuentes" class="github-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
     </div>
 </div>
 

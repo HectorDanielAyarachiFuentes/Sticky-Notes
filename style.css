@@ -1086,94 +1086,187 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transform: scale(0.9);
 }
 
-/* --- NUEVO: Contenedor para la imagen y el visualizador --- */
-.about-image-container {
+/* --- ESTILOS DEL MODAL "SOBRE MÍ" (REDiseñado) --- */
+.modal-content {
+    background: linear-gradient(145deg, #fdf8e1, #f9f2d0);
+    padding: 0; /* Quitamos el padding para un control total */
+    border-radius: 16px;
+    max-width: 420px;
+    text-align: center;
+    overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
+    font-family: 'Nunito', sans-serif; /* Usamos una fuente más suave */
+}
+
+.modal-overlay.hidden .modal-content {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+}
+
+.modal-header {
+    background-color: rgba(75, 75, 75, 0.05);
+    padding: 30px 20px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.modal-body {
+    padding: 25px 35px;
+}
+
+.modal-footer {
+    padding: 20px 35px;
+    background-color: rgba(75, 75, 75, 0.03);
+    font-size: 0.9em;
+}
+
+.modal-footer p {
+    margin: 0 0 8px 0;
+    color: #777;
+}
+
+.github-link {
+    display: inline-block;
+    background-color: var(--sidebar-bg);
+    color: white;
+    padding: 10px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.github-link:hover {
+    background-color: var(--rojo-circo);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.about-image-container { /* Ahora es el contenedor del canvas y la imagen */
     position: relative;
-    width: 150px; /* Igual al ancho de la imagen */
-    height: 150px; /* Igual al alto de la imagen */
+    width: 160px;
+    height: 160px;
     margin: 20px auto;
 }
 
 .about-modal-img {
     display: block;
-    width: 150px;
-    height: 150px;
-    /* El margen ahora lo controla el contenedor */
+    width: 140px;
+    height: 140px;
     margin: 0;
-    border-radius: 50%; /* ¡La hacemos circular! */
-    object-fit: cover; /* Asegura que la imagen cubra el círculo sin deformarse */
-    border: 4px solid white;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid white;
     box-shadow: var(--shadow-md);
-    position: relative; /* Para que esté por encima del visualizador */
-    z-index: 2;
-}
-
-/* --- NUEVO: Estilo para el visualizador de audio --- */
-#audio-visualizer {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 1px; /* Solo es un punto de anclaje */
-    height: 1px;
     transform: translate(-50%, -50%);
-    z-index: 1; /* Detrás de la imagen */
-    pointer-events: none;
+    z-index: 2;
 }
 
-.flare-wrapper {
+/* --- NUEVO: Visualizador de audio con Canvas --- */
+#audio-visualizer { /* Ahora es un canvas */
     position: absolute;
     top: 0; left: 0;
-    width: 100%; height: 100%;
-    /* La rotación se aplica aquí */
+    width: 100%;
+    height: 100%;
+    z-index: 1;
 }
 
-.flare {
-    /* --- NUEVO: Forma de rayo --- */
-    position: absolute;
-    left: 80px; /* Empieza justo fuera del círculo de la imagen (radio 75px) */
-    top: 50%;
-    transform: translateY(-50%); /* Centra verticalmente el rayo */
-    width: 150px; /* Largo del rayo */
-    height: 14px;  /* ¡Más cuerpo para el rayo! */
-    border-radius: 0 7px 7px 0; /* Redondeamos la punta del rayo */
-    /* --- MEJORADO: Gradiente de arcoíris más completo y vibrante --- */
-    background: linear-gradient(to right, hsla(0, 100%, 70%, 0.8), hsla(30, 100%, 70%, 0.7), hsla(60, 100%, 70%, 0.6), hsla(120, 100%, 70%, 0.5), hsla(240, 100%, 70%, 0.4), hsla(300, 100%, 70%, 0.3), transparent 80%);
-    opacity: 0;
-    /* --- NUEVO: Forma de rayo de sol (trapezoide) --- */
-    clip-path: polygon(0% 0%, 100% 30%, 100% 70%, 0% 100%);
-    /* La animación ahora controla posición y opacidad */
-}
-
-.flare-wrapper.animate .flare {
-    animation: flare-out 0.8s ease-out forwards;
-}
-
-@keyframes flare-out {
-    0% {
-        opacity: 1;
-        transform: translateY(-50%) scale(0.6); /* Empieza más pequeño en general */
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-50%) translateX(40px) scale(1.1); /* Se mueve hacia afuera y se desvanece */
-    }
-}
-
-.modal-content h2 {
+.modal-title {
     margin-top: 0;
+    margin-bottom: 5px;
     color: var(--rojo-circo);
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.8em;
 }
+
+.modal-subtitle {
+    margin: 0;
+    font-size: 1.1em;
+    color: #666;
+    font-weight: normal;
+}
+
+.modal-body p {
+    color: #555;
+    line-height: 1.6;
+}
+
+.skills-container {
+    margin-top: 25px;
+}
+
+.skills-container h3 {
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.1em;
+    color: var(--texto-principal);
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.skills-list {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.skill-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(15px);
+    /* La animación se aplicará con JS */
+}
+
+.modal-overlay:not(.hidden) .skill-item {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Animación escalonada para los items de habilidad */
+.modal-overlay:not(.hidden) .skill-item:nth-child(1) { animation-delay: 0.3s; }
+.modal-overlay:not(.hidden) .skill-item:nth-child(2) { animation-delay: 0.4s; }
+.modal-overlay:not(.hidden) .skill-item:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.skill-item img {
+    width: 48px;
+    height: 48px;
+    filter: grayscale(30%);
+    transition: all 0.3s ease;
+}
+
+.skill-item:hover img {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+.skill-item span {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #666;
+}
+
 .modal-close-btn {
     position: absolute;
     top: 10px;
     right: 15px;
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: bold;
-    color: #aaa;
+    color: #bbb;
     cursor: pointer;
     transition: color 0.2s ease;
+    z-index: 10;
 }
 .modal-close-btn:hover {
     color: var(--texto-principal);
