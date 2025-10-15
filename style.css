@@ -440,7 +440,6 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .pin-icon {
     width: 20px;
     height: 20px;
-    filter: invert(35%) sepia(11%) saturate(581%) hue-rotate(165deg) brightness(95%) contrast(88%);
 }
 
 /* --- NUEVO: Contenedor con scroll para las notas de la paleta --- */
