@@ -1450,7 +1450,9 @@ document.addEventListener('DOMContentLoaded', () => {
             '#badc58', // Verde lima
             '#7ed6df', // Turquesa
             '#54a0ff', // Azul cielo
-            '#be2edd'  // Violeta
+            '#be2edd', // Violeta
+            '#FFFFFF', // Blanco (generará grises claros)
+            '#808080'  // Gris (generará grises oscuros y negro)
         ];
         
         const fullPalette = [];
