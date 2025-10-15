@@ -1415,9 +1415,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
             if (noteElement) {
                 noteElement.style.backgroundColor = color;
-                // --- MEJORA DE CONTRASTE ---
-                // Actualizar la clase de tema claro/oscuro también en la previsualización
-                noteElement.classList.toggle('dark-theme', isColorDark(color));
+                // MEJORA DE CONTRASTE: Actualizar la clase de tema claro/oscuro también en la previsualización
+                noteElement.classList.toggle('dark-theme', isColorDark(color)); // Esta línea ya estaba, la muevo para agrupar.
             }
         };
 
