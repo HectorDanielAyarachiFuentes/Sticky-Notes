@@ -1085,15 +1085,78 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .modal-overlay.hidden .modal-content {
     transform: scale(0.9);
 }
+
+/* --- NUEVO: Contenedor para la imagen y el visualizador --- */
+.about-image-container {
+    position: relative;
+    width: 150px; /* Igual al ancho de la imagen */
+    height: 150px; /* Igual al alto de la imagen */
+    margin: 20px auto;
+}
+
 .about-modal-img {
     display: block;
     width: 150px;
     height: 150px;
-    margin: 20px auto; /* Centrar la imagen y darle espacio */
+    /* El margen ahora lo controla el contenedor */
+    margin: 0;
     border-radius: 50%; /* ¡La hacemos circular! */
     object-fit: cover; /* Asegura que la imagen cubra el círculo sin deformarse */
     border: 4px solid white;
     box-shadow: var(--shadow-md);
+    position: relative; /* Para que esté por encima del visualizador */
+    z-index: 2;
+}
+
+/* --- NUEVO: Estilo para el visualizador de audio --- */
+#audio-visualizer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px; /* Solo es un punto de anclaje */
+    height: 1px;
+    transform: translate(-50%, -50%);
+    z-index: 1; /* Detrás de la imagen */
+    pointer-events: none;
+}
+
+.flare-wrapper {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    /* La rotación se aplica aquí */
+}
+
+.flare {
+    /* --- NUEVO: Forma de rayo --- */
+    position: absolute;
+    left: 80px; /* Empieza justo fuera del círculo de la imagen (radio 75px) */
+    top: 50%;
+    transform: translateY(-50%); /* Centra verticalmente el rayo */
+    width: 150px; /* Largo del rayo */
+    height: 14px;  /* ¡Más cuerpo para el rayo! */
+    border-radius: 0 7px 7px 0; /* Redondeamos la punta del rayo */
+    /* --- MEJORADO: Gradiente de arcoíris más completo y vibrante --- */
+    background: linear-gradient(to right, hsla(0, 100%, 70%, 0.8), hsla(30, 100%, 70%, 0.7), hsla(60, 100%, 70%, 0.6), hsla(120, 100%, 70%, 0.5), hsla(240, 100%, 70%, 0.4), hsla(300, 100%, 70%, 0.3), transparent 80%);
+    opacity: 0;
+    /* --- NUEVO: Forma de rayo de sol (trapezoide) --- */
+    clip-path: polygon(0% 0%, 100% 30%, 100% 70%, 0% 100%);
+    /* La animación ahora controla posición y opacidad */
+}
+
+.flare-wrapper.animate .flare {
+    animation: flare-out 0.8s ease-out forwards;
+}
+
+@keyframes flare-out {
+    0% {
+        opacity: 1;
+        transform: translateY(-50%) scale(0.6); /* Empieza más pequeño en general */
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50%) translateX(40px) scale(1.1); /* Se mueve hacia afuera y se desvanece */
+    }
 }
 
 .modal-content h2 {

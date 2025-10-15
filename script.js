@@ -50,6 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const aboutBtn = document.querySelector("#about-btn");
     const aboutModal = document.querySelector("#about-modal");
     const closeAboutModalBtn = aboutModal.querySelector(".modal-close-btn");
+    const aboutModalAudio = document.querySelector("#about-modal-audio");
+    const audioVisualizer = document.querySelector("#audio-visualizer");
+
+    // --- NUEVO: Configuración de Web Audio API ---
+    let audioContext;
+    let analyser;
+    let source;
+    let dataArray;
+    let flares;
+    let lastFlareTime = 0;
+    let flareCooldown = 30; // ms. ¡Aún menos espera para una ráfaga de rayos!
+    let currentFlareIndex = 0;
 
     // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
 
@@ -1431,13 +1443,76 @@ document.addEventListener('DOMContentLoaded', () => {
         closePopoverBtn.addEventListener('click', hideColorPopover);
     }
 
+    // --- NUEVO: Lógica del visualizador de audio ---
+    function setupAudioVisualizer() {
+        if (audioContext) return; // Evitar inicializar múltiples veces
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        source = audioContext.createMediaElementSource(aboutModalAudio);
+
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        analyser.fftSize = 64; // Tamaño pequeño para un análisis más general (menos detalle)
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+
+        // Capturar los elementos de destello
+        flares = audioVisualizer.querySelectorAll('.flare-wrapper');
+    }
+
+    function drawVisualizer() {
+        if (aboutModal.classList.contains('hidden')) {
+            return; // Detener si el modal está cerrado
+        }
+
+        requestAnimationFrame(drawVisualizer);
+
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calcular un promedio de la energía de las frecuencias bajas (graves y medios-bajos)
+        let sum = 0;
+        for (let i = 0; i < 8; i++) { // Nos enfocamos en las primeras 8 bandas de frecuencia
+            sum += dataArray[i];
+        }
+        let average = sum / 8;
+
+        const now = Date.now();
+        // Si hay un "pico" en la música y ha pasado el tiempo de enfriamiento
+        if (average > 130 && now - lastFlareTime > flareCooldown) { // Umbral más bajo para más disparos
+            lastFlareTime = now;
+
+            const flareWrapper = flares[currentFlareIndex];
+            if (flareWrapper) {
+                // Asignar una rotación aleatoria y disparar la animación
+                flareWrapper.style.transform = `rotate(${Math.random() * 360}deg)`;
+                flareWrapper.classList.add('animate');
+                flareWrapper.addEventListener('animationend', () => flareWrapper.classList.remove('animate'), { once: true });
+                currentFlareIndex = (currentFlareIndex + 1) % flares.length; // Pasar al siguiente destello
+            }
+        }
+    }
+
     // --- LÓGICA DEL MODAL "SOBRE MÍ" ---
     function initializeAboutModal() {
         aboutBtn.addEventListener('click', () => {
+            // Mostrar modal y reproducir música
+            setupAudioVisualizer(); // Asegurarse de que el audio context esté listo
             aboutModal.classList.remove('hidden');
+            aboutModalAudio.play().catch(error => {
+                // Los navegadores pueden bloquear el autoplay si no hay interacción previa.
+                // Esto evita un error en la consola en esos casos.
+                console.log("La reproducción automática fue bloqueada por el navegador.");
+            });
+            drawVisualizer(); // Iniciar la animación del visualizador
         });
 
-        const closeModal = () => aboutModal.classList.add('hidden');
+        const closeModal = () => {
+            aboutModal.classList.add('hidden');
+            aboutModalAudio.pause(); // Pausar la música
+            aboutModalAudio.currentTime = 0; // Reiniciar para la próxima vez
+        };
 
         closeAboutModalBtn.addEventListener('click', closeModal);
         // Cerrar también si se hace clic en el fondo oscuro
