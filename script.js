@@ -447,6 +447,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 zIndex: ++maxZIndex,
                 locked: false,
                 rotation: note.rotation !== undefined ? note.rotation : (Math.random() - 0.5) * 4,
+                // Convertir la estructura de la plantilla a la nueva estructura de pestañas
+                tabs: Array(5).fill(null).map((_, tabIndex) => ({
+                    title: tabIndex === 0 ? (note.title || '') : '',
+                    content: tabIndex === 0 ? (note.content || '') : ''
+                })),
+                activeTab: 0,
+                // Eliminar propiedades antiguas para evitar confusiones
+                ...('title' in note && { title: undefined }),
+                ...('content' in note && { content: undefined }),
             }));
 
             appState.boards[newBoardId] = {
