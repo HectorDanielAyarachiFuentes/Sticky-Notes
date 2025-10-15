@@ -397,6 +397,20 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     box-sizing: border-box;
 }
 
+.palette-title-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.palette-create-icon {
+    width: 30px;
+    height: 30px;
+    /* Filtro para cambiar el color del SVG a uno más acorde con la paleta */
+    filter: invert(38%) sepia(11%) saturate(597%) hue-rotate(162deg) brightness(94%) contrast(88%);
+    opacity: 0.7;
+}
+
 .palette-header span {
     margin: 0;
     color: #566573;
@@ -408,20 +422,22 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 #pin-palette-btn {
     background: none;
     border: none;
+    border-radius: 6px;
     cursor: pointer;
     opacity: 0.5;
-    transition: opacity 0.2s, color 0.2s, transform 0.3s ease;
-    padding: 0;
+    transition: all 0.3s ease;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-#pin-palette-btn:hover { opacity: 1; }
-#pin-palette-btn.active { opacity: 1; color: var(--rojo-circo); transform: rotate(45deg); }
+#pin-palette-btn:hover { opacity: 1; background-color: #D5D8DC; }
+#pin-palette-btn.active { opacity: 1; color: var(--rojo-circo); background-color: #D5D8DC; transform: rotate(45deg); }
 
 .pin-icon {
     width: 20px;
     height: 20px;
+    color: #566573;
 }
 
 /* --- NUEVO: Contenedor con scroll para las notas de la paleta --- */
