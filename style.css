@@ -124,11 +124,26 @@ body {
 #board-manager li:hover { background-color: var(--sidebar-hover); }
 #board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
 
-.board-name-text {
+.board-item-main {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Para que el ellipsis funcione */
+}
+
+.board-name-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: bold;
+}
+
+.board-creation-date {
+    font-size: 0.75em;
+    opacity: 0.7;
+    margin-top: 4px;
+    white-space: nowrap;
+    color: var(--text-light);
 }
 
 .board-item-buttons {

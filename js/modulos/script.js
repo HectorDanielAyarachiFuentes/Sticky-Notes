@@ -315,11 +315,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             const li = document.createElement('li');
             li.dataset.boardId = boardData.id;
     
-            const nameSpan = document.createElement('span');
+            const mainInfo = document.createElement('div');
+            mainInfo.className = 'board-item-main';
+            mainInfo.addEventListener('click', () => switchBoard(boardData.id));
+
+            const nameSpan = document.createElement('div');
             nameSpan.className = 'board-name-text';
             nameSpan.textContent = boardData.name;
-            // El clic en el nombre cambia de tablero
-            nameSpan.addEventListener('click', () => switchBoard(boardData.id));
+
+            const dateSpan = document.createElement('div');
+            dateSpan.className = 'board-creation-date';
+            if (boardData.createdAt) {
+                const date = new Date(boardData.createdAt);
+                dateSpan.textContent = date.toLocaleString(undefined, {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                dateSpan.title = `Creado el ${date.toLocaleDateString()} a las ${date.toLocaleTimeString()}`;
+            }
+
+            mainInfo.appendChild(nameSpan);
+            mainInfo.appendChild(dateSpan);
     
             const buttonsContainer = document.createElement('div');
             buttonsContainer.className = 'board-item-buttons';
@@ -345,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             buttonsContainer.appendChild(editBtn);
             buttonsContainer.appendChild(deleteBtn);
     
-            li.appendChild(nameSpan);
+            li.appendChild(mainInfo);
             li.appendChild(buttonsContainer);
     
             if (boardData.id === appState.activeBoardId) {
@@ -521,6 +537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 id: newBoardId,
                 name: boardName,
                 notes: [],
+                createdAt: Date.now(),
                 connections: [],
                 background: null, // Fondo por defecto para nuevos tableros
                 backgroundApplyTo: { board: true, notes: false } // ¡CORRECCIÓN!
@@ -539,6 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             id: newBoardId,
             name: "Tablero de Respaldo",
             notes: [],
+            createdAt: Date.now(),
             connections: [],
             background: null,
             backgroundApplyTo: { board: true, notes: false }
@@ -618,6 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             appState.boards[newBoardId] = {
                 id: newBoardId,
                 name: boardName,
+                createdAt: Date.now(),
                 notes: newNotes,
                 connections: [], // Las plantillas aún no definen conexiones
                 background: null,
