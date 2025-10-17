@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const { initializePanning } = await import('./moverfondo.js');
+    const { initializeAboutModalFeature } = await import('./sobremi.js');
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
     const board = document.querySelector("#board");
@@ -52,20 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const aboutModal = document.querySelector("#about-modal");
     const closeAboutModalBtn = aboutModal.querySelector(".modal-close-btn");
     const aboutModalAudio = document.querySelector("#about-modal-audio");
-    const audioVisualizerCanvas = document.querySelector("#audio-visualizer");
-
-    // --- Configuración de Web Audio API para el modal "Sobre Mí" ---
-    let audioContext;
-    let analyser;
-    let source;
-    let dataArray;
-    let particles = [];
-    const PARTICLE_COUNT = 128; // Número de partículas en el anillo
-    let canvasCtx;
-    let isVisualizerActive = false;
-
-
-        // --- FUNCIONES AUXILIARES PARA MANEJO DE COLOR ---
 
     /**
      * Convierte un color HEX a HSL.
@@ -1581,110 +1568,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         closePopoverBtn.addEventListener('click', hideColorPopover);
     }
 
-    // --- Lógica del visualizador de audio con Canvas (Modal "Sobre Mí") ---
-    function setupAudioVisualizer() {
-        if (audioContext) return; // Evitar inicializar múltiples veces
-
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioContext.createAnalyser();
-        source = audioContext.createMediaElementSource(aboutModalAudio);
-        canvasCtx = audioVisualizerCanvas.getContext('2d');
-
-        source.connect(analyser);
-        analyser.connect(audioContext.destination);
-
-        analyser.fftSize = 256;
-        const bufferLength = analyser.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
-
-        // Inicializar partículas
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const angle = (i / PARTICLE_COUNT) * Math.PI * 2;
-            particles.push({
-                angle,
-                radius: 80, // Radio base del anillo
-                energy: 0,
-                color: `hsl(${i / PARTICLE_COUNT * 360}, 100%, 70%)`
-            });
-        }
-
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-    }
-
-    function resizeCanvas() {
-        const container = audioVisualizerCanvas.parentElement;
-        if (!container) return;
-        const size = Math.min(container.clientWidth, container.clientHeight);
-        audioVisualizerCanvas.width = size;
-        audioVisualizerCanvas.height = size;
-    }
-
-    function animateVisualizer() {
-        if (!isVisualizerActive) return;
-
-        requestAnimationFrame(animateVisualizer);
-
-        analyser.getByteFrequencyData(dataArray);
-
-        canvasCtx.clearRect(0, 0, audioVisualizerCanvas.width, audioVisualizerCanvas.height);
-        const centerX = audioVisualizerCanvas.width / 2;
-        const centerY = audioVisualizerCanvas.height / 2;
-
-        particles.forEach((p, i) => {
-            // Mapear la frecuencia a la partícula
-            const dataIndex = Math.floor(i * (dataArray.length / PARTICLE_COUNT));
-            const dataValue = dataArray[dataIndex];
-
-            // La energía de la partícula decae suavemente
-            p.energy = Math.max(dataValue / 4, p.energy * 0.92);
-
-            const displayRadius = p.radius + p.energy;
-            const x = centerX + Math.cos(p.angle) * displayRadius;
-            const y = centerY + Math.sin(p.angle) * displayRadius;
-
-            // Dibujar la partícula
-            canvasCtx.beginPath();
-            canvasCtx.arc(x, y, 2, 0, Math.PI * 2);
-            canvasCtx.fillStyle = p.color;
-            canvasCtx.globalAlpha = Math.min(1, p.energy / 30); // La opacidad depende de la energía
-            canvasCtx.fill();
-        });
-
-        canvasCtx.globalAlpha = 1; // Restaurar opacidad global
-    }
-
-    // --- LÓGICA DEL MODAL "SOBRE MÍ" ---
-    function initializeAboutModal() {
-        aboutBtn.addEventListener('click', () => {
-            // Mostrar modal y reproducir música
-            if (!audioContext) {
-                setupAudioVisualizer(); // Asegurarse de que el audio context esté listo
-            }
-            aboutModal.classList.remove('hidden');
-            isVisualizerActive = true;
-            aboutModalAudio.play().catch(error => {
-                // Los navegadores pueden bloquear el autoplay si no hay interacción previa.
-                // Esto evita un error en la consola en esos casos.
-                console.log("La reproducción automática fue bloqueada por el navegador.");
-            });
-            animateVisualizer(); // Iniciar la animación del visualizador
-        });
-
-        const closeModal = () => {
-            aboutModal.classList.add('hidden');
-            isVisualizerActive = false;
-            aboutModalAudio.pause(); // Pausar la música
-            aboutModalAudio.currentTime = 0; // Reiniciar para la próxima vez
-        };
-
-        closeAboutModalBtn.addEventListener('click', closeModal);
-        // Cerrar también si se hace clic en el fondo oscuro
-        aboutModal.addEventListener('click', (e) => {
-            if (e.target === aboutModal) closeModal();
-        });
-    }
-
     // --- INICIALIZACIÓN DE LA APP ---
     function initializeApp() {
         loadState();
@@ -1890,7 +1773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeColorPopover();
         initializeSidebarResizing();
         updatePaletteState();
-        initializeAboutModal();
+        initializeAboutModalFeature();
 
         // Inicializar la nueva funcionalidad de paneo
         initializePanning(boardContainer, board, updateAllLinesPosition);
