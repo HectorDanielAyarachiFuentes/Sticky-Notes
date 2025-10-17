@@ -999,6 +999,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             text-align: center;
             pointer-events: none; /* Para que no interfiera con los clics */
             user-select: none;
+            cursor: default; /* Evita que se muestre el cursor de "grab" */
         }
 
         /* --- Estilos para Leader-Line --- */

@@ -542,21 +542,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function deleteBoard(boardId) {
-        if (Object.keys(appState.boards).length <= 1) {
-            showToast("❌ No puedes eliminar el único tablero que queda.");
-            return;
-        }
-    
         const boardToDelete = appState.boards[boardId];
-        if (confirm(`¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`)) {
+        const isLastBoard = Object.keys(appState.boards).length <= 1;
+    
+        const confirmMessage = isLastBoard ?
+            `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"? El espacio de trabajo quedará vacío hasta que crees un nuevo tablero.` :
+            `¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`;
+    
+        if (confirm(confirmMessage)) {
             // Mover a la papelera de tableros
             appState.boardsTrash.push(boardToDelete);
             delete appState.boards[boardId];
     
             // Si el tablero eliminado era el activo, cambia a otro
             if (appState.activeBoardId === boardId) {
-                const firstBoardId = Object.keys(appState.boards)[0];
-                switchBoard(firstBoardId); // Esto ya guarda el estado
+                if (isLastBoard) {
+                    appState.activeBoardId = null;
+                    saveState();
+                    renderActiveBoard(); // Renderiza el estado vacío
+                } else {
+                    const firstBoardId = Object.keys(appState.boards)[0];
+                    switchBoard(firstBoardId); // Esto ya guarda el estado y renderiza
+                }
             } else {
                 saveState();
             }
