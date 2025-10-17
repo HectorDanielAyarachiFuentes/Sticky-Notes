@@ -1008,6 +1008,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
     }
     
+    /**
+     * Maneja el doble clic en el tablero para crear una nota nueva.
+     * @param {MouseEvent} e - El evento de doble clic.
+     */
+    function handleBoardDoubleClick(e) {
+        // Solo crear la nota si el doble clic es en el fondo del tablero
+        if (e.target !== board && e.target !== boardContainer) {
+            return;
+        }
+
+        board.querySelector('.welcome-message')?.remove();
+        const boardRect = boardContainer.getBoundingClientRect();
+
+        // Calcular la posición teniendo en cuenta el scroll y el zoom
+        const mouseXInBoard = (e.clientX - boardRect.left + boardContainer.scrollLeft) / appState.zoomLevel;
+        const mouseYInBoard = (e.clientY - boardRect.top + boardContainer.scrollTop) / appState.zoomLevel;
+
+        const newNoteData = {
+            id: `note-${Date.now()}`,
+            tabs: Array(5).fill(null).map(() => ({ title: '', content: '' })),
+            activeTab: 0,
+            width: 200, height: 200, color: '#FFF9C4', // Color amarillo por defecto
+            rotation: (Math.random() - 0.5) * 8,
+            locked: false,
+            zIndex: ++maxZIndex,
+            x: mouseXInBoard, // ¡CORRECCIÓN! La esquina superior izquierda en el cursor.
+            y: mouseYInBoard,
+        };
+
+        appState.boards[appState.activeBoardId].notes.push(newNoteData);
+        createStickyNoteElement(newNoteData, true); // Crear con animación
+        saveState();
+        updateBoardSize();
+    }
+
     // --- LÓGICA DEL MENÚ CONTEXTUAL ---
     function handleContextMenu(e) {
         // Primero, verificar si el clic es en una pestaña de nota
@@ -1862,6 +1897,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ¡CORRECCIÓN! Actualizar líneas también con el scroll normal (rueda del ratón, etc.)
         boardContainer.addEventListener('scroll', updateAllLinesPosition);
+
+        // ¡NUEVO! Crear nota con doble clic en el tablero
+        boardContainer.addEventListener('dblclick', handleBoardDoubleClick);
     }
 
     initializeApp();
