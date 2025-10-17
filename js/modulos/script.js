@@ -407,11 +407,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const line = new LeaderLine(startEl, endEl, {
                     ...restOptions,
+                    hide: true, // ¡NUEVO! Crear la línea oculta
                     color: hexToRgba(color, opacity),
                     startSocket: 'auto',
                     endSocket: 'auto'
                 });
                 activeLines.push({ line, from: conn.from, to: conn.to });
+
+                // ¡NUEVO! Mostrar la línea con una animación de dibujado
+                line.show('draw', {
+                    duration: 400,
+                    timing: 'ease-in-out'
+                });
             }
         });
     }
