@@ -681,6 +681,19 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         .stickynote.new-note-animation {
             animation: rebote 0.4s ease-out;
         }
+        
+        /* --- NUEVO: Animación para eliminar nota --- */
+        @keyframes fadeOutAndShrink {
+            to {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+        }
+        .stickynote.deleting {
+            /* forwards mantiene el estado final de la animación */
+            animation: fadeOutAndShrink 0.3s ease-out forwards;
+            pointer-events: none; /* Evita interacciones durante la animación */
+        }
 
         /* Estilo cuando la nota está siendo arrastrada */
         .stickynote.dragging {

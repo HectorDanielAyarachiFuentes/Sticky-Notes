@@ -1284,24 +1284,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function moveNoteToTrash(noteId) {
         const boardId = appState.activeBoardId;
-        const notes = appState.boards[boardId].notes;
-        const noteIndex = notes.findIndex(n => n.id === noteId);
+        const noteElement = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
+        if (!noteElement) return;
 
-        if (noteIndex > -1) {
-            const [noteToTrash] = notes.splice(noteIndex, 1);
-            noteToTrash.originalBoardId = boardId; // Guardar de dónde vino
-            appState.trash.push(noteToTrash);
+        // Añadir clase para la animación de salida
+        noteElement.classList.add('deleting');
 
-            // Eliminar conexiones asociadas
-            appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
-                conn => conn.from !== noteId && conn.to !== noteId
-            );
+        // Esperar a que la animación termine para eliminar la nota lógicamente
+        noteElement.addEventListener('animationend', () => {
+            const notes = appState.boards[boardId].notes;
+            const noteIndex = notes.findIndex(n => n.id === noteId);
 
-            saveState();
-            renderActiveBoard(); // Re-renderizar el tablero actual
-            updateBoardSize(); // Actualizar tamaño por si se eliminó la nota más lejana
-            showToast('Nota movida a la papelera.');
-        }
+            if (noteIndex > -1) {
+                const [noteToTrash] = notes.splice(noteIndex, 1);
+                noteToTrash.originalBoardId = boardId; // Guardar de dónde vino
+                appState.trash.push(noteToTrash);
+
+                // Eliminar conexiones asociadas
+                appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
+                    conn => conn.from !== noteId && conn.to !== noteId
+                );
+
+                // ¡CORRECCIÓN! Eliminar visualmente las líneas antes de filtrar el array
+                const linesToRemove = activeLines.filter(l => l.from === noteId || l.to === noteId);
+                linesToRemove.forEach(l => l.line.remove());
+                activeLines = activeLines.filter(l => l.from !== noteId && l.to !== noteId);
+                noteElement.remove();
+
+                saveState();
+                updateBoardSize(); // Actualizar tamaño por si se eliminó la nota más lejana
+                showToast('Nota movida a la papelera.');
+            }
+        }, { once: true }); // El listener se ejecuta solo una vez
+
         hideContextMenu();
     }
 
