@@ -236,6 +236,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         maxZIndex = note.zIndex;
                     }
                 });
+                // Migración para sidebarWidth
+                if (board.lineOptions && board.lineOptions.sidebarWidth) {
+                    loadedState.sidebarWidth = board.lineOptions.sidebarWidth;
+                    delete board.lineOptions.sidebarWidth;
+                }
             });
             // Migración para el estado del panel lateral y la paleta
             if (loadedState.isSidebarCollapsed === undefined) {
@@ -266,10 +271,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 zoomLevel: 1.0,                isPalettePinned: true, // Nuevo estado para la paleta
                 isSidebarCollapsed: false, // Nuevo estado para el panel lateral
                 activeBoardId: initialBoardId, // El tablero activo
+                sidebarWidth: 260, // Ancho inicial del panel
                 lineOptions: { // Opciones por defecto para las líneas
                     color: '#4B4B4B', // Gris oscuro en formato HEX
                     opacity: 0.8,
-                    sidebarWidth: 260, // Ancho inicial del panel
                     size: 4,
                     path: 'fluid',
                     endPlug: 'arrow1'
@@ -1426,9 +1431,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const minWidth = 220;
         const maxWidth = 500;
 
-        // Aplicar el ancho guardado al iniciar
-        boardManager.style.width = `${appState.sidebarWidth || 260}px`;
-
         const handlePointerDown = (e) => {
             e.preventDefault();
             resizer.classList.add('resizing');
@@ -1614,8 +1616,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             setSidebarCollapsed(false);
         });
 
+        // Aplicar el ancho guardado al iniciar
+        boardManager.style.width = `${appState.sidebarWidth || 260}px`;
+
         // Aplicar el estado colapsado guardado al iniciar
-        if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
+        if (appState.isSidebarCollapsed) setSidebarCollapsed(true); // Esto aplicará el marginLeft correcto
 
         // Configurar UI
         addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
