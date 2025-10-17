@@ -41,6 +41,7 @@
         <button class="tab-btn active" data-tab="boards" title="Tableros">🗂️<span class="tab-text">Tableros</span></button>
         <button class="tab-btn" data-tab="create" title="Crear">✨<span class="tab-text">Crear</span></button>
         <button class="tab-btn" data-tab="lines" title="Líneas">☍<span class="tab-text">Líneas</span></button>
+        <button class="tab-btn" data-tab="share" title="Compartir">🔗<span class="tab-text">Compartir</span></button>
         <button class="tab-btn" data-tab="background" title="Fondo">🎨<span class="tab-text">Fondo</span></button>
         <button class="tab-btn" data-tab="trash" title="Papelera">🗑️<span class="tab-text">Papelera</span></button>
     </div>
@@ -107,6 +108,14 @@
             </div>
         </div>
     
+        <div id="tab-content-share" class="tab-content">
+            <p class="tab-title">Compartir e Importar</p>
+            <p>Genera un enlace con los datos de tu tablero actual. El enlace se copiará automáticamente.</p>
+            <button id="share-board-btn">🔗 Generar Enlace</button>
+            <textarea id="share-link-output" readonly placeholder="Aquí aparecerá tu enlace para compartir..."></textarea>
+            <p class="import-info">Para importar, simplemente abre un enlace generado en tu navegador.</p>
+        </div>
+
         <div id="tab-content-trash" class="tab-content">
             <p class="tab-title">Notas Eliminadas</p>
             <button id="empty-trash-btn">Vaciar Papelera</button>

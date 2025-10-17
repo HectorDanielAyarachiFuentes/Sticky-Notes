@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const { initializePanning } = await import('./moverfondo.js');
+    const { initializeShareAndImport } = await import('./gestor/exportar.js');
     const { initializeAboutModalFeature } = await import('./sobremi.js');
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
@@ -1778,6 +1779,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeColorPopover();
         initializeSidebarResizing();
         updatePaletteState();
+        initializeShareAndImport(appState, showToast, switchBoard, saveState, renderBoardList);
         initializeAboutModalFeature();
 
         // Inicializar la nueva funcionalidad de paneo
