@@ -249,6 +249,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             });
+            // Migración para el estado del panel lateral y la paleta
+            if (loadedState.isSidebarCollapsed === undefined) {
+                loadedState.isSidebarCollapsed = false; // Por defecto, no está colapsado
+                loadedState.isPalettePinned = true; // Por defecto, está fijada
+            }
             appState = loadedState;
 
         } else {
@@ -271,7 +276,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 trash: [], // Papelera de reciclaje
                 zoomLevel: 1.0,                isPalettePinned: true, // Nuevo estado para la paleta
-                activeBoardId: initialBoardId,
+                isSidebarCollapsed: false, // Nuevo estado para el panel lateral
+                activeBoardId: initialBoardId, // El tablero activo
                 lineOptions: { // Opciones por defecto para las líneas
                     color: '#4B4B4B', // Gris oscuro en formato HEX
                     opacity: 0.8,
@@ -1596,12 +1602,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
 
-        const updateCollapsedMargin = () => {
-            const currentWidth = boardManager.offsetWidth;
-            const padding = parseInt(getComputedStyle(boardManager).paddingLeft, 10) * 2;
-            boardManager.style.setProperty('--collapsed-margin', `-${currentWidth + padding}px`);
+        const setSidebarCollapsed = (collapsed) => {
+            appState.isSidebarCollapsed = collapsed;
+            if (collapsed) {
+                boardManager.style.marginLeft = `-${boardManager.offsetWidth}px`;
+                boardManager.classList.add('collapsed');
+            } else {
+                boardManager.style.marginLeft = '';
+                boardManager.classList.remove('collapsed');
+            }
+            smoothLineUpdateOnToggle();
+            saveState();
         };
 
+        // Función para animar las líneas de conexión suavemente al abrir/cerrar el panel
         const smoothLineUpdateOnToggle = () => {
             const duration = 400; // Debe coincidir con la duración de la transición en CSS
             const startTime = performance.now();
@@ -1620,15 +1634,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         collapseBtn.addEventListener('click', () => {
-            boardManager.style.marginLeft = `-${boardManager.offsetWidth}px`;
-            boardManager.classList.add('collapsed');
-            smoothLineUpdateOnToggle();
+            setSidebarCollapsed(true);
         });
         expander.addEventListener('click', () => {
-            boardManager.style.marginLeft = '';
-            boardManager.classList.remove('collapsed');
-            smoothLineUpdateOnToggle();
+            setSidebarCollapsed(false);
         });
+
+        // Aplicar el estado colapsado guardado al iniciar
+        if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
 
         // Configurar UI
         addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
