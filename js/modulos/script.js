@@ -229,6 +229,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!loadedState.trash) {
                     loadedState.trash = [];
                 }
+                if (!loadedState.boardsTrash) {
+                    loadedState.boardsTrash = [];
+                }
                 // Migración para zIndex y cálculo del maxZIndex
                 board.notes.forEach(note => {
                     if (note.zIndex === undefined) {
@@ -268,6 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         backgroundApplyTo: { board: true, notes: false }
                     }
                 },
+                boardsTrash: [], // Papelera para tableros
                 trash: [], // Papelera de reciclaje
                 zoomLevel: 1.0,                isPalettePinned: true, // Nuevo estado para la paleta
                 isSidebarCollapsed: false, // Nuevo estado para el panel lateral
@@ -307,14 +311,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- FUNCIONES DE RENDERIZADO DE LA UI ---
     function renderBoardList() {
         boardList.innerHTML = '';
-        Object.values(appState.boards).forEach(b => {
+        Object.values(appState.boards).forEach(boardData => {
             const li = document.createElement('li');
-            li.textContent = b.name;
-            li.dataset.boardId = b.id;
-            if (b.id === appState.activeBoardId) {
+            li.dataset.boardId = boardData.id;
+    
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'board-name-text';
+            nameSpan.textContent = boardData.name;
+            // El clic en el nombre cambia de tablero
+            nameSpan.addEventListener('click', () => switchBoard(boardData.id));
+    
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'board-item-buttons';
+    
+            const editBtn = document.createElement('button');
+            editBtn.className = 'board-item-btn';
+            editBtn.innerHTML = '✏️';
+            editBtn.title = 'Editar nombre';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita que se dispare el cambio de tablero
+                editBoardName(boardData.id);
+            });
+    
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'board-item-btn';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Eliminar tablero';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteBoard(boardData.id);
+            });
+    
+            buttonsContainer.appendChild(editBtn);
+            buttonsContainer.appendChild(deleteBtn);
+    
+            li.appendChild(nameSpan);
+            li.appendChild(buttonsContainer);
+    
+            if (boardData.id === appState.activeBoardId) {
                 li.classList.add('active');
             }
-            li.addEventListener('click', () => switchBoard(b.id));
+    
             boardList.appendChild(li);
         });
     }
@@ -488,6 +525,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                 background: null // Fondo por defecto para nuevos tableros
             };
             switchBoard(newBoardId);
+        }
+    }
+
+    function editBoardName(boardId) {
+        const board = appState.boards[boardId];
+        if (!board) return;
+    
+        const newName = prompt("Nuevo nombre para el tablero:", board.name);
+        if (newName && newName.trim() !== '') {
+            board.name = newName.trim();
+            saveState();
+            renderBoardList();
+            showToast(`Tablero renombrado a "${board.name}".`);
+        }
+    }
+    
+    function deleteBoard(boardId) {
+        if (Object.keys(appState.boards).length <= 1) {
+            showToast("❌ No puedes eliminar el único tablero que queda.");
+            return;
+        }
+    
+        const boardToDelete = appState.boards[boardId];
+        if (confirm(`¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`)) {
+            // Mover a la papelera de tableros
+            appState.boardsTrash.push(boardToDelete);
+            delete appState.boards[boardId];
+    
+            // Si el tablero eliminado era el activo, cambia a otro
+            if (appState.activeBoardId === boardId) {
+                const firstBoardId = Object.keys(appState.boards)[0];
+                switchBoard(firstBoardId); // Esto ya guarda el estado
+            } else {
+                saveState();
+            }
+            renderBoardList(); // Actualiza la lista en la UI
+            showToast(`Tablero "${boardToDelete.name}" movido a la papelera.`);
         }
     }
 
@@ -1356,39 +1430,92 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderTrash() {
-        trashListContainer.innerHTML = '';
+        const trashNotesContainer = document.querySelector("#trash-notes-container");
+        const trashBoardsContainer = document.querySelector("#trash-boards-container");
+
+        // Limpiar contenedores
+        if (trashNotesContainer) trashNotesContainer.innerHTML = '';
+        if (trashBoardsContainer) trashBoardsContainer.innerHTML = '';
+
+        // Renderizar Notas eliminadas
         if (appState.trash.length === 0) {
-            trashListContainer.innerHTML = '<p style="opacity: 0.7; text-align: center;">La papelera está vacía.</p>';
-            return;
+            trashNotesContainer.innerHTML = '<p class="empty-trash-message">No hay notas eliminadas.</p>';
+        } else {
+            appState.trash.forEach(note => {
+                const item = document.createElement('div');
+                item.className = 'trash-item';
+
+                const activeTabData = note.tabs[note.activeTab] || { title: '', content: '' };
+                const titleText = activeTabData.title || 'Nota sin título';
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.tabs.map(t => t.content).join(' ');
+                const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim() || 'Nota vacía';
+
+                item.innerHTML = `
+                    <div class="trash-item-title">${titleText}</div>
+                    <div class="trash-item-content">${noteText}</div>
+                    <div class="trash-item-actions">
+                        <button class="restore" data-note-id="${note.id}">Restaurar</button>
+                        <button class="delete-perm" data-note-id="${note.id}">Borrar</button>
+                    </div>
+                `;
+                trashNotesContainer.appendChild(item);
+            });
+
+            trashNotesContainer.querySelectorAll('.restore').forEach(btn => {
+                btn.addEventListener('click', () => restoreNote(btn.dataset.noteId));
+            });
+            trashNotesContainer.querySelectorAll('.delete-perm').forEach(btn => {
+                btn.addEventListener('click', () => deletePermanently(btn.dataset.noteId));
+            });
         }
 
-        appState.trash.forEach(note => {
-            const item = document.createElement('div');
-            item.className = 'trash-item';
+        // Renderizar Tableros eliminados
+        if (appState.boardsTrash.length === 0) {
+            trashBoardsContainer.innerHTML = '<p class="empty-trash-message">No hay tableros eliminados.</p>';
+        } else {
+            appState.boardsTrash.forEach(board => {
+                const item = document.createElement('div');
+                item.className = 'trash-item';
+                item.innerHTML = `
+                    <div class="trash-item-title">${board.name}</div>
+                    <div class="trash-item-content">${board.notes.length} nota(s)</div>
+                    <div class="trash-item-actions">
+                        <button class="restore-board" data-board-id="${board.id}">Restaurar</button>
+                        <button class="delete-perm-board" data-board-id="${board.id}">Borrar</button>
+                    </div>
+                `;
+                trashBoardsContainer.appendChild(item);
+            });
 
-            const activeTabData = note.tabs[note.activeTab] || { title: '', content: '' };
-            const titleText = activeTabData.title || 'Nota sin título';
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = note.tabs.map(t => t.content).join(' ');
-            const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim() || 'Nota vacía';
+            trashBoardsContainer.querySelectorAll('.restore-board').forEach(btn => {
+                btn.addEventListener('click', () => restoreBoard(btn.dataset.boardId));
+            });
+            trashBoardsContainer.querySelectorAll('.delete-perm-board').forEach(btn => {
+                btn.addEventListener('click', () => deleteBoardPermanently(btn.dataset.boardId));
+            });
+        }
 
-            item.innerHTML = `
-                <div class="trash-item-title">${titleText}</div>
-                <div class="trash-item-content">${noteText || 'Nota vacía'}</div>
-                <div class="trash-item-actions">
-                    <button class="restore" data-note-id="${note.id}">Restaurar</button>
-                    <button data-note-id="${note.id}">Borrar</button>
-                </div>
-            `;
-            trashListContainer.appendChild(item);
-        });
+        // Lógica del botón "Vaciar Papelera"
+        emptyTrashBtn.disabled = appState.trash.length === 0 && appState.boardsTrash.length === 0;
+    }
 
-        trashListContainer.querySelectorAll('.restore').forEach(btn => {
-            btn.addEventListener('click', () => restoreNote(btn.dataset.noteId));
-        });
-        trashListContainer.querySelectorAll('button:not(.restore)').forEach(btn => {
-            btn.addEventListener('click', () => deletePermanently(btn.dataset.noteId));
-        });
+    function restoreBoard(boardId) {
+        const boardIndex = appState.boardsTrash.findIndex(b => b.id === boardId);
+        if (boardIndex > -1) {
+            const [boardToRestore] = appState.boardsTrash.splice(boardIndex, 1);
+            appState.boards[boardToRestore.id] = boardToRestore;
+            saveState();
+            renderTrash();
+            renderBoardList(); // Actualizar la lista de tableros en el panel
+            showToast(`Tablero "${boardToRestore.name}" restaurado.`);
+        }
+    }
+
+    function deleteBoardPermanently(boardId) {
+        appState.boardsTrash = appState.boardsTrash.filter(b => b.id !== boardId);
+        saveState();
+        renderTrash();
     }
 
     function restoreNote(noteId) {
@@ -1407,6 +1534,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateBoardSize();
                 }
                 showToast('Nota restaurada.');
+            } else {
+                // Si el tablero original ya no existe, restaurar la nota al primer tablero disponible
+                const firstBoardId = Object.keys(appState.boards)[0];
+                if(firstBoardId) {
+                    appState.boards[firstBoardId].notes.push(noteToRestore);
+                    delete noteToRestore.originalBoardId;
+                    saveState();
+                    renderTrash();
+                    if (firstBoardId === appState.activeBoardId) {
+                        renderActiveBoard();
+                        updateBoardSize();
+                    }
+                    showToast(`Nota restaurada en el tablero "${appState.boards[firstBoardId].name}".`);
+                } else {
+                    // Caso extremo: no hay tableros. Devolver la nota a la papelera.
+                    appState.trash.push(noteToRestore);
+                    showToast('❌ No hay tableros disponibles para restaurar la nota.');
+                }
             }
         }
     }
@@ -1418,8 +1563,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function emptyTrash() {
-        if (confirm('¿Estás seguro de que quieres vaciar la papelera? Esta acción no se puede deshacer.')) {
+        if (confirm('¿Estás seguro de que quieres vaciar la papelera? Todos los tableros y notas eliminados se borrarán permanentemente.')) {
             appState.trash = [];
+            appState.boardsTrash = [];
             saveState();
             renderTrash();
         }

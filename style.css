@@ -111,9 +111,40 @@ body {
 }
 /* --- LISTA DE TABLEROS --- */
 #board-manager ul { list-style: none; padding: 0; margin: 15px 0 0 0; flex-grow: 1; overflow-y: auto; max-height: 40vh; /* Controla la altura máxima de la lista */ }
-#board-manager li { padding: 12px 15px; cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease; }
+#board-manager li {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
 #board-manager li:hover { background-color: var(--sidebar-hover); }
 #board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
+
+.board-name-text {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.board-item-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.board-item-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+.board-item-btn:hover { opacity: 1; }
 
 #board-manager .tab-content button {
     margin-top: 15px; /* Espacio sobre el botón */
@@ -1014,6 +1045,19 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     flex-direction: column;
     gap: 12px;
 }
+.trash-section-title {
+    font-weight: bold;
+    color: var(--text-light);
+    opacity: 0.9;
+    margin: 20px 0 5px 0;
+    border-bottom: 1px solid var(--sidebar-hover);
+    padding-bottom: 5px;
+}
+.trash-section-title:first-child {
+    margin-top: 0;
+}
+.empty-trash-message { opacity: 0.7; text-align: center; }
+
 .trash-item {
     background-color: #3a3a3a;
     padding: 12px;
@@ -1044,7 +1088,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     background-color: var(--sidebar-hover);
 }
 .trash-item-actions button.restore {
-    background-color: var(--azul-carpa);
+    background-color: #388E3C; /* Un verde para restaurar */
 }
 #empty-trash-btn {
     background-color: #a61e4d;
