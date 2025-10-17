@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentBoard.notes.length === 0) {
             const welcomeMsg = document.createElement('div');
             welcomeMsg.classList.add('welcome-message');
-            welcomeMsg.textContent = '¡Bienvenido! Arrastra una nota para comenzar.';
+            welcomeMsg.innerHTML = '¡Bienvenido! <br>Arrastra una nota o haz doble clic para comenzar.';
             board.appendChild(welcomeMsg);
         } else {
             currentBoard.notes.forEach(noteData => {
@@ -522,10 +522,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 name: boardName,
                 notes: [],
                 connections: [],
-                background: null // Fondo por defecto para nuevos tableros
+                background: null, // Fondo por defecto para nuevos tableros
+                backgroundApplyTo: { board: true, notes: false } // ¡CORRECCIÓN!
             };
             switchBoard(newBoardId);
         }
+    }
+
+    /**
+     * Crea un nuevo tablero por defecto sin pedir confirmación.
+     * @returns {string} El ID del nuevo tablero creado.
+     */
+    function createDefaultBoard() {
+        const newBoardId = `board-${Date.now()}`;
+        appState.boards[newBoardId] = {
+            id: newBoardId,
+            name: "Tablero de Respaldo",
+            notes: [],
+            connections: [],
+            background: null,
+            backgroundApplyTo: { board: true, notes: false }
+        };
+        return newBoardId;
     }
 
     function editBoardName(boardId) {
@@ -546,7 +564,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isLastBoard = Object.keys(appState.boards).length <= 1;
     
         const confirmMessage = isLastBoard ?
-            `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"? El espacio de trabajo quedará vacío hasta que crees un nuevo tablero.` :
+            `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"? El espacio de trabajo quedará vacío.` :
             `¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`;
     
         if (confirm(confirmMessage)) {
@@ -1014,6 +1032,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isOverBoard && !trashCan.classList.contains('active')) {
                 board.querySelector('.welcome-message')?.remove();
 
+
                 const color = ghostNote.dataset.color;
                 const mouseXInBoard = (event.clientX - boardRect.left + boardContainer.scrollLeft) / appState.zoomLevel;
                 const mouseYInBoard = (event.clientY - boardRect.top + boardContainer.scrollTop) / appState.zoomLevel;
@@ -1029,6 +1048,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar
                     y: mouseYInBoard - (100 / appState.zoomLevel),
                 };
+
+                // Si no hay tablero activo, crear uno por defecto
+                if (!appState.activeBoardId) {
+                    const newBoardId = createDefaultBoard();
+                    switchBoard(newBoardId);
+                    showToast('Hemos creado un nuevo tablero para ti.');
+                }
 
                 appState.boards[appState.activeBoardId].notes.push(newNoteData);
                 createStickyNoteElement(newNoteData, true); // Crear la nota real
@@ -1110,6 +1136,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             x: mouseXInBoard, // ¡CORRECCIÓN! La esquina superior izquierda en el cursor.
             y: mouseYInBoard,
         };
+
+        // Si no hay tablero activo, crear uno por defecto
+        if (!appState.activeBoardId) {
+            const newBoardId = createDefaultBoard();
+            switchBoard(newBoardId);
+            showToast('Hemos creado un nuevo tablero para ti.');
+        }
 
         appState.boards[appState.activeBoardId].notes.push(newNoteData);
         createStickyNoteElement(newNoteData, true); // Crear con animación
@@ -1430,6 +1463,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 saveState();
                 updateBoardSize(); // Actualizar tamaño por si se eliminó la nota más lejana
                 showToast('Nota movida a la papelera.');
+
+                // ¡NUEVO! Actualizar la vista de la papelera si está abierta
+                const trashTabContent = document.getElementById('tab-content-trash');
+                if (trashTabContent && trashTabContent.classList.contains('active')) {
+                    renderTrash();
+                }
             }
         }, { once: true }); // El listener se ejecuta solo una vez
 
