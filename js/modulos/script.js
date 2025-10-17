@@ -1426,8 +1426,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const minWidth = 220;
         const maxWidth = 500;
 
-        // Aplicar el ancho guardado al iniciar
-        boardManager.style.width = `${appState.sidebarWidth || 260}px`;
+        // Aplicar el ancho guardado al iniciar actualizando la variable CSS
+        document.documentElement.style.setProperty('--sidebar-width', `${appState.sidebarWidth || 260}px`);
 
         const handlePointerDown = (e) => {
             e.preventDefault();
@@ -1440,7 +1440,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (newWidth < minWidth) newWidth = minWidth;
                 if (newWidth > maxWidth) newWidth = maxWidth;
 
-                boardManager.style.width = `${newWidth}px`;
+                // En lugar de cambiar el width directamente, actualizamos la variable CSS
+                document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`);
                 // Actualizar la posición de las líneas en tiempo real
                 activeLines.forEach(l => l.line.position());
             };
@@ -1450,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
 
-                appState.sidebarWidth = parseInt(boardManager.style.width, 10);
+                appState.sidebarWidth = parseInt(getComputedStyle(boardManager).width, 10);
                 saveState();
 
                 document.removeEventListener('pointermove', handlePointerMove);
@@ -1577,14 +1578,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const expander = document.querySelector("#sidebar-expander");
 
         const setSidebarCollapsed = (collapsed) => {
+            // Aplicar la clase al body para que CSS controle el layout
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
             appState.isSidebarCollapsed = collapsed;
+
+            // --- CORRECCIÓN: Restaurar la lógica de ocultación directa ---
+            // Esto asegura que el panel se oculte visualmente.
             if (collapsed) {
                 boardManager.style.marginLeft = `-${boardManager.offsetWidth}px`;
-                boardManager.classList.add('collapsed');
             } else {
-                boardManager.style.marginLeft = '';
-                boardManager.classList.remove('collapsed');
+                boardManager.style.marginLeft = '0px';
             }
+
             smoothLineUpdateOnToggle();
             saveState();
         };
