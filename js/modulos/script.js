@@ -1785,5 +1785,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         boardContainer.addEventListener('dblclick', handleBoardDoubleClick);
     }
 
+    
     initializeApp();
 });
