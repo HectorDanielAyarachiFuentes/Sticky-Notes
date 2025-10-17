@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeNoteData = null;  // Objeto de la nota en el 'appState'
     let offsetX = 0;
     let offsetY = 0;
+    let ghostNote = null; // Para la previsualización al arrastrar desde la paleta
     let isResizing = false;
 
     let contextMenuNoteId = null; // ID de la nota para el menú contextual    
@@ -794,6 +795,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isResizer = e.target.classList.contains('resizer');
         const isPaletteNote = e.target.closest('.palette-note');
         const isStickyNote = e.target.closest('.stickynote');
+        const isBoard = e.target === board || e.target === boardContainer;
 
         // Si no se hizo clic en un elemento interactivo (nota, paleta, redimensionador), no hacer nada.
         // Esto permite que el listener de paneo del fondo funcione sin conflictos.
@@ -815,7 +817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Si estamos en modo conexión, un clic en una nota crea la conexión
-        if (connectionState.startNoteId && e.target.closest('.stickynote')) {
+        if (connectionState.startNoteId && isStickyNote) {
             const noteEl = e.target.closest('.stickynote');
             if (noteEl) {
                 e.preventDefault();
@@ -827,38 +829,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // CASO 2: Iniciar arrastre para CREAR una nota nueva
         if (isPaletteNote) {
             e.preventDefault();
-            board.querySelector('.welcome-message')?.remove();
+            // Crear un "fantasma" de la nota para arrastrar
+            ghostNote = isPaletteNote.cloneNode(true);
+            ghostNote.style.position = 'fixed'; // Se mueve por toda la ventana
+            ghostNote.style.zIndex = '9999';
+            ghostNote.style.pointerEvents = 'none'; // No interfiere con otros eventos
+            ghostNote.style.transform = 'scale(1.1)'; // Un poco más grande para indicar que se está arrastrando
+            document.body.appendChild(ghostNote);
 
-            const color = isPaletteNote.dataset.color;
-            // **CORRECCIÓN:** Calcular posición inicial relativa al tablero
-            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
-            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
+            // Posicionar el fantasma bajo el cursor
+            offsetX = e.clientX - isPaletteNote.getBoundingClientRect().left;
+            offsetY = e.clientY - isPaletteNote.getBoundingClientRect().top;
+            ghostNote.style.left = `${e.clientX - offsetX}px`;
+            ghostNote.style.top = `${e.clientY - offsetY}px`;
 
-            const newNoteData = {
-                id: `note-${Date.now()}`,
-                // Nueva estructura de pestañas
-                tabs: Array(5).fill(null).map(() => ({
-                    title: '',
-                    content: ''
-                })),
-                activeTab: 0,
-                width: 200, height: 200, color: color,
-                rotation: (Math.random() - 0.5) * 8,
-                locked: false,
-                zIndex: ++maxZIndex,
-                x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar la nota en el cursor, ajustado al zoom
-                y: mouseYInBoard - (100 / appState.zoomLevel),
-            };
-
-            appState.boards[appState.activeBoardId].notes.push(newNoteData);
-            activeNote = createStickyNoteElement(newNoteData, true);
-            activeNoteData = newNoteData;
-            
-            // **CORRECCIÓN:** El desfase ahora es desde el centro de la nota
-            offsetX = 100 / appState.zoomLevel;
-            offsetY = 100 / appState.zoomLevel;
-
-            activeNote.classList.add('dragging');
             trashCan.classList.add('visible');
         }
 
@@ -887,6 +871,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handlePointerMove(e) {
+        // Mover el fantasma si existe
+        if (ghostNote) {
+            ghostNote.style.left = `${e.clientX - offsetX}px`;
+            ghostNote.style.top = `${e.clientY - offsetY}px`;
+            // Lógica de la papelera para el fantasma
+            const trashRect = trashCan.getBoundingClientRect();
+            trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
+            return; // No hacer nada más si estamos arrastrando el fantasma
+        }
+
         if (!activeNote || (activeNoteData && activeNoteData.locked)) return;
         e.preventDefault();
 
@@ -929,6 +923,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handlePointerUp() {
+        // Si soltamos un fantasma
+        if (ghostNote) {
+            const boardRect = boardContainer.getBoundingClientRect();
+            const isOverBoard = event.clientX >= boardRect.left && event.clientX <= boardRect.right &&
+                                event.clientY >= boardRect.top && event.clientY <= boardRect.bottom;
+
+            // Si se suelta sobre el tablero y no sobre la papelera
+            if (isOverBoard && !trashCan.classList.contains('active')) {
+                board.querySelector('.welcome-message')?.remove();
+
+                const color = ghostNote.dataset.color;
+                const mouseXInBoard = (event.clientX - boardRect.left + boardContainer.scrollLeft) / appState.zoomLevel;
+                const mouseYInBoard = (event.clientY - boardRect.top + boardContainer.scrollTop) / appState.zoomLevel;
+
+                const newNoteData = {
+                    id: `note-${Date.now()}`,
+                    tabs: Array(5).fill(null).map(() => ({ title: '', content: '' })),
+                    activeTab: 0,
+                    width: 200, height: 200, color: color,
+                    rotation: (Math.random() - 0.5) * 8,
+                    locked: false,
+                    zIndex: ++maxZIndex,
+                    x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar
+                    y: mouseYInBoard - (100 / appState.zoomLevel),
+                };
+
+                appState.boards[appState.activeBoardId].notes.push(newNoteData);
+                createStickyNoteElement(newNoteData, true); // Crear la nota real
+                saveState();
+                updateBoardSize();
+            }
+
+            // Limpiar el fantasma y la papelera
+            ghostNote.remove();
+            ghostNote = null;
+            trashCan.classList.remove('visible', 'active');
+            return; // Terminar la función aquí
+        }
+
+        // Lógica existente para notas que ya están en el tablero
         if (!activeNote) return;
 
         if (trashCan.classList.contains('active')) {
