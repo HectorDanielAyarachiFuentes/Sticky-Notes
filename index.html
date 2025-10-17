@@ -210,8 +210,10 @@
 </div>
 
 <div id="toast-container"></div>
-<script src="leader-line.min.js"></script>
-<script type="module" src="script.js"></script>
+    <!-- 1. Cargar la librería LeaderLine como un script global normal -->
+    <script src="js/librerias/leader-line.min.js"></script>
+    <!-- 2. Cargar TU código a través del punto de entrada principal como un módulo -->
+    <script type="module" src="js/principal.js" defer></script>
 
 </body>
 </html>
