@@ -539,7 +539,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     flex-grow: 1; /* Ocupa el espacio restante */
     height: 100%;
     background-image: repeating-linear-gradient(90deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),repeating-linear-gradient(90deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),linear-gradient(90deg, hsl(226,47%,26%),hsl(226,47%,26%));
-    overflow: auto; /* Permite scroll si las notas se salen */
+    overflow: auto; /* Permite scroll en ambas direcciones si las notas se salen */
 }
 
 /* El tablero en sí solo contiene las notas y es lo que se escala */

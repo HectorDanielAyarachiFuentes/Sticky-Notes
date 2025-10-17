@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const { initializePanning } = await import('./moverfondo.js');
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
     const board = document.querySelector("#board");
@@ -352,6 +353,32 @@ document.addEventListener('DOMContentLoaded', () => {
         renderConnections();
     }
 
+    /**
+     * Calcula el tamaño necesario para el tablero basado en la posición de las notas
+     * y lo expande si es necesario para crear un efecto de "lienzo infinito".
+     */
+    function updateBoardSize() {
+        const currentBoardData = appState.boards[appState.activeBoardId];
+        const PADDING = 1000; // Espacio extra para que se sienta más infinito
+
+        if (!currentBoardData || !currentBoardData.notes.length) {
+            board.style.width = `calc(100% + ${PADDING}px)`;
+            board.style.height = `calc(100% + ${PADDING}px)`;
+            return;
+        }
+
+        let maxX = 0;
+        let maxY = 0;
+
+        currentBoardData.notes.forEach(note => {
+            maxX = Math.max(maxX, note.x + note.width);
+            maxY = Math.max(maxY, note.y + note.height);
+        });
+
+        board.style.width = `${Math.max(boardContainer.clientWidth + PADDING, maxX + PADDING)}px`;
+        board.style.height = `${Math.max(boardContainer.clientHeight + PADDING, maxY + PADDING)}px`;
+    }
+
     function renderConnections() {
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard.connections) currentBoard.connections = [];
@@ -386,6 +413,13 @@ document.addEventListener('DOMContentLoaded', () => {
         activeLines = [];
     }
 
+    /**
+     * Recorre todas las líneas de conexión activas y recalcula su posición.
+     * Esencial para el zoom y el paneo.
+     */
+    function updateAllLinesPosition() {
+        activeLines.forEach(l => l.line.position());
+    }
     // --- FUNCIONES DE ZOOM ---
     function updateZoom(newZoomLevel) {
         if (newZoomLevel !== undefined) {
@@ -395,9 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
         board.style.transform = `scale(${appState.zoomLevel})`;
         zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
         // ¡CORRECCIÓN! Actualizar la posición de todas las líneas al hacer zoom.
-        activeLines.forEach(l => {
-            l.line.position();
-        });
+        updateAllLinesPosition();
         saveState();
     }
 
@@ -418,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
         renderBoardList();
         renderActiveBoard();
+        updateBoardSize(); // Asegurarse de que el tamaño es correcto al cambiar de tablero
         searchInput.value = ''; // Limpiar búsqueda al cambiar de tablero
         globalSearchResults.innerHTML = ''; // Limpiar resultados globales
         board.classList.remove('searching');
@@ -752,14 +785,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) CORREGIDA ---
 
     function handlePointerDown(e) {
-        const target = e.target;
+        const isResizer = e.target.classList.contains('resizer');
+        const isPaletteNote = e.target.closest('.palette-note');
+        const isStickyNote = e.target.closest('.stickynote');
+
+        // Si no se hizo clic en un elemento interactivo (nota, paleta, redimensionador), no hacer nada.
+        // Esto permite que el listener de paneo del fondo funcione sin conflictos.
+        if (!isResizer && !isPaletteNote && !isStickyNote) return;
+
         const boardRect = boardContainer.getBoundingClientRect();
 
         // CASO 1: Iniciar redimensión
-        if (target.classList.contains('resizer')) {
+        if (isResizer) {
             e.preventDefault();
             isResizing = true;
-            activeNote = target.closest('.stickynote');
+            activeNote = e.target.closest('.stickynote');
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
             if (activeNoteData.locked) { isResizing = false; activeNote = null; return; }
             bringToFront(activeNote, activeNoteData);
@@ -779,11 +819,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CASO 2: Iniciar arrastre para CREAR una nota nueva
-        if (target.classList.contains('palette-note')) {
+        if (isPaletteNote) {
             e.preventDefault();
             board.querySelector('.welcome-message')?.remove();
 
-            const color = target.dataset.color;
+            const color = isPaletteNote.dataset.color;
             // **CORRECCIÓN:** Calcular posición inicial relativa al tablero
             const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
             const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
@@ -817,14 +857,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CASO 3: Iniciar arrastre para MOVER una nota existente
-        const noteToDrag = target.closest('.stickynote');
-        if (noteToDrag && !target.classList.contains('resizer') && !target.classList.contains('connect-btn')) {
-            activeNote = noteToDrag;
+        if (isStickyNote && !isResizer && !e.target.classList.contains('connect-btn')) {
+            activeNote = isStickyNote;
             activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
             if (activeNoteData.locked) { activeNote = null; return; }
 
             // Solo prevenimos el comportamiento por defecto (y empezamos a arrastrar) si no es el área de texto.
-            if (!target.classList.contains('stickynote-text') && !target.classList.contains('stickynote-title')) e.preventDefault();
+            const originalTarget = e.target;
+            if (!originalTarget.classList.contains('stickynote-text') && !originalTarget.classList.contains('stickynote-title')) e.preventDefault();
 
             // **CORRECCIÓN:** Calcular el desfase relativo al tablero y AJUSTADO AL ZOOM
             const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
@@ -833,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
             offsetY = mouseYInBoard - activeNote.offsetTop;
 
             bringToFront(activeNote, activeNoteData);
-            if (!target.classList.contains('stickynote-text') && !target.classList.contains('stickynote-title')) {
+            if (!originalTarget.classList.contains('stickynote-text') && !originalTarget.classList.contains('stickynote-title')) {
                 activeNote.classList.add('dragging');
                 trashCan.classList.add('visible');
             }
@@ -854,6 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData.height = Math.max(150, newHeight);
             activeNote.style.width = `${activeNoteData.width}px`;
             activeNote.style.height = `${activeNoteData.height}px`;
+            updateBoardSize(); // Actualizar tamaño del tablero al redimensionar
         } else {
             // Lógica de arrastre
             // **CORRECCIÓN:** Calcular la nueva posición relativa al tablero y AJUSTADA AL ZOOM
@@ -866,12 +907,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activeNoteData.y = newY;
             activeNote.style.left = `${newX}px`;
             activeNote.style.top = `${newY}px`;
+            updateBoardSize(); // Actualizar tamaño del tablero al arrastrar
             // Actualizar líneas conectadas
-            activeLines.forEach(l => {
-                if (l.from === activeNoteData.id || l.to === activeNoteData.id) {
-                    l.line.position();
-                }
-            });
+            updateAllLinesPosition();
             activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`; // Mantener rotación al arrastrar
         }
 
@@ -888,9 +926,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeNote) return;
 
         if (trashCan.classList.contains('active')) {
-            moveNoteToTrash(activeNoteData.id);
+            moveNoteToTrash(activeNoteData.id); 
         } else {
-            if (!isResizing) activeLines.forEach(l => l.line.position()); // Reposicionar al soltar
+            if (!isResizing) updateAllLinesPosition(); // Reposicionar al soltar
             activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
         }
         
@@ -907,6 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
         if (appState.boards[appState.activeBoardId].notes.length === 0) {
             renderActiveBoard(); // Volver a mostrar mensaje de bienvenida si es necesario
+            updateBoardSize(); // Resetear el tamaño si no quedan notas
         }
     }
 
@@ -1220,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             saveState();
             renderActiveBoard(); // Re-renderizar el tablero actual
+            updateBoardSize(); // Actualizar tamaño por si se eliminó la nota más lejana
             showToast('Nota movida a la papelera.');
         }
         hideContextMenu();
@@ -1274,6 +1314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Si la nota pertenece al tablero actual, re-renderizarlo
                 if (targetBoard.id === appState.activeBoardId) {
                     renderActiveBoard();
+                    updateBoardSize();
                 }
                 showToast('Nota restaurada.');
             }
@@ -1739,12 +1780,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderBoardList();
         renderActiveBoard();
+        updateBoardSize(); // Calcular tamaño inicial del tablero
         initializeLineStyleControls();
         initializeBackgroundOptions();
         initializeColorPopover();
         initializeSidebarResizing();
         updatePaletteState();
         initializeAboutModal();
+
+        // Inicializar la nueva funcionalidad de paneo
+        initializePanning(boardContainer, board, updateAllLinesPosition);
     }
 
     initializeApp();
