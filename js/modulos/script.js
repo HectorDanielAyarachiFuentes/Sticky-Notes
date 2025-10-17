@@ -1837,6 +1837,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar la nueva funcionalidad de paneo
         initializePanning(boardContainer, board, updateAllLinesPosition);
+
+        // ¡CORRECCIÓN! Actualizar líneas también con el scroll normal (rueda del ratón, etc.)
+        boardContainer.addEventListener('scroll', updateAllLinesPosition);
     }
 
     initializeApp();
