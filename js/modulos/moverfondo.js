@@ -54,6 +54,9 @@ export function initializePanning(boardContainer, board, onPanCallback) {
         isPanning = false;
         boardContainer.style.cursor = 'grab';
         boardContainer.style.userSelect = '';
+
+        // Notificar que el paneo ha terminado.
+        if (onPanCallback) onPanCallback();
     };
 
     boardContainer.addEventListener('pointerdown', startPanning);
