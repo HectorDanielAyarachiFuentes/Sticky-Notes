@@ -1,34 +1,48 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&family=Kalam&display=swap');
 
 /* --- VARIABLES Y ESTILOS GLOBALES --- */
+/* Paleta de colores profesional y moderna */
 :root {
-    --rojo-circo: #E65C5C;
-    --azul-carpa: #5C82E6;
-    --amarillo-luz: #F2D06B;
-    --fondo-crema: #FDF8E1;
-    --texto-principal: #4B4B4B;
-    --sidebar-bg: #4B4B4B;
-    --sidebar-hover: #616161;
-    --text-light: #FDF8E1;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 10px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+    /* Colores base */
+    --color-primary: #007aff;       /* Azul vibrante para acciones principales */
+    --color-secondary: #5856d6;     /* Púrpura para elementos secundarios */
+    --color-accent: #ff9500;        /* Naranja para alertas o highlights */
+    --color-success: #34c759;       /* Verde para acciones exitosas */
+
+    /* Fondos y superficies */
+    --bg-light: linear-gradient(180deg, rgba(242, 242, 247, 0.9) 0%, rgba(232, 232, 237, 0.8) 100%); /* Fondo principal claro y neutro con gradiente y transparencia */
+    --bg-dark: linear-gradient(135deg, rgba(28, 28, 30, 0.98) 0%, rgba(44, 44, 46, 0.95) 100%); /* Fondo oscuro para sidebars o modos noche con gradiente y transparencia */
+    --surface-light: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 245, 0.9) 100%); /* Superficie de elementos como modales o tarjetas con gradiente y transparencia */
+    --surface-dark: linear-gradient(135deg, rgba(44, 44, 46, 0.95) 0%, rgba(60, 60, 62, 0.9) 100%); /* Superficie oscura con gradiente y transparencia */
+
+    /* Texto y bordes */
+    --text-primary: #1d1d1f;        /* Texto principal sobre fondos claros */
+    --text-secondary: rgba(60, 60, 67, 0.6); /* Texto secundario, con transparencia */
+    --text-light: #f2f2f7;          /* Texto sobre fondos oscuros */
+    --border-color: linear-gradient(90deg, rgba(60, 60, 67, 0.05) 0%, rgba(60, 60, 67, 0.25) 50%, rgba(60, 60, 67, 0.05) 100%); /* Borde sutil con gradiente y transparencia */
+
+    /* Sombras y gradientes */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --gradient-primary: linear-gradient(60deg, rgba(0, 122, 255, 0.85) 0%, rgba(88, 86, 214, 1) 100%); /* Gradiente principal con transparencia ajustada */
 }
 
 body {
     font-family: 'Roboto Slab', serif;
-    background-color: var(--fondo-crema);
+    /* El fondo del body ahora usa directamente la variable --bg-light, que ya es un gradiente */
+    background: var(--bg-light);
     margin: 0;
     display: flex;
     height: 100vh; /* Ocupa toda la altura de la ventana */
-    color: var(--texto-principal);
+    color: var(--text-primary);
 }
 
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
 #board-manager {
     /* El ancho ahora se controla por JS, con un valor inicial y límites */
     flex-shrink: 0; /* Evita que se encoja */
-    background-color: var(--sidebar-bg);
+    background: var(--bg-dark); /* Usamos el gradiente definido en root */
     color: var(--text-light);
     padding: 20px;
     display: flex;
@@ -44,7 +58,10 @@ body {
 #board-manager h3 {
     margin-top: 0;
     font-weight: 700;
-    border-bottom: 1px solid var(--sidebar-hover);
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     padding-bottom: 10px;
     display: flex;
     gap: 10px; /* Espacio entre elementos del título */
@@ -55,7 +72,10 @@ body {
 /* --- PESTAÑAS DEL PANEL --- */
 .tab-nav {
     display: flex;
-    border-bottom: 1px solid var(--sidebar-hover);
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     margin-bottom: 15px;
 }
 .tab-btn {
@@ -75,8 +95,8 @@ body {
     gap: 6px; /* Más espacio entre icono y texto */
     min-width: 0; /* Permite que el botón se encoja */
 }
-.tab-btn:hover { opacity: 1; background-color: var(--sidebar-hover); }
-.tab-btn.active { background-color: var(--sidebar-hover); border-bottom-color: var(--rojo-circo); font-weight: bold; opacity: 1; }
+.tab-btn:hover { opacity: 1; background: var(--surface-dark); } /* Usamos el gradiente */
+.tab-btn.active { background: var(--surface-dark); border-bottom-color: var(--color-primary); font-weight: bold; opacity: 1; } /* Usamos el gradiente */
 .tab-btn .tab-text {
     font-size: 0.55em; /* Ajustamos el tamaño relativo al icono */
     font-family: 'Roboto Slab', serif;
@@ -121,8 +141,8 @@ body {
     align-items: center;
     gap: 10px;
 }
-#board-manager li:hover { background-color: var(--sidebar-hover); }
-#board-manager li.active { background-color: var(--rojo-circo); font-weight: bold; }
+#board-manager li:hover { background: var(--surface-dark); } /* Usamos el gradiente */
+#board-manager li.active { background-color: var(--color-primary); font-weight: bold; }
 
 .board-item-main {
     flex-grow: 1;
@@ -165,10 +185,10 @@ body {
     margin-top: 15px; /* Espacio sobre el botón */
     width: 100%;
     padding: 12px;
-    background-color: var(--rojo-circo);
+    background: var(--gradient-primary);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
     transition: background-color 0.2s ease, transform 0.2s ease;
@@ -182,8 +202,8 @@ body {
     padding: 10px;
     margin: 15px 0 0 0;
     border-radius: 6px;
-    border: 1px solid var(--sidebar-hover);
-    background-color: #3a3a3a;
+    border: 1px solid var(--surface-dark);
+    background: var(--surface-dark); /* Usamos el gradiente */
     color: var(--text-light);
     font-family: 'Nunito', sans-serif;
     box-sizing: border-box;
@@ -191,8 +211,8 @@ body {
 }
 #board-manager #search-input:focus {
     outline: none;
-    border-color: var(--rojo-circo);
-    background-color: var(--sidebar-bg);
+    border-color: var(--color-primary); /* El borde puede seguir siendo un color sólido */
+    background: var(--bg-dark); /* Usamos el gradiente */
 }
 
 /* --- Resultados de Búsqueda Global --- */
@@ -205,10 +225,10 @@ body {
     padding: 10px 12px;
     border-radius: 6px;
     margin-bottom: 6px;
-    background-color: #3a3a3a;
+    background: var(--surface-dark); /* Usamos el gradiente */
     cursor: pointer;
     transition: background-color 0.2s ease;
-    border-left: 3px solid var(--azul-carpa);
+    border-left: 3px solid var(--color-secondary); /* Mantener color sólido para el acento */
 }
 .search-result-item:hover { background-color: var(--sidebar-hover); }
 .search-result-item .note-snippet {
@@ -219,7 +239,7 @@ body {
     opacity: 0.8;
     font-size: 0.85em;
 }
-#board-manager .tab-content button:hover { background-color: var(--azul-carpa); transform: translateY(-2px); }
+#board-manager .tab-content button:hover { background-size: 150% 150%; transform: translateY(-2px); }
 #board-manager .icon { font-size: 1.2em; }
 
 /* --- BOTONES PARA OCULTAR/MOSTRAR PANEL --- */
@@ -232,7 +252,7 @@ body {
     align-items: center;
 }
 #sidebar-collapse-btn:hover {
-    background-color: var(--sidebar-hover);
+    background: var(--surface-dark); /* Usamos el gradiente */
 }
 #sidebar-collapse-btn img {
     width: 32px;
@@ -254,7 +274,7 @@ body {
     margin-left: auto; /* Empuja el botón a la derecha */
 }
 #about-btn:hover {
-    background-color: var(--sidebar-hover);
+    background: var(--surface-dark); /* Usamos el gradiente */
 }
 #about-btn img {
     width: 24px; /* Un poco más pequeño para diferenciarlo */
@@ -268,8 +288,8 @@ body {
     top: 50%; /* Oculto por defecto fuera de la pantalla */
     transform: translateY(-50%) translateX(-100%);
     width: 25px;
-    height: 60px;
-    background-color: var(--sidebar-bg);
+    height: 60px; /* Ajustado para el nuevo tamaño del icono */
+    background: var(--bg-dark); /* Usamos el gradiente */
     color: var(--text-light);
     border-radius: 0 8px 8px 0;
     cursor: pointer;
@@ -281,7 +301,7 @@ body {
     z-index: 199;
 }
 #sidebar-expander:hover {
-    background-color: var(--rojo-circo);
+    background: var(--gradient-primary);
 }
 
 /* Estilos para el SVG dentro del expansor */
@@ -309,12 +329,15 @@ body {
 }
 #sidebar-resizer:hover,
 #sidebar-resizer.resizing {
-    background-color: var(--rojo-circo);
+    background-color: var(--color-primary);
 }
 
 /* --- SECCIÓN DE PLANTILLAS --- */
 #template-container {
-    border-top: 1px solid var(--sidebar-hover);
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-top: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     padding-top: 15px;
 }
 #template-container .tab-title { /* Reutilizamos el estilo de título de pestaña */
@@ -325,10 +348,10 @@ body {
     opacity: 0.8;
 }
 .template-btn {
-    background-color: var(--azul-carpa);
+    background-color: var(--color-secondary);
     margin-top: 8px;
 }
-.template-btn:hover { background-color: var(--rojo-circo); }
+.template-btn:hover { background-color: var(--color-accent); }
 
 /* --- ESTILOS PARA LA PESTAÑA DE LÍNEAS --- */
 .style-option {
@@ -346,8 +369,8 @@ body {
     width: 100%;
     box-sizing: border-box;
     padding: 8px;
-    border-radius: 4px;
-    border: 1px solid var(--sidebar-hover);
+    border-radius: 6px;
+    border: 1px solid rgba(60, 60, 67, 0.2); /* Fallback para border-color */
     background-color: #3a3a3a;
     color: var(--text-light);
     font-family: 'Nunito', sans-serif;
@@ -388,7 +411,10 @@ body {
     flex-wrap: wrap;
     gap: 10px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--sidebar-hover);
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
 }
 .background-preview {
     width: 40px;
@@ -403,7 +429,7 @@ body {
     transform: scale(1.1);
 }
 .background-preview.active {
-    border-color: var(--amarillo-luz);
+    border-color: var(--color-accent);
 }
 
 /* --- PALETA DE NOTAS --- */
@@ -411,14 +437,14 @@ body {
     width: 90px; /* Un poco más estrecho para un look más compacto */
     flex-shrink: 0;
     padding-top: 20px; /* Solo padding superior */
-    background-color: #EAECEE;
+    background: var(--surface-light); /* Usamos el gradiente */
     box-shadow: var(--shadow-sm);
     z-index: 100;
     display: flex; /* Cambiado para el nuevo layout */
     flex-direction: column;
     align-items: center; /* Centramos los elementos */
     gap: 20px; /* Aumentamos el espacio */
-    border-right: 1px solid #D5D8DC;
+    border-right: 1px solid rgba(60, 60, 67, 0.2); /* Fallback para border-color */
     transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     overflow: hidden; /* Evita que las notas se salgan al animarse */
     position: relative; /* ¡CLAVE! Para que el indicador de scroll se posicione dentro de la paleta */
@@ -458,7 +484,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 .palette-header span {
     margin: 0;
-    color: #566573;
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 0.9em;
     text-align: center;
@@ -480,8 +506,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     opacity: 1;
 }
 
-#pin-palette-btn:hover { opacity: 1; background-color: #D5D8DC; }
-#pin-palette-btn.active { opacity: 1; color: var(--rojo-circo); background-color: #D5D8DC; transform: rotate(45deg); }
+#pin-palette-btn:hover { opacity: 1; background-color: var(--bg-light); }
+#pin-palette-btn.active { opacity: 1; color: var(--color-primary); background-color: var(--bg-light); transform: rotate(45deg); }
 
 .pin-icon {
     width: 20px;
@@ -603,8 +629,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 8px;
-    background-color: rgba(75, 75, 75, 0.85);
+    gap: 8px; /* Ajustado para el nuevo tamaño del icono */
+    background: var(--surface-dark); /* Usamos el gradiente */
     padding: 8px 12px;
     border-radius: 25px;
     box-shadow: var(--shadow-md);
@@ -617,7 +643,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     height: 32px;
     border-radius: 50%;
     border: none;
-    background-color: var(--sidebar-hover);
+    background: var(--surface-dark); /* Usamos el gradiente */
     color: var(--text-light);
     font-size: 20px;
     font-weight: bold;
@@ -630,7 +656,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 #zoom-controls button:hover {
-    background-color: var(--rojo-circo);
+    background: var(--gradient-primary);
     transform: scale(1.1);
 }
 /* Estilos para el modo búsqueda */
@@ -641,7 +667,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 #board.searching .stickynote.highlight {
     opacity: 1;
     transform: scale(1.03) !important; /* !important para sobreescribir el transform al arrastrar */
-    box-shadow: 0 0 25px 5px var(--amarillo-luz);
+    box-shadow: 0 0 25px 5px var(--color-accent);
     z-index: 999;
 }
 
@@ -684,7 +710,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     user-select: none;
     box-sizing: border-box;
-    border: 2px dashed var(--texto-principal);
+    border: 2px dashed var(--text-primary);
     border-radius: 15px 5px 20px 5px; /* ¡Esquinas asimétricas! */
     display: flex; /* Para controlar el hijo de texto */
     flex-direction: column;
@@ -695,7 +721,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             font-size: 1.1em;
             padding-bottom: 8px;
             margin-bottom: 8px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--border-color);
             outline: none;
             cursor: text;
         }
@@ -786,7 +812,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         /* Estilo para el placeholder del contenteditable */
         .stickynote-text:empty:before,
         .stickynote-title:empty:before {
-            content: attr(placeholder);
+            content: attr(data-placeholder);
             color: #888;
             cursor: text;
             pointer-events: none;
@@ -841,8 +867,11 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         .stickynote-tabs {
             display: flex;
             flex-shrink: 0; /* Evita que se encoja */
-            margin-top: 10px;
-            border-top: 1px solid rgba(0,0,0,0.1);
+            margin-top: 10px; /* Ajustado para el nuevo tamaño del icono */
+            /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+            border-top: 1px solid rgba(60, 60, 67, 0.2);
+            border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+            border-image-slice: 1;
             padding-top: 8px;
             cursor: default;
             /* --- MEJORA UX: Espacio para la animación de expansión --- */
@@ -906,12 +935,12 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
         /* 3. La pestaña activa siempre es más grande */
         .stickynote-tab.active {
-            border-color: var(--azul-carpa);
+            border-color: var(--color-primary);
             height: 12px;
         }
         /* Cuando la pestaña está activa, ambas partes se pintan del color activo */
         .stickynote-tab.active .stickynote-tab-part {
-            background-color: var(--azul-carpa) !important;
+            background-color: var(--color-primary) !important;
         }
 
         /* --- Botón para conectar notas --- */
@@ -921,10 +950,10 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             right: -12px;
             width: 28px;
             height: 28px;
-            background-color: var(--azul-carpa);
+            background-color: var(--color-primary);
             color: white;
             border-radius: 50%;
-            border: 2px solid var(--fondo-crema);
+            border: 2px solid var(--surface-light);
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -938,8 +967,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         .stickynote:hover .connect-btn {
             opacity: 1;
         }
-        .connect-btn:hover { transform: scale(1.2); background-color: var(--rojo-circo); }
-        .stickynote.connection-start { box-shadow: 0 0 20px 8px var(--azul-carpa); }
+        .connect-btn:hover { transform: scale(1.2); background-color: var(--color-accent); }
+        .stickynote.connection-start { box-shadow: 0 0 20px 8px var(--color-primary); }
 
         /* Estilos del manejador para redimensionar la nota */
         .resizer {
@@ -1008,7 +1037,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -60%);
             color: #B0BEC5;
             font-size: 1.8em;
             text-align: center;
@@ -1026,12 +1055,15 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 #context-menu, #tab-context-menu {
     position: fixed;
     z-index: 2000;
-    background-color: #fff;
+    background: var(--surface-light); /* Usamos el gradiente */
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     padding: 8px 0;
     min-width: 170px;
-    border: 1px solid #eee;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
 }
 #context-menu.hidden, #tab-context-menu.hidden {
     display: none;
@@ -1049,8 +1081,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     align-items: center;
     gap: 10px;
 }
-#context-menu li:hover, #tab-context-menu li:hover { background-color: #f0f0f0; }
-#context-menu li.separator { height: 1px; background-color: #eee; padding: 0; margin: 5px 0; }
+#context-menu li:hover, #tab-context-menu li:hover { background: var(--bg-light); } /* Usamos el gradiente */
+#context-menu li.separator { height: 1px; background-color: var(--border-color); padding: 0; margin: 5px 0; }
 
 /* --- PESTAÑA DE PAPELERA --- */
 #trash-list-container {
@@ -1065,8 +1097,11 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     font-weight: bold;
     color: var(--text-light);
     opacity: 0.9;
-    margin: 20px 0 5px 0;
-    border-bottom: 1px solid var(--sidebar-hover);
+    margin: 20px 0 10px 0;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     padding-bottom: 5px;
 }
 .trash-section-title:first-child {
@@ -1075,10 +1110,10 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .empty-trash-message { opacity: 0.7; text-align: center; }
 
 .trash-item {
-    background-color: #3a3a3a;
+    background: var(--surface-dark); /* Usamos el gradiente */
     padding: 12px;
     border-radius: 6px;
-    border-left: 4px solid var(--rojo-circo);
+    border-left: 4px solid var(--color-accent);
 }
 .trash-item-title {
     font-weight: bold;
@@ -1101,23 +1136,26 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     font-size: 0.8em;
     margin-top: 0; /* Anular el margen de .tab-content button */
     flex: 1;
-    background-color: var(--sidebar-hover);
+    background: var(--surface-dark); /* Usamos el gradiente */
 }
 .trash-item-actions button.restore {
-    background-color: #388E3C; /* Un verde para restaurar */
+    background-color: var(--color-success);
 }
 #empty-trash-btn {
-    background-color: #a61e4d;
+    background-color: var(--color-accent);
 }
 
 /* --- POPOVER DE PALETA DE COLORES --- */
 #color-picker-popover {
     position: fixed;
     z-index: 2001; /* Encima del menú contextual */
-    background-color: #fff;
+    background: var(--surface-light); /* Usamos el gradiente */
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    border: 1px solid #ddd;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     width: 280px;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -1131,12 +1169,15 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     justify-content: space-between;
     align-items: center;
     padding: 8px 15px;
-    border-bottom: 1px solid #eee;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
 }
 .popover-header h4 {
     margin: 0;
     font-size: 1em;
-    color: var(--texto-principal);
+    color: var(--text-primary);
 }
 #close-popover-btn {
     background: none;
@@ -1146,7 +1187,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     color: #888;
     padding: 0 5px;
 }
-#close-popover-btn:hover { color: #333; }
+#close-popover-btn:hover { color: var(--text-primary); }
 
 #popover-color-palette {
     display: grid;
@@ -1168,8 +1209,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transform: scale(1.15);
 }
 /* El borde activo ahora se adapta al color de fondo */
-.color-swatch.active.light-bg { border-color: #333; }
-.color-swatch.active.dark-bg { border-color: #fff; }
+.color-swatch.active.light-bg { border-color: var(--text-primary); }
+.color-swatch.active.dark-bg { border-color: var(--text-light); }
 
 /* --- NOTIFICACIONES (TOASTS) --- */
 #toast-container {
@@ -1184,7 +1225,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     gap: 10px;
 }
 .toast {
-    background-color: rgba(30, 30, 30, 0.9);
+    background: var(--surface-dark); /* Usamos el gradiente */
     color: white;
     padding: 12px 20px;
     border-radius: 25px;
@@ -1214,7 +1255,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     pointer-events: none;
 }
 .modal-content {
-    background-color: var(--fondo-crema);
+    background: var(--surface-light); /* Usamos el gradiente */
     padding: 30px 40px;
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
@@ -1223,7 +1264,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     position: relative;
     transform: scale(1);
     transition: transform 0.3s ease;
-    color: var(--texto-principal);
+    color: var(--text-primary);
 }
 .modal-overlay.hidden .modal-content {
     transform: scale(0.9);
@@ -1231,7 +1272,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 /* --- ESTILOS DEL MODAL "SOBRE MÍ" --- */
 #about-modal .modal-content {
-    background: linear-gradient(145deg, #fdf8e1, #f9f2d0);
+    background: var(--surface-light); /* Usamos el gradiente */
     padding: 0; /* Quitamos el padding para un control total */
     border-radius: 16px;
     width: 90%; /* Asegura que no se desborde en pantallas pequeñas */
@@ -1253,9 +1294,11 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .modal-header {
-    background-color: rgba(75, 75, 75, 0.05);
-    padding: 20px 20px 15px 20px; /* Reducimos padding vertical */
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    background: var(--bg-light); /* Usamos el gradiente */
     border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    padding: 20px 20px 15px 20px; /* Reducimos padding vertical */
 }
 
 .modal-body {
@@ -1265,8 +1308,11 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .modal-footer {
-    padding: 20px 35px;
-    background-color: rgba(75, 75, 75, 0.03);
+    padding: 20px 35px; /* Ajustado para el nuevo tamaño del icono */
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    background: var(--bg-light); /* Usamos el gradiente */
+    border-top: 1px solid rgba(0,0,0,0.05);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
     font-size: 0.9em;
 }
 
@@ -1277,7 +1323,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 .github-link {
     display: inline-block;
-    background-color: var(--sidebar-bg);
+    background: var(--bg-dark); /* Usamos el gradiente */
     color: white;
     padding: 10px 25px;
     border-radius: 25px;
@@ -1287,7 +1333,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 
 .github-link:hover {
-    background-color: var(--rojo-circo);
+    background-color: var(--color-primary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -1326,7 +1372,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .modal-title {
     margin-top: 0;
     margin-bottom: 5px;
-    color: #d65a5a; /* Un rojo un poco más sobrio */
+    color: var(--color-accent);
     font-family: 'Roboto Slab', serif;
     font-size: 1.8em;
 }
@@ -1350,9 +1396,12 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .skills-container h3 {
     font-family: 'Roboto Slab', serif;
     font-size: 1.1em;
-    color: var(--texto-principal);
-    margin-bottom: 15px;
-    border-bottom: 1px solid #ddd;
+    color: var(--text-primary);
+    margin-bottom: 15px; /* Ajustado para el nuevo tamaño del icono */
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
     padding-bottom: 8px;
 }
 
@@ -1420,7 +1469,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     z-index: 10;
 }
 .modal-close-btn:hover {
-    color: var(--texto-principal);
+    color: var(--text-primary);
 }
 
 /* --- Media Query para mejorar la responsividad del modal en pantallas pequeñas --- */
