@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // --- IMPORTACIÓN DE MÓDULOS ---
     const { initializePanning } = await import('./moverfondo.js');
-    const { initializeShareAndImport } = await import('./gestor/compartir.js');
+    const { initializeShareAndImport } = await import('./gestor/exportar.js');
     const { initializeAboutModalFeature } = await import('./sobremi.js');
     const {
         initializeLineManager,
