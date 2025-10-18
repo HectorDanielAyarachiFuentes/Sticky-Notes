@@ -1,7 +1,24 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // --- IMPORTACIÓN DE MÓDULOS ---
     const { initializePanning } = await import('./moverfondo.js');
     const { initializeShareAndImport } = await import('./gestor/exportar.js');
     const { initializeAboutModalFeature } = await import('./sobremi.js');
+    const {
+        initializeLineManager,
+        renderConnections,
+        removeActiveLines,
+        updateAllLinesPosition,
+        handleConnectionClick,
+        removeLinesForNote
+    } = await import('./gestor/lineas.js');
+    const {
+        initializeTrashManager,
+        moveNoteToTrash,
+        renderTrash,
+        emptyTrash
+    } = await import('./gestor/papelera.js');
+    const { initializeNoteInteractions } = await import('./gestor/interaccionesNotas.js');
+
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
     const board = document.querySelector("#board");
@@ -41,7 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctxTabDeleteBtn = document.querySelector("#ctx-tab-delete");
 
     // Papelera
-    const trashListContainer = document.querySelector("#trash-list-container");
+    const trashNotesContainer = document.querySelector("#trash-notes-container");
+    const trashBoardsContainer = document.querySelector("#trash-boards-container");
     const emptyTrashBtn = document.querySelector("#empty-trash-btn");
     const toastContainer = document.querySelector("#toast-container");
     // Popover de color
@@ -122,20 +140,16 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @returns {boolean} - True si el color es oscuro, false si es claro.
      */
     function isColorDark(hexColor) {
-        if (!hexColor || hexColor.length < 7) return false; // Manejar colores inválidos
-        // Quitar el #
+        if (!hexColor || hexColor.length < 7) return false;
         const hex = hexColor.replace('#', '');
-        // Convertir a RGB
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
-        // Fórmula de luminancia YIQ (un estándar para la percepción humana)
         const luminance = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-        return luminance < 128; // El umbral 128 es un buen punto de partida (0-255)
+        return luminance < 128;
     }
     // --- CONFIGURACIÓN INICIAL ---
-    let popoverOriginalColor = null; // Para guardar el color original al previsualizar
-    const noteColors = ['#FFF9C4', '#C8E6C9', '#BBDEFB', '#FFCDD2', '#B2EBF2', '#D7CCC8', '#F8BBD0', '#E1BEE7', '#CFD8DC'];
+    let popoverOriginalColor = null;
     const boardTemplates = {
         kanban: {
             name: 'Tablero Kanban',
@@ -154,7 +168,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { title: 'Amenazas', content: '', x: 450, y: 350, width: 350, height: 250, color: '#FFF9C4', rotation: -1.5 },
             ]
         },
-        // El mapa mental es más complejo por los conectores, se deja como base.
         mindmap: {
             name: 'Mapa Mental',
             notes: [
@@ -182,20 +195,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- GESTIÓN DE ESTADO DE LA APLICACIÓN ---
     let appState = {};
-    let activeNote = null;      // Elemento del DOM que se está arrastrando/redimensionando
-    let activeNoteData = null;  // Objeto de la nota en el 'appState'
-    let offsetX = 0;
-    let offsetY = 0;
-    let ghostNote = null; // Para la previsualización al arrastrar desde la paleta
-    let isResizing = false;
+    let contextMenuNoteId = null;
+    let contextMenuTabInfo = null;
+    let popoverNoteId = null;
+    let maxZIndex = 0;
 
-    let contextMenuNoteId = null; // ID de la nota para el menú contextual    
-    let contextMenuTabInfo = null; // {noteId, tabIndex} para el menú de pestañas
-
-    let popoverNoteId = null; // ID de la nota para el popover de color
-    let maxZIndex = 0; // Para gestionar el apilamiento de las notas
-    let activeLines = []; // Almacena las instancias de LeaderLine activas
-    let connectionState = { startNoteId: null }; // Para gestionar la creación de conexiones
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
     function saveState() {
         localStorage.setItem('stickyNotesApp', JSON.stringify(appState));
@@ -205,34 +209,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedState = localStorage.getItem('stickyNotesApp');
         if (savedState) {
             const loadedState = JSON.parse(savedState);
-            // Migración: Asegurarse de que los tableros viejos tengan la nueva propiedad
             Object.values(loadedState.boards).forEach(board => {
                 if (!board.backgroundApplyTo) {
                     board.backgroundApplyTo = { board: true, notes: false };
                 }
                 board.notes.forEach(note => {
                     if (note.locked === undefined) note.locked = false;
-                    // Migración para la nueva estructura de pestañas (título + contenido)
                     if (note.tabs === undefined) {
-                        // Si la nota viene del formato antiguo (title + content) o (title + tabs[string])
                         const oldTabsContent = note.content ? [note.content, '', '', '', ''] : (note.tabs || ['', '', '', '', '']);
                         note.tabs = oldTabsContent.map((content, index) => ({
-                            // La primera pestaña hereda el título principal, las demás quedan vacías.
                             title: index === 0 ? (note.title || '') : '',
                             content: content || ''
                         }));
                         note.activeTab = 0;
-                        delete note.content; // Eliminar propiedades antiguas
+                        delete note.content;
                         delete note.title;
                     }
                 });
-                if (!loadedState.trash) {
-                    loadedState.trash = [];
-                }
-                if (!loadedState.boardsTrash) {
-                    loadedState.boardsTrash = [];
-                }
-                // Migración para zIndex y cálculo del maxZIndex
+                if (!loadedState.trash) loadedState.trash = [];
+                if (!loadedState.boardsTrash) loadedState.boardsTrash = [];
                 board.notes.forEach(note => {
                     if (note.zIndex === undefined) {
                         note.zIndex = ++maxZIndex;
@@ -240,50 +235,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                         maxZIndex = note.zIndex;
                     }
                 });
-                // Migración para sidebarWidth
                 if (board.lineOptions && board.lineOptions.sidebarWidth) {
                     loadedState.sidebarWidth = board.lineOptions.sidebarWidth;
                     delete board.lineOptions.sidebarWidth;
                 }
             });
-            // Migración para el estado del panel lateral y la paleta
             if (loadedState.isSidebarCollapsed === undefined) {
-                loadedState.isSidebarCollapsed = false; // Por defecto, no está colapsado
-                loadedState.isPalettePinned = true; // Por defecto, está fijada
+                loadedState.isSidebarCollapsed = false;
+                loadedState.isPalettePinned = true;
             }
             appState = loadedState;
-
         } else {
-            // Estado inicial si no hay nada guardado
             const initialBoardId = `board-${Date.now()}`;
             appState = {
                 boards: {
                     [initialBoardId]: {
-                        id: initialBoardId,
-                        name: 'Tablero Principal',
-                        notes: [
-                            // Nota de ejemplo con la nueva estructura
-                            // { id: 'note-init', title: '¡Hola!', tabs: ['Este es un ejemplo de nota con pestañas.', 'Contenido de la pestaña 2', '', '', ''], activeTab: 0, x: 100, y: 100, width: 250, height: 250, color: '#FFF9C4', rotation: -2, zIndex: 1, locked: false }
-                        ],
-                        connections: [], // Array para las conexiones
-                        background: null,
-                        // A dónde se aplica el fondo
-                        backgroundApplyTo: { board: true, notes: false }
+                        id: initialBoardId, name: 'Tablero Principal', notes: [], connections: [],
+                        background: null, backgroundApplyTo: { board: true, notes: false }
                     }
                 },
-                boardsTrash: [], // Papelera para tableros
-                trash: [], // Papelera de reciclaje
-                zoomLevel: 1.0,                isPalettePinned: true, // Nuevo estado para la paleta
-                isSidebarCollapsed: false, // Nuevo estado para el panel lateral
-                activeBoardId: initialBoardId, // El tablero activo
-                sidebarWidth: 260, // Ancho inicial del panel
-                lineOptions: { // Opciones por defecto para las líneas
-                    color: '#4B4B4B', // Gris oscuro en formato HEX
-                    opacity: 0.8,
-                    size: 4,
-                    path: 'fluid',
-                    endPlug: 'arrow1'
-                }
+                boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
+                isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
+                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', endPlug: 'arrow1' }
             };
         }
     }
@@ -298,15 +271,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updatePaletteState() {
         document.body.classList.toggle('palette-pinned', appState.isPalettePinned);
         pinPaletteBtn.classList.toggle('active', appState.isPalettePinned);
-        pinPaletteBtn.title = appState.isPalettePinned ?
-            'Desfijar paleta (permanecerá visible)' :
-            'Fijar paleta (se ocultará con el panel)';
+        pinPaletteBtn.title = appState.isPalettePinned ? 'Desfijar paleta' : 'Fijar paleta';
     }
-    
+
     // --- CONSTANTES GLOBALES ---
     const DEFAULT_BOARD_BACKGROUND = `repeating-linear-gradient(90deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.06) 0px, hsla(280,0%,67%,0.06) 1px,transparent 1px, transparent 96px),repeating-linear-gradient(0deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),repeating-linear-gradient(90deg, hsla(280,0%,67%,0.09) 0px, hsla(280,0%,67%,0.09) 1px,transparent 1px, transparent 12px),linear-gradient(90deg, hsl(226,47%,26%),hsl(226,47%,26%))`;
-
-
 
     // --- FUNCIONES DE RENDERIZADO DE LA UI ---
     function renderBoardList() {
@@ -314,7 +283,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.values(appState.boards).forEach(boardData => {
             const li = document.createElement('li');
             li.dataset.boardId = boardData.id;
-    
+            li.className = boardData.id === appState.activeBoardId ? 'active' : '';
+
             const mainInfo = document.createElement('div');
             mainInfo.className = 'board-item-main';
             mainInfo.addEventListener('click', () => switchBoard(boardData.id));
@@ -336,83 +306,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             mainInfo.appendChild(nameSpan);
             mainInfo.appendChild(dateSpan);
-    
+
             const buttonsContainer = document.createElement('div');
             buttonsContainer.className = 'board-item-buttons';
-    
-            const editBtn = document.createElement('button');
-            editBtn.className = 'board-item-btn';
-            editBtn.innerHTML = '✏️';
-            editBtn.title = 'Editar nombre';
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Evita que se dispare el cambio de tablero
+            buttonsContainer.innerHTML = `
+                <button class="board-item-btn" title="Editar nombre">✏️</button>
+                <button class="board-item-btn" title="Eliminar tablero">🗑️</button>
+            `;
+            buttonsContainer.querySelector('[title="Editar nombre"]').addEventListener('click', (e) => {
+                e.stopPropagation();
                 editBoardName(boardData.id);
             });
-    
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'board-item-btn';
-            deleteBtn.innerHTML = '🗑️';
-            deleteBtn.title = 'Eliminar tablero';
-            deleteBtn.addEventListener('click', (e) => {
+            buttonsContainer.querySelector('[title="Eliminar tablero"]').addEventListener('click', (e) => {
                 e.stopPropagation();
                 deleteBoard(boardData.id);
             });
-    
-            buttonsContainer.appendChild(editBtn);
-            buttonsContainer.appendChild(deleteBtn);
-    
+
             li.appendChild(mainInfo);
             li.appendChild(buttonsContainer);
-    
-            if (boardData.id === appState.activeBoardId) {
-                li.classList.add('active');
-            }
-    
             boardList.appendChild(li);
         });
     }
 
-    function renderActiveBoard() {
-        board.innerHTML = ''; // Limpiar tablero
-        removeActiveLines(); // Limpiar líneas existentes
+    function renderActiveBoard(shouldSave = false) {
+        if (shouldSave) saveState();
+
+        board.innerHTML = '';
+        removeActiveLines();
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
 
-        // Sincronizar checkboxes de aplicación de fondo
         bgApplyToBoardCheckbox.checked = currentBoard.backgroundApplyTo.board;
         bgApplyToNotesCheckbox.checked = currentBoard.backgroundApplyTo.notes;
+        boardContainer.style.background = currentBoard.backgroundApplyTo.board ? (currentBoard.background || DEFAULT_BOARD_BACKGROUND) : DEFAULT_BOARD_BACKGROUND;
 
-        // Aplicar fondo al tablero si corresponde
-        if (currentBoard.backgroundApplyTo.board) {
-            boardContainer.style.background = currentBoard.background || DEFAULT_BOARD_BACKGROUND;
-        } else {
-            boardContainer.style.background = DEFAULT_BOARD_BACKGROUND;
-        }
-
-        // Actualizar la previsualización activa
         updateActiveBackgroundPreview(currentBoard.background);
+        updateZoom();
 
-        updateZoom(); // Aplicar el zoom guardado al renderizar
         if (currentBoard.notes.length === 0) {
             const welcomeMsg = document.createElement('div');
             welcomeMsg.classList.add('welcome-message');
             welcomeMsg.innerHTML = '¡Bienvenido! <br>Arrastra una nota o haz doble clic para comenzar.';
             board.appendChild(welcomeMsg);
         } else {
-            currentBoard.notes.forEach(noteData => {
-                createStickyNoteElement(noteData);
-            });
+            currentBoard.notes.forEach(noteData => createStickyNoteElement(noteData));
         }
         renderConnections();
     }
 
-    /**
-     * Calcula el tamaño necesario para el tablero basado en la posición de las notas
-     * y lo expande si es necesario para crear un efecto de "lienzo infinito".
-     */
     function updateBoardSize() {
         const currentBoardData = appState.boards[appState.activeBoardId];
-        const PADDING = 1000; // Espacio extra para que se sienta más infinito
+        const PADDING = 1000;
 
         if (!currentBoardData || !currentBoardData.notes.length) {
             board.style.width = `calc(100% + ${PADDING}px)`;
@@ -432,75 +376,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         board.style.height = `${Math.max(boardContainer.clientHeight + PADDING, maxY + PADDING)}px`;
     }
 
-    function renderConnections() {
-        const currentBoard = appState.boards[appState.activeBoardId];
-        if (!currentBoard.connections) currentBoard.connections = [];
-
-        currentBoard.connections.forEach(conn => {
-            const startEl = board.querySelector(`.stickynote[data-note-id="${conn.from}"]`);
-            const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
-
-            if (startEl && endEl) {
-                const { color, opacity, ...restOptions } = appState.lineOptions;
-                
-                // Función para convertir HEX a RGBA
-                const hexToRgba = (hex, alpha) => {
-                    const r = parseInt(hex.slice(1, 3), 16);
-                    const g = parseInt(hex.slice(3, 5), 16);
-                    const b = parseInt(hex.slice(5, 7), 16);
-                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                };
-
-                const line = new LeaderLine(startEl, endEl, {
-                    ...restOptions,
-                    hide: true, // ¡NUEVO! Crear la línea oculta
-                    color: hexToRgba(color, opacity),
-                    startSocket: 'auto',
-                    endSocket: 'auto'
-                });
-                activeLines.push({ line, from: conn.from, to: conn.to });
-
-                // ¡NUEVO! Mostrar la línea con una animación de dibujado
-                line.show('draw', {
-                    duration: 400,
-                    timing: 'ease-in-out'
-                });
-            }
-        });
-    }
-    function removeActiveLines() {
-        activeLines.forEach(l => l.line.remove());
-        activeLines = [];
-    }
-
-    /**
-     * Recorre todas las líneas de conexión activas y recalcula su posición.
-     * Esencial para el zoom y el paneo.
-     */
-    function updateAllLinesPosition() {
-        activeLines.forEach(l => l.line.position());
-    }
     // --- FUNCIONES DE ZOOM ---
     function updateZoom(newZoomLevel) {
         if (newZoomLevel !== undefined) {
-            // Limitar el zoom entre 20% y 200%
             appState.zoomLevel = Math.max(0.2, Math.min(2, newZoomLevel));
         }
         board.style.transform = `scale(${appState.zoomLevel})`;
         zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
-        // ¡CORRECCIÓN! Actualizar la posición de todas las líneas al hacer zoom.
         updateAllLinesPosition();
         saveState();
-    }
-
-    function handleZoomIn() {
-        updateZoom(appState.zoomLevel + 0.1);
-    }
-    function handleZoomOut() {
-        updateZoom(appState.zoomLevel - 0.1);
-    }
-    function handleZoomReset() {
-        updateZoom(1.0);
     }
 
     // --- FUNCIONES DE LÓGICA DE LA APP ---
@@ -510,19 +394,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveState();
         renderBoardList();
         renderActiveBoard();
-        updateBoardSize(); // Asegurarse de que el tamaño es correcto al cambiar de tablero
-        searchInput.value = ''; // Limpiar búsqueda al cambiar de tablero
-        globalSearchResults.innerHTML = ''; // Limpiar resultados globales
+        updateBoardSize();
+        searchInput.value = '';
+        globalSearchResults.innerHTML = '';
         board.classList.remove('searching');
 
         if (noteToHighlightId) {
-            // Pequeño delay para asegurar que la nota está en el DOM
             setTimeout(() => {
                 const noteEl = board.querySelector(`.stickynote[data-note-id="${noteToHighlightId}"]`);
                 if (noteEl) {
                     noteEl.classList.add('highlight');
                     noteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Quitar el resaltado después de un tiempo
                     setTimeout(() => noteEl.classList.remove('highlight'), 2500);
                 }
             }, 100);
@@ -534,76 +416,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (boardName) {
             const newBoardId = `board-${Date.now()}`;
             appState.boards[newBoardId] = {
-                id: newBoardId,
-                name: boardName,
-                notes: [],
-                createdAt: Date.now(),
-                connections: [],
-                background: null, // Fondo por defecto para nuevos tableros
-                backgroundApplyTo: { board: true, notes: false } // ¡CORRECCIÓN!
+                id: newBoardId, name: boardName, notes: [], createdAt: Date.now(),
+                connections: [], background: null, backgroundApplyTo: { board: true, notes: false }
             };
             switchBoard(newBoardId);
         }
     }
 
-    /**
-     * Crea un nuevo tablero por defecto sin pedir confirmación.
-     * @returns {string} El ID del nuevo tablero creado.
-     */
     function createDefaultBoard() {
         const newBoardId = `board-${Date.now()}`;
         appState.boards[newBoardId] = {
-            id: newBoardId,
-            name: "Tablero de Respaldo",
-            notes: [],
-            createdAt: Date.now(),
-            connections: [],
-            background: null,
-            backgroundApplyTo: { board: true, notes: false }
+            id: newBoardId, name: "Tablero de Respaldo", notes: [], createdAt: Date.now(),
+            connections: [], background: null, backgroundApplyTo: { board: true, notes: false }
         };
         return newBoardId;
     }
 
     function editBoardName(boardId) {
-        const board = appState.boards[boardId];
-        if (!board) return;
-    
-        const newName = prompt("Nuevo nombre para el tablero:", board.name);
+        const boardData = appState.boards[boardId];
+        if (!boardData) return;
+        const newName = prompt("Nuevo nombre para el tablero:", boardData.name);
         if (newName && newName.trim() !== '') {
-            board.name = newName.trim();
+            boardData.name = newName.trim();
             saveState();
             renderBoardList();
-            showToast(`Tablero renombrado a "${board.name}".`);
+            showToast(`Tablero renombrado a "${boardData.name}".`);
         }
     }
-    
+
     function deleteBoard(boardId) {
         const boardToDelete = appState.boards[boardId];
         const isLastBoard = Object.keys(appState.boards).length <= 1;
-    
-        const confirmMessage = isLastBoard ?
-            `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"? El espacio de trabajo quedará vacío.` :
-            `¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`;
-    
+        const confirmMessage = isLastBoard
+            ? `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"?`
+            : `¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`;
+
         if (confirm(confirmMessage)) {
-            // Mover a la papelera de tableros
             appState.boardsTrash.push(boardToDelete);
             delete appState.boards[boardId];
-    
-            // Si el tablero eliminado era el activo, cambia a otro
             if (appState.activeBoardId === boardId) {
-                if (isLastBoard) {
+                const firstBoardId = Object.keys(appState.boards)[0] || null;
+                if (firstBoardId) {
+                    switchBoard(firstBoardId);
+                } else {
                     appState.activeBoardId = null;
                     saveState();
-                    renderActiveBoard(); // Renderiza el estado vacío
-                } else {
-                    const firstBoardId = Object.keys(appState.boards)[0];
-                    switchBoard(firstBoardId); // Esto ya guarda el estado y renderiza
+                    renderActiveBoard();
                 }
-            } else {
-                saveState();
             }
-            renderBoardList(); // Actualiza la lista en la UI
+            saveState();
+            renderBoardList();
             showToast(`Tablero "${boardToDelete.name}" movido a la papelera.`);
         }
     }
@@ -611,36 +473,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     function createBoardFromTemplate(templateType) {
         const template = boardTemplates[templateType];
         if (!template) return;
-
         const boardName = prompt(`Nombre para el tablero "${template.name}":`, template.name);
         if (boardName) {
             const newBoardId = `board-${Date.now()}`;
             const newNotes = template.notes.map((note, index) => ({
                 ...note,
-                id: `note-${Date.now()}-${index}`,
-                // Si la plantilla no especifica rotación, se añade una aleatoria
-                zIndex: ++maxZIndex,
-                locked: false,
+                id: `note-${Date.now()}-${index}`, zIndex: ++maxZIndex, locked: false,
                 rotation: note.rotation !== undefined ? note.rotation : (Math.random() - 0.5) * 4,
-                // Convertir la estructura de la plantilla a la nueva estructura de pestañas
                 tabs: Array(5).fill(null).map((_, tabIndex) => ({
                     title: tabIndex === 0 ? (note.title || '') : '',
                     content: tabIndex === 0 ? (note.content || '') : ''
                 })),
                 activeTab: 0,
-                // Eliminar propiedades antiguas para evitar confusiones
-                ...('title' in note && { title: undefined }),
-                ...('content' in note && { content: undefined }),
+                ...('title' in note && { title: undefined }), ...('content' in note && { content: undefined }),
             }));
-
             appState.boards[newBoardId] = {
-                id: newBoardId,
-                name: boardName,
-                createdAt: Date.now(),
-                notes: newNotes,
-                connections: [], // Las plantillas aún no definen conexiones
-                background: null,
-                backgroundApplyTo: { board: true, notes: false }
+                id: newBoardId, name: boardName, createdAt: Date.now(), notes: newNotes,
+                connections: [], background: null, backgroundApplyTo: { board: true, notes: false }
             };
             switchBoard(newBoardId);
         }
@@ -648,181 +497,95 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function handleSearch() {
         const searchTerm = searchInput.value.toLowerCase().trim();
-        globalSearchResults.innerHTML = ''; // Limpiar resultados anteriores
+        globalSearchResults.innerHTML = '';
 
         if (searchTerm === '') {
             board.classList.remove('searching');
-            board.querySelectorAll('.stickynote').forEach(noteEl => {
-                noteEl.classList.remove('highlight');
-            });
+            board.querySelectorAll('.stickynote.highlight').forEach(n => n.classList.remove('highlight'));
             return;
         }
 
         board.classList.add('searching');
-        
-        // Recorrer TODOS los tableros
         Object.values(appState.boards).forEach(currentBoard => {
             currentBoard.notes.forEach(note => {
-                // Usamos un div temporal para quitar el HTML y buscar solo en el texto
                 const tempDiv = document.createElement('div');
-                // Buscar en todos los títulos y contenidos de todas las pestañas
-                const searchableText = note.tabs.map(tab => `${tab.title} ${tab.content}`).join(' ');
-
-                tempDiv.innerHTML = searchableText;
+                tempDiv.innerHTML = note.tabs.map(tab => `${tab.title} ${tab.content}`).join(' ');
                 const noteText = tempDiv.textContent || tempDiv.innerText || "";
+                const isMatch = noteText.toLowerCase().includes(searchTerm);
 
-                if (noteText.toLowerCase().includes(searchTerm)) {
-                    // Si la nota está en el tablero ACTIVO, la resaltamos
-                    if (currentBoard.id === appState.activeBoardId) {
-                        const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
-                        noteEl?.classList.add('highlight');
-                    } 
-                    // Si la nota está en OTRO tablero, la mostramos en los resultados globales
-                    else {
-                        const resultItem = document.createElement('div');
-                        resultItem.classList.add('search-result-item');
-                        resultItem.innerHTML = `
-                            <span class="board-name">${currentBoard.name}</span>
-                            <span class="note-snippet">${noteText.substring(0, 100)}</span>
-                        `;
-                        resultItem.addEventListener('click', () => {
-                            switchBoard(currentBoard.id, note.id);
-                        });
-                        globalSearchResults.appendChild(resultItem);
-                    }
-                } else {
-                    // Si no coincide, nos aseguramos de que no esté resaltada (en el tablero activo)
-                    if (currentBoard.id === appState.activeBoardId) {
-                        const noteEl = board.querySelector(`.stickynote[data-note-id="${note.id}"]`);
-                        noteEl?.classList.remove('highlight');
-                    }
+                if (currentBoard.id === appState.activeBoardId) {
+                    board.querySelector(`.stickynote[data-note-id="${note.id}"]`)?.classList.toggle('highlight', isMatch);
+                } else if (isMatch) {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `<span class="board-name">${currentBoard.name}</span><span class="note-snippet">${noteText.substring(0, 100)}</span>`;
+                    resultItem.addEventListener('click', () => switchBoard(currentBoard.id, note.id));
+                    globalSearchResults.appendChild(resultItem);
                 }
             });
         });
     }
 
-    function autoLink(text) {
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
-    }
-
     function createStickyNoteElement(noteData, isNew = false) {
         const sticky = document.createElement("div");
-        sticky.classList.add("stickynote");
-        if (noteData.locked) {
-            sticky.classList.add("locked");
-        }
+        sticky.className = `stickynote ${noteData.locked ? 'locked' : ''} ${isColorDark(noteData.color) ? 'dark-theme' : ''}`;
         sticky.dataset.noteId = noteData.id;
-        sticky.style.left = `${noteData.x}px`;
-        sticky.style.top = `${noteData.y}px`;
-        sticky.style.width = `${noteData.width}px`;
-        sticky.style.height = `${noteData.height}px`;
-        sticky.style.backgroundColor = noteData.color;
-        sticky.style.transform = `rotate(${noteData.rotation}deg)`;
-        sticky.style.zIndex = noteData.zIndex;
+        sticky.style.cssText = `left:${noteData.x}px; top:${noteData.y}px; width:${noteData.width}px; height:${noteData.height}px; background-color:${noteData.color}; transform:rotate(${noteData.rotation}deg); z-index:${noteData.zIndex};`;
 
-        // --- MEJORA DE CONTRASTE ---
-        // Añadir clase si el fondo es oscuro para cambiar el color del texto
-        if (isColorDark(noteData.color)) {
-            sticky.classList.add('dark-theme');
-        }
-
-        // Aplicar fondo de tablero a la nota si está activado
         const currentBoard = appState.boards[appState.activeBoardId];
         if (currentBoard.backgroundApplyTo.notes && currentBoard.background) {
             sticky.style.backgroundImage = currentBoard.background;
         }
 
-        // --- TÍTULO ---
         const title = document.createElement("div");
         title.contentEditable = !noteData.locked;
-        title.classList.add("stickynote-title");
+        title.className = "stickynote-title";
         title.setAttribute("placeholder", "Título...");
-        // Mostrar el título de la pestaña activa
         title.innerHTML = noteData.tabs[noteData.activeTab].title || '';
         title.addEventListener('blur', () => {
             const newTitle = title.innerHTML;
             if (noteData.tabs[noteData.activeTab].title !== newTitle) {
                 noteData.tabs[noteData.activeTab].title = newTitle;
                 saveState();
-
-                // Actualizar la parte del título de la pestaña activa
-                const activeTabElement = sticky.querySelector(`.stickynote-tab[data-tab-index="${noteData.activeTab}"]`);
-                const titlePart = activeTabElement.querySelector('.stickynote-tab-part[data-part="title"]');
-                titlePart.classList.toggle('filled', !!newTitle.trim());
-                titlePart.classList.toggle('empty', !newTitle.trim());
-
+                const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${noteData.activeTab}"] .stickynote-tab-part[data-part="title"]`);
+                tabPart.classList.toggle('filled', !!newTitle.trim());
+                tabPart.classList.toggle('empty', !newTitle.trim());
                 handleSearch();
             }
         });
 
-        // --- CONTENEDOR DE PESTAÑAS Y CONTENIDO ---
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'stickynote-content-wrapper';
-
         const tabContainer = document.createElement('div');
         tabContainer.className = 'stickynote-tabs';
-
         const contentContainer = document.createElement('div');
         contentContainer.className = 'stickynote-content-container';
 
         for (let i = 0; i < 5; i++) {
-            // Crear pestaña
             const tab = document.createElement('div');
-            tab.className = 'stickynote-tab';
+            tab.className = `stickynote-tab ${i === noteData.activeTab ? 'active' : ''}`;
             tab.dataset.tabIndex = i;
-
-            // --- RE-DISEÑO: Pestaña inteligente con texto ---
-            const tabTitlePart = document.createElement('span');
-            tabTitlePart.className = 'stickynote-tab-part';
-            tabTitlePart.dataset.part = 'title';
-            tabTitlePart.textContent = 'Título';
-            tabTitlePart.classList.add(noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty');
-
-            const tabContentPart = document.createElement('span');
-            tabContentPart.className = 'stickynote-tab-part';
-            tabContentPart.dataset.part = 'content';
-            tabContentPart.textContent = 'Cuerpo';
-            tabContentPart.classList.add(noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty');
-
-            tab.appendChild(tabTitlePart);
-            tab.appendChild(tabContentPart);
-
-            if (i === noteData.activeTab) {
-                tab.classList.add('active');
-            }
-            tab.addEventListener('click', (e) => { // Clic izquierdo para cambiar de pestaña
+            tab.innerHTML = `<span class="stickynote-tab-part ${noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty'}" data-part="title">T</span><span class="stickynote-tab-part ${noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty'}" data-part="content">C</span>`;
+            tab.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Cambiar de pestaña
                 noteData.activeTab = i;
                 saveState();
-                
-                // Actualizar clases de pestañas y contenido
-                const currentActiveTab = sticky.querySelector('.stickynote-tab.active');
-                if (currentActiveTab) currentActiveTab.classList.remove('active');
+                sticky.querySelector('.stickynote-tab.active')?.classList.remove('active');
                 tab.classList.add('active');
-                const currentActiveContent = sticky.querySelector('.stickynote-text.active');
-                if (currentActiveContent) currentActiveContent.classList.remove('active');
+                sticky.querySelector('.stickynote-text.active')?.classList.remove('active');
                 sticky.querySelector(`.stickynote-text[data-tab-index="${i}"]`).classList.add('active');
-
-                // ¡NUEVO! Actualizar el título principal de la nota
                 title.innerHTML = noteData.tabs[i].title || '';
             });
-            tab.addEventListener('contextmenu', (e) => { // Clic derecho para menú
-                e.preventDefault();
-                e.stopPropagation();
+            tab.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); e.stopPropagation();
                 contextMenuTabInfo = { noteId: noteData.id, tabIndex: i };
                 showTabContextMenu(e.clientX, e.clientY);
             });
             tabContainer.appendChild(tab);
 
-            // Crear área de contenido para la pestaña
             const content = document.createElement("div");
             content.contentEditable = !noteData.locked;
-            content.classList.add("stickynote-text");
-            if (i === noteData.activeTab) {
-                content.classList.add('active');
-            }
+            content.className = `stickynote-text ${i === noteData.activeTab ? 'active' : ''}`;
             content.dataset.tabIndex = i;
             content.setAttribute("placeholder", "Escribe algo...");
             content.innerHTML = noteData.tabs[i].content || '';
@@ -831,13 +594,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (noteData.tabs[i].content !== newContent) {
                     noteData.tabs[i].content = newContent;
                     saveState();
-                    // Actualizar la parte de contenido de la pestaña (UX)
-                    const tabEl = sticky.querySelector(`.stickynote-tab[data-tab-index="${i}"]`);
-                    if (tabEl) {
-                        const contentPart = tabEl.querySelector('.stickynote-tab-part[data-part="content"]');
-                        contentPart.classList.toggle('filled', !!newContent.trim());
-                        contentPart.classList.toggle('empty', !newContent.trim());
-                    }
+                    const tabPart = tab.querySelector('.stickynote-tab-part[data-part="content"]');
+                    tabPart.classList.toggle('filled', !!newContent.trim());
+                    tabPart.classList.toggle('empty', !newContent.trim());
                     handleSearch();
                 }
             });
@@ -846,362 +605,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const connectBtn = document.createElement("div");
         connectBtn.className = 'connect-btn';
-        connectBtn.innerHTML = '☍'; // Símbolo de enlace
+        connectBtn.innerHTML = '☍';
         connectBtn.title = 'Crear conexión';
-
-        // Evento para el botón de conexión
         connectBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             handleConnectionClick(noteData.id);
         });
 
         const resizer = document.createElement("div");
-        resizer.classList.add("resizer");
+        resizer.className = "resizer";
 
         sticky.appendChild(title);
         contentWrapper.appendChild(contentContainer);
         contentWrapper.appendChild(tabContainer);
         sticky.appendChild(contentWrapper);
-
         sticky.appendChild(connectBtn);
         sticky.appendChild(resizer);
         board.appendChild(sticky);
 
         if (isNew) {
-            // Añade la clase para la animación y la quita cuando termina
             sticky.classList.add('new-note-animation');
-            sticky.addEventListener('animationend', () => {
-                sticky.classList.remove('new-note-animation');
-            }, { once: true });
+            sticky.addEventListener('animationend', () => sticky.classList.remove('new-note-animation'), { once: true });
         }
-
         return sticky;
     }
 
-    function handleConnectionClick(noteId) {
-        const startNoteEl = board.querySelector(`.stickynote[data-note-id="${connectionState.startNoteId}"]`);
-        if (startNoteEl) startNoteEl.classList.remove('connection-start');
-
-        if (!connectionState.startNoteId) {
-            // Iniciar conexión
-            connectionState.startNoteId = noteId;
-            const noteEl = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
-            noteEl.classList.add('connection-start');
-        } else {
-            // Finalizar conexión
-            if (connectionState.startNoteId !== noteId) {
-                const currentBoard = appState.boards[appState.activeBoardId];
-                currentBoard.connections.push({ from: connectionState.startNoteId, to: noteId });
-                saveState();
-                renderActiveBoard(); // Re-renderizar para mostrar la nueva línea
-            }
-            // Resetear estado de conexión
-            connectionState.startNoteId = null;
-        }
-    }
-
     function bringToFront(noteElement, noteData) {
-        if (noteData.zIndex >= maxZIndex) return; // Ya está al frente
+        if (noteData.zIndex >= maxZIndex) return;
         noteData.zIndex = ++maxZIndex;
         noteElement.style.zIndex = noteData.zIndex;
         saveState();
     }
 
-    // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) CORREGIDA ---
-
-    function handlePointerDown(e) {
-        const isResizer = e.target.classList.contains('resizer');
-        const isPaletteNote = e.target.closest('.palette-note');
-        const isStickyNote = e.target.closest('.stickynote');
-        const isBoard = e.target === board || e.target === boardContainer;
-
-        // Si no se hizo clic en un elemento interactivo (nota, paleta, redimensionador), no hacer nada.
-        // Esto permite que el listener de paneo del fondo funcione sin conflictos.
-        if (!isResizer && !isPaletteNote && !isStickyNote) return;
-
-        const boardRect = boardContainer.getBoundingClientRect();
-
-        // CASO 1: Iniciar redimensión
-        if (isResizer) {
-            e.preventDefault();
-            isResizing = true;
-            activeNote = e.target.closest('.stickynote');
-            activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
-            if (activeNoteData.locked) { isResizing = false; activeNote = null; return; }
-            bringToFront(activeNote, activeNoteData);
-            activeNote.classList.add('dragging');
-            trashCan.classList.add('visible');
-            return;
-        }
-
-        // Si estamos en modo conexión, un clic en una nota crea la conexión
-        if (connectionState.startNoteId && isStickyNote) {
-            const noteEl = e.target.closest('.stickynote');
-            if (noteEl) {
-                e.preventDefault();
-                handleConnectionClick(noteEl.dataset.noteId);
-            }
-            return;
-        }
-
-        // CASO 2: Iniciar arrastre para CREAR una nota nueva
-        if (isPaletteNote) {
-            e.preventDefault();
-            // Crear un "fantasma" de la nota para arrastrar
-            ghostNote = isPaletteNote.cloneNode(true);
-            ghostNote.style.position = 'fixed'; // Se mueve por toda la ventana
-            ghostNote.style.zIndex = '9999';
-            ghostNote.style.pointerEvents = 'none'; // No interfiere con otros eventos
-            ghostNote.style.transform = 'scale(1.1)'; // Un poco más grande para indicar que se está arrastrando
-            document.body.appendChild(ghostNote);
-
-            // Posicionar el fantasma bajo el cursor
-            offsetX = e.clientX - isPaletteNote.getBoundingClientRect().left;
-            offsetY = e.clientY - isPaletteNote.getBoundingClientRect().top;
-            ghostNote.style.left = `${e.clientX - offsetX}px`;
-            ghostNote.style.top = `${e.clientY - offsetY}px`;
-
-            trashCan.classList.add('visible');
-        }
-
-        // CASO 3: Iniciar arrastre para MOVER una nota existente
-        if (isStickyNote && !isResizer && !e.target.classList.contains('connect-btn')) {
-            activeNote = isStickyNote;
-            activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
-            if (activeNoteData.locked) { activeNote = null; return; }
-
-            // Solo prevenimos el comportamiento por defecto (y empezamos a arrastrar) si no es el área de texto.
-            const originalTarget = e.target;
-            if (!originalTarget.classList.contains('stickynote-text') && !originalTarget.classList.contains('stickynote-title')) e.preventDefault();
-
-            // **CORRECCIÓN:** Calcular el desfase relativo al tablero y AJUSTADO AL ZOOM
-            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
-            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
-            offsetX = mouseXInBoard - activeNote.offsetLeft;
-            offsetY = mouseYInBoard - activeNote.offsetTop;
-
-            bringToFront(activeNote, activeNoteData);
-            if (!originalTarget.classList.contains('stickynote-text') && !originalTarget.classList.contains('stickynote-title')) {
-                activeNote.classList.add('dragging');
-                trashCan.classList.add('visible');
-            }
-        }
-    }
-
-    function handlePointerMove(e) {
-        // Mover el fantasma si existe
-        if (ghostNote) {
-            ghostNote.style.left = `${e.clientX - offsetX}px`;
-            ghostNote.style.top = `${e.clientY - offsetY}px`;
-            // Lógica de la papelera para el fantasma
-            const trashRect = trashCan.getBoundingClientRect();
-            trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
-            return; // No hacer nada más si estamos arrastrando el fantasma
-        }
-
-        if (!activeNote || (activeNoteData && activeNoteData.locked)) return;
-        e.preventDefault();
-
-        const boardRect = boardContainer.getBoundingClientRect();
-
-        if (isResizing) {
-            // Lógica de redimensionamiento
-            const newWidth = (e.clientX - activeNote.getBoundingClientRect().left) / appState.zoomLevel;
-            const newHeight = (e.clientY - activeNote.getBoundingClientRect().top) / appState.zoomLevel;
-            activeNoteData.width = Math.max(150, newWidth);
-            activeNoteData.height = Math.max(150, newHeight);
-            activeNote.style.width = `${activeNoteData.width}px`;
-            activeNote.style.height = `${activeNoteData.height}px`;
-            updateBoardSize(); // Actualizar tamaño del tablero al redimensionar
-        } else {
-            // Lógica de arrastre
-            // **CORRECCIÓN:** Calcular la nueva posición relativa al tablero y AJUSTADA AL ZOOM
-            const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
-            const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
-            const newX = mouseXInBoard - offsetX;
-            const newY = mouseYInBoard - offsetY;
-
-            activeNoteData.x = newX;
-            activeNoteData.y = newY;
-            activeNote.style.left = `${newX}px`;
-            activeNote.style.top = `${newY}px`;
-            updateBoardSize(); // Actualizar tamaño del tablero al arrastrar
-            // Actualizar líneas conectadas
-            updateAllLinesPosition();
-            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`; // Mantener rotación al arrastrar
-        }
-
-        // Lógica de la papelera
-        const trashRect = trashCan.getBoundingClientRect();
-        if (e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom) {
-            trashCan.classList.add('active');
-        } else {
-            trashCan.classList.remove('active');
-        }
-    }
-
-    function handlePointerUp() {
-        // Si soltamos un fantasma
-        if (ghostNote) {
-            const boardRect = boardContainer.getBoundingClientRect();
-            const isOverBoard = event.clientX >= boardRect.left && event.clientX <= boardRect.right &&
-                                event.clientY >= boardRect.top && event.clientY <= boardRect.bottom;
-
-            // Si se suelta sobre el tablero y no sobre la papelera
-            if (isOverBoard && !trashCan.classList.contains('active')) {
-                board.querySelector('.welcome-message')?.remove();
-
-
-                const color = ghostNote.dataset.color;
-                const mouseXInBoard = (event.clientX - boardRect.left + boardContainer.scrollLeft) / appState.zoomLevel;
-                const mouseYInBoard = (event.clientY - boardRect.top + boardContainer.scrollTop) / appState.zoomLevel;
-
-                const newNoteData = {
-                    id: `note-${Date.now()}`,
-                    tabs: Array(5).fill(null).map(() => ({ title: '', content: '' })),
-                    activeTab: 0,
-                    width: 200, height: 200, color: color,
-                    rotation: (Math.random() - 0.5) * 8,
-                    locked: false,
-                    zIndex: ++maxZIndex,
-                    x: mouseXInBoard - (100 / appState.zoomLevel), // Centrar
-                    y: mouseYInBoard - (100 / appState.zoomLevel),
-                };
-
-                // Si no hay tablero activo, crear uno por defecto
-                if (!appState.activeBoardId) {
-                    const newBoardId = createDefaultBoard();
-                    switchBoard(newBoardId);
-                    showToast('Hemos creado un nuevo tablero para ti.');
-                }
-
-                appState.boards[appState.activeBoardId].notes.push(newNoteData);
-                createStickyNoteElement(newNoteData, true); // Crear la nota real
-                saveState();
-                updateBoardSize();
-            }
-
-            // Limpiar el fantasma y la papelera
-            ghostNote.remove();
-            ghostNote = null;
-            trashCan.classList.remove('visible', 'active');
-            return; // Terminar la función aquí
-        }
-
-        // Lógica existente para notas que ya están en el tablero
-        if (!activeNote) return;
-
-        if (trashCan.classList.contains('active')) {
-            moveNoteToTrash(activeNoteData.id); 
-        } else {
-            if (!isResizing) updateAllLinesPosition(); // Reposicionar al soltar
-            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
-        }
-        
-        activeNote.classList.remove('dragging');
-        trashCan.classList.remove('visible', 'active');
-        
-        // Limpiar variables de estado
-        activeNote = null;
-        activeNoteData = null;
-        isResizing = false;
-        offsetX = 0;
-        offsetY = 0;
-        
-        saveState();
-        if (appState.boards[appState.activeBoardId].notes.length === 0) {
-            renderActiveBoard(); // Volver a mostrar mensaje de bienvenida si es necesario
-            updateBoardSize(); // Resetear el tamaño si no quedan notas
-        }
-    }
-
-    function handleWheelRotate(e) {
-        // Rotar la nota activa con la rueda del ratón mientras se arrastra
-        if (!activeNote || isResizing || (activeNoteData && activeNoteData.locked)) return;
-
-        e.preventDefault(); // Evitar el scroll de la página
-
-        const rotationIncrement = e.deltaY > 0 ? 2 : -2; // Grados a rotar por cada "tick" de la rueda
-        activeNoteData.rotation = (activeNoteData.rotation + rotationIncrement) % 360;
-
-        activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
-    }
-    
-    /**
-     * Maneja el doble clic en el tablero para crear una nota nueva.
-     * @param {MouseEvent} e - El evento de doble clic.
-     */
-    function handleBoardDoubleClick(e) {
-        // Solo crear la nota si el doble clic es en el fondo del tablero
-        if (e.target !== board && e.target !== boardContainer) {
-            return;
-        }
-
-        board.querySelector('.welcome-message')?.remove();
-        const boardRect = boardContainer.getBoundingClientRect();
-
-        // Calcular la posición teniendo en cuenta el scroll y el zoom
-        const mouseXInBoard = (e.clientX - boardRect.left + boardContainer.scrollLeft) / appState.zoomLevel;
-        const mouseYInBoard = (e.clientY - boardRect.top + boardContainer.scrollTop) / appState.zoomLevel;
-
-        const newNoteData = {
-            id: `note-${Date.now()}`,
-            tabs: Array(5).fill(null).map(() => ({ title: '', content: '' })),
-            activeTab: 0,
-            width: 200, height: 200, color: '#FFF9C4', // Color amarillo por defecto
-            rotation: (Math.random() - 0.5) * 8,
-            locked: false,
-            zIndex: ++maxZIndex,
-            x: mouseXInBoard, // ¡CORRECCIÓN! La esquina superior izquierda en el cursor.
-            y: mouseYInBoard,
-        };
-
-        // Si no hay tablero activo, crear uno por defecto
-        if (!appState.activeBoardId) {
-            const newBoardId = createDefaultBoard();
-            switchBoard(newBoardId);
-            showToast('Hemos creado un nuevo tablero para ti.');
-        }
-
-        appState.boards[appState.activeBoardId].notes.push(newNoteData);
-        createStickyNoteElement(newNoteData, true); // Crear con animación
-        saveState();
-        updateBoardSize();
-    }
-
     // --- LÓGICA DEL MENÚ CONTEXTUAL ---
     function handleContextMenu(e) {
-        // Primero, verificar si el clic es en una pestaña de nota
-        const tabElement = e.target.closest('.stickynote-tab');
-        if (tabElement) {
-            // El evento 'contextmenu' en la pestaña ya se maneja al crearla.
-            // Prevenimos que se abra el menú contextual principal.
-            e.preventDefault();
-            return;
+        if (e.target.closest('.stickynote-tab')) {
+            e.preventDefault(); return;
         }
 
-        // Si no es una pestaña, verificar si es en una nota
         const noteElement = e.target.closest('.stickynote');
         if (noteElement) {
             e.preventDefault();
-            hideTabContextMenu(); // Ocultar el otro menú por si acaso
+            hideTabContextMenu();
             contextMenuNoteId = noteElement.dataset.noteId;
-            
             const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
             ctxLockBtn.textContent = noteData.locked ? 'Desbloquear Nota' : 'Bloquear Nota';
-
             contextMenu.style.top = `${e.clientY}px`;
             contextMenu.style.left = `${e.clientX}px`;
             contextMenu.classList.remove('hidden');
         } else {
-            // Si se hace clic en cualquier otro lugar, ocultar ambos menús
             hideContextMenu();
             hideTabContextMenu();
         }
     }
 
     function showTabContextMenu(x, y) {
-        hideContextMenu(); // Ocultar el menú principal
+        hideContextMenu();
         tabContextMenu.style.top = `${y}px`;
         tabContextMenu.style.left = `${x}px`;
         tabContextMenu.classList.remove('hidden');
@@ -1215,42 +674,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     function clearTab() {
         if (!contextMenuTabInfo) return;
         const { noteId, tabIndex } = contextMenuTabInfo;
-        hideTabContextMenu(); // Ocultar menú inmediatamente
+        hideTabContextMenu();
 
         const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === noteId);
         const noteElement = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
-        if (!noteData || !noteElement) return;
+        if (!noteData || !noteElement || !confirm('¿Limpiar el contenido de esta pestaña?')) return;
 
-        // UX: Pedir confirmación antes de borrar
-        if (!confirm('¿Estás seguro de que quieres limpiar el título y el contenido de esta pestaña?')) {
-            return;
-        }
-
-        const titleElement = noteElement.querySelector('.stickynote-title');
         const contentElement = noteElement.querySelector(`.stickynote-text[data-tab-index="${tabIndex}"]`);
-        const tabElement = noteElement.querySelector(`.stickynote-tab[data-tab-index="${tabIndex}"]`);
-
-        // Aplicar animación de desvanecimiento
         contentElement.classList.add('clearing-out');
-
-        // Esperar a que la animación termine para limpiar los datos
         contentElement.addEventListener('animationend', () => {
-            // Limpiar datos en el estado de la aplicación
             noteData.tabs[tabIndex] = { title: '', content: '' };
             saveState();
-
-            // Limpiar el DOM
             contentElement.innerHTML = '';
-            if (noteData.activeTab === tabIndex) {
-                titleElement.innerHTML = '';
-            }
-            // Actualizar las dos partes de la pestaña a 'empty'
-            const titlePart = tabElement.querySelector('.stickynote-tab-part[data-part="title"]');
-            const contentPart = tabElement.querySelector('.stickynote-tab-part[data-part="content"]');
-            titlePart.className = 'stickynote-tab-part empty';
-            contentPart.className = 'stickynote-tab-part empty';
-            contentElement.classList.remove('clearing-out'); // Limpiar clase para futuras animaciones
-        }, { once: true }); // El listener se ejecuta solo una vez
+            if (noteData.activeTab === tabIndex) noteElement.querySelector('.stickynote-title').innerHTML = '';
+            const tabEl = noteElement.querySelector(`.stickynote-tab[data-tab-index="${tabIndex}"]`);
+            tabEl.querySelectorAll('.stickynote-tab-part').forEach(part => {
+                part.className = `stickynote-tab-part empty`;
+            });
+            contentElement.classList.remove('clearing-out');
+        }, { once: true });
     }
 
     function hideContextMenu() {
@@ -1264,14 +706,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!originalNoteData) return;
 
         const newNoteData = {
+            ...JSON.parse(JSON.stringify(originalNoteData)),
             id: `note-${Date.now()}`,
-            ...JSON.parse(JSON.stringify(originalNoteData)), // Deep copy para las pestañas
-            x: originalNoteData.x + 20, // Pequeño desfase
+            x: originalNoteData.x + 20,
             y: originalNoteData.y + 20,
             zIndex: ++maxZIndex,
-            locked: false // La nota duplicada nunca está bloqueada
+            locked: false
         };
-
         appState.boards[appState.activeBoardId].notes.push(newNoteData);
         createStickyNoteElement(newNoteData, true);
         saveState();
@@ -1288,27 +729,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         noteElement.classList.toggle('locked');
         noteElement.querySelector('.stickynote-title').contentEditable = !noteData.locked;
         noteElement.querySelectorAll('.stickynote-text').forEach(el => el.contentEditable = !noteData.locked);
-
         saveState();
         hideContextMenu();
     }
 
     function deleteNoteFromContext() {
-        if (!contextMenuNoteId) return;
-        moveNoteToTrash(contextMenuNoteId);
+        if (contextMenuNoteId) {
+            moveNoteToTrash(contextMenuNoteId);
+        }
     }
 
     function handleTabSwitching() {
-        const tabNav = document.querySelector('.tab-nav');
-        if (!tabNav) return;
-
-        tabNav.addEventListener('click', (e) => {
+        document.querySelector('.tab-nav')?.addEventListener('click', (e) => {
             const button = e.target.closest('.tab-btn');
             if (!button || button.classList.contains('active')) return;
-
             const tabId = button.dataset.tab;
 
-            tabNav.querySelector('.tab-btn.active')?.classList.remove('active');
+            document.querySelector('.tab-nav .tab-btn.active')?.classList.remove('active');
             button.classList.add('active');
 
             boardManager.querySelector('.tab-content.active')?.classList.remove('active');
@@ -1333,15 +770,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             appState.lineOptions.size = parseInt(lineSizeInput.value, 10);
             appState.lineOptions.endPlug = linePlugSelect.value;
             saveState();
-            renderActiveBoard(); // Re-renderizar para aplicar cambios
+            renderActiveBoard();
         };
 
-        [lineColorInput, lineOpacityInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el => 
+        [lineColorInput, lineOpacityInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el =>
             el.addEventListener('change', updateLineStyle));
-    }
-
-    function buildGradient(colors) {
-        return `linear-gradient(45deg, ${colors.join(', ')})`;
     }
 
     function createBackgroundPreviews(title, gradients, isRaw = false) {
@@ -1352,20 +785,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const categoryContainer = document.createElement('div');
         categoryContainer.className = 'background-category';
-
         gradients.forEach(grad => {
+            const backgroundValue = isRaw ? grad : `linear-gradient(45deg, ${grad.colors.join(', ')})`;
             const preview = document.createElement('div');
             preview.className = 'background-preview';
-            
-            const backgroundValue = isRaw ? grad : buildGradient(grad.colors);
             preview.style.background = backgroundValue;
             preview.dataset.background = backgroundValue;
             preview.title = isRaw ? 'Fondo de rayas' : grad.name;
-
-            preview.addEventListener('click', () => {
-                applyBackground(backgroundValue);
-            });
-
+            preview.addEventListener('click', () => applyBackground(backgroundValue));
             categoryContainer.appendChild(preview);
         });
         backgroundOptionsContainer.appendChild(categoryContainer);
@@ -1373,27 +800,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function initializeBackgroundOptions() {
         try {
-            const [gradientsRes, stripesRes] = await Promise.all([
-                fetch('fondo/gradients.json'),
-                fetch('fondo/gradientesraya.json')
+            const [gradients, stripes] = await Promise.all([
+                fetch('fondo/gradients.json').then(res => res.json()),
+                fetch('fondo/gradientesraya.json').then(res => res.json())
             ]);
-
-            if (gradientsRes.ok) {
-                const gradients = await gradientsRes.json();
-                createBackgroundPreviews('Gradientes', gradients, false);
-            }
-            if (stripesRes.ok) {
-                const stripes = await stripesRes.json();
-                createBackgroundPreviews('Rayas', stripes, true);
-            }
-
+            createBackgroundPreviews('Gradientes', gradients, false);
+            createBackgroundPreviews('Rayas', stripes, true);
         } catch (error) {
             console.error("Error al cargar los fondos:", error);
             backgroundOptionsContainer.innerHTML = '<p>No se pudieron cargar los fondos.</p>';
         }
 
         resetBackgroundBtn.addEventListener('click', () => applyBackground(null));
-        // Añadir listeners a los checkboxes para aplicar cambios inmediatamente
         bgApplyToBoardCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
         bgApplyToNotesCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
     }
@@ -1402,22 +820,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
 
-        // Guardar la configuración de a qué se aplica
         currentBoard.backgroundApplyTo = {
             board: bgApplyToBoardCheckbox.checked,
             notes: bgApplyToNotesCheckbox.checked
         };
-
         currentBoard.background = backgroundValue;
 
-        // Aplicar al tablero
-        if (currentBoard.backgroundApplyTo.board) {
-            boardContainer.style.background = backgroundValue || DEFAULT_BOARD_BACKGROUND;
-        } else {
-            boardContainer.style.background = DEFAULT_BOARD_BACKGROUND; // Restaurar si no se aplica
-        }
-
-        // Aplicar a todas las notas del tablero actual
+        boardContainer.style.background = currentBoard.backgroundApplyTo.board ? backgroundValue || DEFAULT_BOARD_BACKGROUND : DEFAULT_BOARD_BACKGROUND;
         document.querySelectorAll('.stickynote').forEach(noteEl => {
             noteEl.style.backgroundImage = currentBoard.backgroundApplyTo.notes ? backgroundValue : '';
         });
@@ -1428,220 +837,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateActiveBackgroundPreview(backgroundValue) {
         document.querySelectorAll('.background-preview').forEach(p => {
-            if (p.dataset.background === backgroundValue || (!backgroundValue && !p.dataset.background)) {
-                p.classList.add('active');
-            } else {
-                p.classList.remove('active');
-            }
+            p.classList.toggle('active', p.dataset.background === backgroundValue || (!backgroundValue && !p.dataset.background));
         });
     }
-
-    // --- LÓGICA DE LA PAPELERA Y NOTIFICACIONES ---
 
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.textContent = message;
         toastContainer.appendChild(toast);
-
-        // El toast se elimina a sí mismo después de que la animación termina
-        toast.addEventListener('animationend', () => {
-            toast.remove();
-        });
-    }
-
-    function moveNoteToTrash(noteId) {
-        const boardId = appState.activeBoardId;
-        const noteElement = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
-        if (!noteElement) return;
-
-        // Añadir clase para la animación de salida
-        noteElement.classList.add('deleting');
-
-        // Esperar a que la animación termine para eliminar la nota lógicamente
-        noteElement.addEventListener('animationend', () => {
-            const notes = appState.boards[boardId].notes;
-            const noteIndex = notes.findIndex(n => n.id === noteId);
-
-            if (noteIndex > -1) {
-                const [noteToTrash] = notes.splice(noteIndex, 1);
-                noteToTrash.originalBoardId = boardId; // Guardar de dónde vino
-                appState.trash.push(noteToTrash);
-
-                // Eliminar conexiones asociadas
-                appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
-                    conn => conn.from !== noteId && conn.to !== noteId
-                );
-
-                // ¡CORRECCIÓN! Eliminar visualmente las líneas antes de filtrar el array
-                const linesToRemove = activeLines.filter(l => l.from === noteId || l.to === noteId);
-                linesToRemove.forEach(l => l.line.remove());
-                activeLines = activeLines.filter(l => l.from !== noteId && l.to !== noteId);
-                noteElement.remove();
-
-                saveState();
-                updateBoardSize(); // Actualizar tamaño por si se eliminó la nota más lejana
-                showToast('Nota movida a la papelera.');
-
-                // ¡NUEVO! Actualizar la vista de la papelera si está abierta
-                const trashTabContent = document.getElementById('tab-content-trash');
-                if (trashTabContent && trashTabContent.classList.contains('active')) {
-                    renderTrash();
-                }
-            }
-        }, { once: true }); // El listener se ejecuta solo una vez
-
-        hideContextMenu();
-    }
-
-    function renderTrash() {
-        const trashNotesContainer = document.querySelector("#trash-notes-container");
-        const trashBoardsContainer = document.querySelector("#trash-boards-container");
-
-        // Limpiar contenedores
-        if (trashNotesContainer) trashNotesContainer.innerHTML = '';
-        if (trashBoardsContainer) trashBoardsContainer.innerHTML = '';
-
-        // Renderizar Notas eliminadas
-        if (appState.trash.length === 0) {
-            trashNotesContainer.innerHTML = '<p class="empty-trash-message">No hay notas eliminadas.</p>';
-        } else {
-            appState.trash.forEach(note => {
-                const item = document.createElement('div');
-                item.className = 'trash-item';
-
-                const activeTabData = note.tabs[note.activeTab] || { title: '', content: '' };
-                const titleText = activeTabData.title || 'Nota sin título';
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = note.tabs.map(t => t.content).join(' ');
-                const noteText = (tempDiv.textContent || tempDiv.innerText || "").trim() || 'Nota vacía';
-
-                item.innerHTML = `
-                    <div class="trash-item-title">${titleText}</div>
-                    <div class="trash-item-content">${noteText}</div>
-                    <div class="trash-item-actions">
-                        <button class="restore" data-note-id="${note.id}">Restaurar</button>
-                        <button class="delete-perm" data-note-id="${note.id}">Borrar</button>
-                    </div>
-                `;
-                trashNotesContainer.appendChild(item);
-            });
-
-            trashNotesContainer.querySelectorAll('.restore').forEach(btn => {
-                btn.addEventListener('click', () => restoreNote(btn.dataset.noteId));
-            });
-            trashNotesContainer.querySelectorAll('.delete-perm').forEach(btn => {
-                btn.addEventListener('click', () => deletePermanently(btn.dataset.noteId));
-            });
-        }
-
-        // Renderizar Tableros eliminados
-        if (appState.boardsTrash.length === 0) {
-            trashBoardsContainer.innerHTML = '<p class="empty-trash-message">No hay tableros eliminados.</p>';
-        } else {
-            appState.boardsTrash.forEach(board => {
-                const item = document.createElement('div');
-                item.className = 'trash-item';
-                item.innerHTML = `
-                    <div class="trash-item-title">${board.name}</div>
-                    <div class="trash-item-content">${board.notes.length} nota(s)</div>
-                    <div class="trash-item-actions">
-                        <button class="restore-board" data-board-id="${board.id}">Restaurar</button>
-                        <button class="delete-perm-board" data-board-id="${board.id}">Borrar</button>
-                    </div>
-                `;
-                trashBoardsContainer.appendChild(item);
-            });
-
-            trashBoardsContainer.querySelectorAll('.restore-board').forEach(btn => {
-                btn.addEventListener('click', () => restoreBoard(btn.dataset.boardId));
-            });
-            trashBoardsContainer.querySelectorAll('.delete-perm-board').forEach(btn => {
-                btn.addEventListener('click', () => deleteBoardPermanently(btn.dataset.boardId));
-            });
-        }
-
-        // Lógica del botón "Vaciar Papelera"
-        emptyTrashBtn.disabled = appState.trash.length === 0 && appState.boardsTrash.length === 0;
-    }
-
-    function restoreBoard(boardId) {
-        const boardIndex = appState.boardsTrash.findIndex(b => b.id === boardId);
-        if (boardIndex > -1) {
-            const [boardToRestore] = appState.boardsTrash.splice(boardIndex, 1);
-            appState.boards[boardToRestore.id] = boardToRestore;
-            saveState();
-            renderTrash();
-            renderBoardList(); // Actualizar la lista de tableros en el panel
-            showToast(`Tablero "${boardToRestore.name}" restaurado.`);
-        }
-    }
-
-    function deleteBoardPermanently(boardId) {
-        appState.boardsTrash = appState.boardsTrash.filter(b => b.id !== boardId);
-        saveState();
-        renderTrash();
-    }
-
-    function restoreNote(noteId) {
-        const trashIndex = appState.trash.findIndex(n => n.id === noteId);
-        if (trashIndex > -1) {
-            const [noteToRestore] = appState.trash.splice(trashIndex, 1);
-            const targetBoard = appState.boards[noteToRestore.originalBoardId];
-            if (targetBoard) {
-                targetBoard.notes.push(noteToRestore);
-                delete noteToRestore.originalBoardId; // Limpiar la propiedad
-                saveState();
-                renderTrash();
-                // Si la nota pertenece al tablero actual, re-renderizarlo
-                if (targetBoard.id === appState.activeBoardId) {
-                    renderActiveBoard();
-                    updateBoardSize();
-                }
-                showToast('Nota restaurada.');
-            } else {
-                // Si el tablero original ya no existe, restaurar la nota al primer tablero disponible
-                const firstBoardId = Object.keys(appState.boards)[0];
-                if(firstBoardId) {
-                    appState.boards[firstBoardId].notes.push(noteToRestore);
-                    delete noteToRestore.originalBoardId;
-                    saveState();
-                    renderTrash();
-                    if (firstBoardId === appState.activeBoardId) {
-                        renderActiveBoard();
-                        updateBoardSize();
-                    }
-                    showToast(`Nota restaurada en el tablero "${appState.boards[firstBoardId].name}".`);
-                } else {
-                    // Caso extremo: no hay tableros. Devolver la nota a la papelera.
-                    appState.trash.push(noteToRestore);
-                    showToast('❌ No hay tableros disponibles para restaurar la nota.');
-                }
-            }
-        }
-    }
-
-    function deletePermanently(noteId) {
-        appState.trash = appState.trash.filter(n => n.id !== noteId);
-        saveState();
-        renderTrash();
-    }
-
-    function emptyTrash() {
-        if (confirm('¿Estás seguro de que quieres vaciar la papelera? Todos los tableros y notas eliminados se borrarán permanentemente.')) {
-            appState.trash = [];
-            appState.boardsTrash = [];
-            saveState();
-            renderTrash();
-        }
+        toast.addEventListener('animationend', () => toast.remove());
     }
 
     function initializeSidebarResizing() {
         const resizer = document.getElementById('sidebar-resizer');
         if (!resizer) return;
-
-        const minWidth = 220;
-        const maxWidth = 500;
+        const minWidth = 220, maxWidth = 500;
 
         const handlePointerDown = (e) => {
             e.preventDefault();
@@ -1650,23 +861,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.style.userSelect = 'none';
 
             const handlePointerMove = (moveEvent) => {
-                let newWidth = moveEvent.clientX;
-                if (newWidth < minWidth) newWidth = minWidth;
-                if (newWidth > maxWidth) newWidth = maxWidth;
-
+                let newWidth = Math.max(minWidth, Math.min(moveEvent.clientX, maxWidth));
                 boardManager.style.width = `${newWidth}px`;
-                // Actualizar la posición de las líneas en tiempo real
-                activeLines.forEach(l => l.line.position());
+                updateAllLinesPosition();
             };
 
             const handlePointerUp = () => {
                 resizer.classList.remove('resizing');
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
-
                 appState.sidebarWidth = parseInt(boardManager.style.width, 10);
                 saveState();
-
                 document.removeEventListener('pointermove', handlePointerMove);
                 document.removeEventListener('pointerup', handlePointerUp);
             };
@@ -1674,91 +879,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.addEventListener('pointermove', handlePointerMove);
             document.addEventListener('pointerup', handlePointerUp);
         };
-
         resizer.addEventListener('pointerdown', handlePointerDown);
     }
 
-    // --- LÓGICA DE LA PALETA DE COLORES (POPOVER) ---
-
     function showColorPopover() {
         if (!contextMenuNoteId) return;
-
         const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
         if (!noteData) return;
 
-        // --- SOLUCIÓN: Guardar el ID en la variable del popover ---
         popoverNoteId = contextMenuNoteId;
-        popoverOriginalColor = noteData.color; // Guardar color original
+        popoverOriginalColor = noteData.color;
 
-        // Resaltar el color actual
         for (const swatch of popoverPalette.children) {
             const isActive = swatch.dataset.color === noteData.color;
-            swatch.classList.toggle('active', isActive);
-            swatch.classList.toggle('light-bg', isActive && !isColorDark(swatch.dataset.color));
-            swatch.classList.toggle('dark-bg', isActive && isColorDark(swatch.dataset.color));
+            swatch.className = `color-swatch ${isActive ? 'active' : ''} ${isActive ? (isColorDark(swatch.dataset.color) ? 'dark-bg' : 'light-bg') : ''}`;
         }
         
         const menuRect = contextMenu.getBoundingClientRect();
         colorPopover.style.top = `${menuRect.top}px`;
         colorPopover.style.left = `${menuRect.right + 10}px`;
         colorPopover.classList.remove('hidden');
-        hideContextMenu(); // Ahora esto es seguro, porque ya guardamos el ID
+        hideContextMenu();
     }
 
     function hideColorPopover() {
         if (!colorPopover.classList.contains('hidden') && popoverOriginalColor) {
-            // Restaurar el color original si se cierra sin seleccionar
-            // --- SOLUCIÓN: Usar popoverNoteId ---
             const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
-            if (noteElement) {
-                noteElement.style.backgroundColor = popoverOriginalColor;
-            }
+            if (noteElement) noteElement.style.backgroundColor = popoverOriginalColor;
         }
         colorPopover.classList.add('hidden');
         popoverOriginalColor = null;
-        // --- SOLUCIÓN: Limpiar el ID del popover ---
         popoverNoteId = null;
     }
 
     function changeNoteColor(newColor) {
-        // --- SOLUCIÓN: Usar popoverNoteId ---
         if (!popoverNoteId) return;
-
         const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === popoverNoteId);
         const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
-
         if (noteData && noteElement) {
-            popoverOriginalColor = null; // Marcar que el color ha sido elegido, para no restaurarlo.
+            popoverOriginalColor = null;
             noteData.color = newColor;
             noteElement.style.backgroundColor = newColor;
-            
-            // --- MEJORA DE CONTRASTE ---
-            // Actualizar la clase de tema claro/oscuro al cambiar el color
             noteElement.classList.toggle('dark-theme', isColorDark(newColor));
-
             saveState();
         }
         hideColorPopover();
     }
 
     function initializeColorPopover() {
-        // Paleta extendida de colores
-        const extendedColors = [
-            '#FFFFFF', '#F1F3F4', '#CFD8DC', '#E8EAED', '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC', '#D7CCC8', '#424242', '#000000'
-        ];
-
-        // Función para previsualizar el color en la nota
+        const extendedColors = ['#FFFFFF', '#F1F3F4', '#CFD8DC', '#E8EAED', '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC', '#D7CCC8', '#424242', '#000000'];
         const previewNoteColor = (color) => {
-            // --- SOLUCIÓN: Usar popoverNoteId ---
             if (!popoverNoteId) return;
             const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
             if (noteElement) {
                 noteElement.style.backgroundColor = color;
-                // MEJORA DE CONTRASTE: Actualizar la clase de tema claro/oscuro también en la previsualización
-                noteElement.classList.toggle('dark-theme', isColorDark(color)); // Esta línea ya estaba, la muevo para agrupar.
+                noteElement.classList.toggle('dark-theme', isColorDark(color));
             }
         };
-
         extendedColors.forEach(color => {
             const swatch = document.createElement('div');
             swatch.className = 'color-swatch';
@@ -1768,16 +945,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             swatch.addEventListener('mouseenter', () => previewNoteColor(color));
             popoverPalette.appendChild(swatch);
         });
-
-        // Restablecer el color de la nota cuando el cursor sale de la paleta
         popoverPalette.addEventListener('mouseleave', () => {
-            if (popoverOriginalColor) {
-                // Al salir, restauramos el color y también el tema de contraste original
-                const noteElement = board.querySelector(`.stickynote[data-note-id="${popoverNoteId}"]`);
-                if (noteElement) previewNoteColor(popoverOriginalColor);
-            }
+            if (popoverOriginalColor) previewNoteColor(popoverOriginalColor);
         });
-
         ctxChangeColorBtn.addEventListener('click', showColorPopover);
         closePopoverBtn.addEventListener('click', hideColorPopover);
     }
@@ -1786,59 +956,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     function initializeApp() {
         loadState();
 
-        // Lógica para los botones de ocultar/mostrar panel
+        initializeLineManager(appState, board, renderActiveBoard);
+
+        const trashDOM = {
+            board: board,
+            trashNotesContainer: trashNotesContainer,
+            trashBoardsContainer: trashBoardsContainer,
+            emptyTrashBtn: emptyTrashBtn
+        };
+        const trashCallbacks = {
+            saveState, showToast, renderBoardList, renderActiveBoard,
+            updateBoardSize, hideContextMenu, removeLinesForNote
+        };
+        initializeTrashManager(appState, trashDOM, trashCallbacks);
+
+        const noteInteractionDOM = { boardContainer, board, trashCan };
+        const noteInteractionCallbacks = {
+            handleConnectionClick, bringToFront, updateBoardSize, updateAllLinesPosition,
+            moveNoteToTrash, saveState, renderActiveBoard, createDefaultBoard,
+            switchBoard, showToast, createStickyNoteElement,
+            getNewZIndex: () => ++maxZIndex
+        };
+        initializeNoteInteractions(appState, noteInteractionDOM, noteInteractionCallbacks);
+
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
-
         const setSidebarCollapsed = (collapsed) => {
             appState.isSidebarCollapsed = collapsed;
-            if (collapsed) {
-                boardManager.style.marginLeft = `-${boardManager.offsetWidth}px`;
-                boardManager.classList.add('collapsed');
-            } else {
-                boardManager.style.marginLeft = '';
-                boardManager.classList.remove('collapsed');
-            }
+            boardManager.classList.toggle('collapsed', collapsed);
+            boardManager.style.marginLeft = collapsed ? `-${boardManager.offsetWidth}px` : '';
             smoothLineUpdateOnToggle();
             saveState();
         };
-
-        // Función para animar las líneas de conexión suavemente al abrir/cerrar el panel
         const smoothLineUpdateOnToggle = () => {
-            const duration = 400; // Debe coincidir con la duración de la transición en CSS
-            const startTime = performance.now();
-
+            const duration = 400; const startTime = performance.now();
             function animateLines() {
-                const elapsed = performance.now() - startTime;
-                if (elapsed < duration) {
-                    activeLines.forEach(l => l.line.position());
+                if (performance.now() - startTime < duration) {
+                    updateAllLinesPosition();
                     requestAnimationFrame(animateLines);
-                } else {
-                    // Una última actualización para asegurar la posición final perfecta
-                    activeLines.forEach(l => l.line.position());
-                }
+                } else { updateAllLinesPosition(); }
             }
             requestAnimationFrame(animateLines);
         };
-
-        collapseBtn.addEventListener('click', () => {
-            setSidebarCollapsed(true);
-        });
-        expander.addEventListener('click', () => {
-            setSidebarCollapsed(false);
-        });
-
-        // Aplicar el ancho guardado al iniciar
+        collapseBtn.addEventListener('click', () => setSidebarCollapsed(true));
+        expander.addEventListener('click', () => setSidebarCollapsed(false));
         boardManager.style.width = `${appState.sidebarWidth || 260}px`;
+        if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
 
-        // Aplicar el estado colapsado guardado al iniciar
-        if (appState.isSidebarCollapsed) setSidebarCollapsed(true); // Esto aplicará el marginLeft correcto
-
-        // Configurar UI
         addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
         handleTabSwitching();
 
-        // Crear botones de plantillas dinámicamente
         const templateTitle = document.createElement('p');
         templateTitle.className = 'tab-title';
         templateTitle.textContent = 'Crear desde plantilla:';
@@ -1846,145 +1013,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.keys(boardTemplates).forEach(key => {
             const btn = document.createElement('button');
             btn.className = 'template-btn';
-            btn.dataset.template = key;
             btn.textContent = boardTemplates[key].name;
             btn.addEventListener('click', () => createBoardFromTemplate(key));
             templateContainer.appendChild(btn);
         });
 
-        // --- MEJORA UX/UI: Paleta de notas con scroll infinito y circular ---
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
         const scrollIndicatorUp = paletteScrollContainer.previousElementSibling;
         const scrollIndicator = paletteScrollContainer.nextElementSibling;
-        
-        let lastScrollTop = 0; // Para detectar la dirección del scroll
-
-        // 1. Generar una paleta de colores rica con matices
-        const rainbowColors = [
-            '#ff7979', // Rojo pastel
-            '#ffbe76', // Naranja pastel
-            '#f6e58d', // Amarillo pastel
-            '#badc58', // Verde lima
-            '#7ed6df', // Turquesa
-            '#54a0ff', // Azul cielo
-            '#be2edd', // Violeta
-            '#FFFFFF', // Blanco (generará grises claros)
-            '#808080'  // Gris (generará grises oscuros y negro)
-        ];
-        
+        const rainbowColors = ['#ff7979', '#ffbe76', '#f6e58d', '#badc58', '#7ed6df', '#54a0ff', '#be2edd', '#FFFFFF', '#808080'];
         const fullPalette = [];
         rainbowColors.forEach(color => {
             const [h, s, l] = hexToHsl(color);
-            // Generar 2 tonos más claros y 2 más oscuros
             for (let i = -2; i <= 2; i++) {
-                // Ajustar la luminosidad, asegurando que se mantenga entre 15% y 95%
-                const newL = Math.max(0.15, Math.min(0.95, l + i * 0.08));
-                fullPalette.push(hslToHex(h, s, newL));
+                fullPalette.push(hslToHex(h, s, Math.max(0.15, Math.min(0.95, l + i * 0.08))));
             }
         });
-
-        // 2. Duplicar la paleta (más veces) para un scroll infinito más robusto
         const extendedColors = [...fullPalette, ...fullPalette, ...fullPalette, ...fullPalette];
-
-        // Función para mostrar/ocultar el indicador de scroll
         const updateScrollIndicator = () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
             const isScrollable = scrollHeight > clientHeight;
-            
-            // Indicador hacia abajo: se muestra si hay scroll y no se ha llegado al final.
-            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // Pequeño umbral
-            scrollIndicator.style.opacity = (isScrollable && !isAtBottom) ? '1' : '0';
-            // Indicador hacia arriba: se muestra si hay scroll y no se está en el principio.
+            scrollIndicator.style.opacity = (isScrollable && scrollTop + clientHeight < scrollHeight - 10) ? '1' : '0';
             scrollIndicatorUp.style.opacity = (isScrollable && scrollTop > 10) ? '1' : '0';
         };
-
-        // 3. Lógica para el scroll circular
         paletteScrollContainer.addEventListener('scroll', () => {
-            const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
-
-            // --- NUEVO: Lógica para detectar dirección y animar la flecha ---
-            if (scrollTop > lastScrollTop && scrollTop > 0) {
-                // Scroll hacia abajo
-                scrollIndicator.classList.add('scrolling-down');
-                // Quitar la clase después de la animación para poder volver a activarla
-                setTimeout(() => scrollIndicator.classList.remove('scrolling-down'), 500);
-            } else if (scrollTop < lastScrollTop) {
-                // Scroll hacia arriba
-                scrollIndicatorUp.classList.add('scrolling-up');
-                // Quitar la clase después de la animación
-                setTimeout(() => scrollIndicatorUp.classList.remove('scrolling-up'), 500);
-            }
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Para manejar el rebote en iOS/Mac
-            // --- FIN NUEVO ---
-
-            const scrollContentHeight = scrollHeight / 4; // Altura de un bloque de colores
             updateScrollIndicator();
-
-            // Si el scroll se acerca al final, lo movemos al bloque anterior
-            if (scrollTop + clientHeight >= scrollContentHeight * 3) {
-                paletteScrollContainer.scrollTop -= scrollContentHeight;
-                lastScrollTop = paletteScrollContainer.scrollTop; // Actualizar después del salto
-            } // Si el scroll se acerca al principio, lo movemos al bloque siguiente
-            else if (scrollTop <= scrollContentHeight) {
-                paletteScrollContainer.scrollTop += scrollContentHeight;
-            }
+            const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
+            const blockHeight = scrollHeight / 4;
+            if (scrollTop + clientHeight >= blockHeight * 3) paletteScrollContainer.scrollTop -= blockHeight;
+            else if (scrollTop <= blockHeight) paletteScrollContainer.scrollTop += blockHeight;
         }, { passive: true });
-
         extendedColors.forEach((color, index) => {
             const paletteNote = document.createElement("div");
-            paletteNote.classList.add("palette-note");
+            paletteNote.className = `palette-note ${isColorDark(color) ? 'dark-theme' : ''}`;
             paletteNote.style.backgroundColor = color;
             paletteNote.dataset.color = color;
-
-            // --- MEJORA DE CONTRASTE EN PALETA ---
-            if (isColorDark(color)) {
-                paletteNote.classList.add('dark-theme');
-            }
-            
-            // Aumentamos el desplazamiento vertical para mayor separación
             paletteNote.style.top = `${index * 25}px`;
-            // Una rotación sutil y aleatoria para un look más natural
             paletteNote.style.transform = `rotate(${(Math.random() - 0.5) * 6}deg)`;
-
             paletteScrollContainer.appendChild(paletteNote);
         });
-        
-        // 4. Posicionar el scroll en el medio para empezar
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
-        // 5. Actualizar el indicador de scroll al inicio
-        // Usamos un pequeño timeout para asegurar que el DOM está completamente renderizado
         setTimeout(updateScrollIndicator, 100);
 
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         addBoardBtn.addEventListener('click', addNewBoard);
         searchInput.addEventListener('input', handleSearch);
-        document.addEventListener('pointerdown', handlePointerDown);
-        document.addEventListener('pointermove', handlePointerMove);
-        document.addEventListener('pointerup', handlePointerUp);
+
         document.addEventListener('contextmenu', handleContextMenu);
-        // Ocultar menús si se hace clic fuera
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('#context-menu') && !e.target.closest('#tab-context-menu') && !e.target.closest('#color-picker-popover')) {
+            if (!e.target.closest('#context-menu, #tab-context-menu, #color-picker-popover')) {
                 hideContextMenu();
                 hideTabContextMenu();
                 hideColorPopover();
             }
-        }, true); // Usar captura para que se ejecute antes que otros clics
+        }, true);
         ctxDuplicateBtn.addEventListener('click', duplicateNote);
         ctxLockBtn.addEventListener('click', toggleLockNote);
         ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
         ctxTabDeleteBtn.addEventListener('click', clearTab);
         emptyTrashBtn.addEventListener('click', emptyTrash);
-        document.addEventListener('wheel', handleWheelRotate, { passive: false });
-        
-        // Eventos de zoom
-        zoomInBtn.addEventListener('click', handleZoomIn);
-        zoomOutBtn.addEventListener('click', handleZoomOut);
-        zoomResetBtn.addEventListener('click', handleZoomReset);
+
+        zoomInBtn.addEventListener('click', () => updateZoom(appState.zoomLevel + 0.1));
+        zoomOutBtn.addEventListener('click', () => updateZoom(appState.zoomLevel - 0.1));
+        zoomResetBtn.addEventListener('click', () => updateZoom(1.0));
 
         renderBoardList();
         renderActiveBoard();
-        updateBoardSize(); // Calcular tamaño inicial del tablero
+        updateBoardSize();
         initializeLineStyleControls();
         initializeBackgroundOptions();
         initializeColorPopover();
@@ -1992,17 +1087,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         updatePaletteState();
         initializeShareAndImport(appState, showToast, switchBoard, saveState, renderBoardList);
         initializeAboutModalFeature();
-
-        // Inicializar la nueva funcionalidad de paneo
         initializePanning(boardContainer, board, updateAllLinesPosition);
-
-        // ¡CORRECCIÓN! Actualizar líneas también con el scroll normal (rueda del ratón, etc.)
         boardContainer.addEventListener('scroll', updateAllLinesPosition);
-
-        // ¡NUEVO! Crear nota con doble clic en el tablero
-        boardContainer.addEventListener('dblclick', handleBoardDoubleClick);
     }
 
-    
     initializeApp();
 });
