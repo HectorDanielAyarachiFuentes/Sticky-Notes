@@ -909,12 +909,15 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             justify-content: center;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #000; /* Color de texto negro para mejor contraste */
+            color: #000;
+            overflow: hidden; /* Oculta el texto que se desborda */
+            white-space: nowrap;
         }
         .stickynote-tab-part[data-part="title"] {
             margin-right: 2px; /* Espacio en lugar de línea */
         }
         /* Cuando la parte está vacía, el texto tiene menos opacidad */
+        .stickynote-tab-part span { transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); }
         .stickynote-tab-part.empty {
             opacity: 0.4;
         }
@@ -930,13 +933,14 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
         .stickynote-tabs:hover .stickynote-tab:hover {
             height: 16px;
             border-color: rgba(0,0,0,0.3);
-            background-color: rgba(0,0,0,0.05);
+            background-color: rgba(0,0,0,0.05);            
         }
 
         /* 3. La pestaña activa siempre es más grande */
         .stickynote-tab.active {
             border-color: var(--color-primary);
             height: 12px;
+            overflow: visible; /* Permite que el texto se vea completo */
         }
         /* Cuando la pestaña está activa, ambas partes se pintan del color activo */
         .stickynote-tab.active .stickynote-tab-part {

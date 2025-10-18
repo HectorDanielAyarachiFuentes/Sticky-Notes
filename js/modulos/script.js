@@ -565,7 +565,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tab = document.createElement('div');
             tab.className = `stickynote-tab ${i === noteData.activeTab ? 'active' : ''}`;
             tab.dataset.tabIndex = i;
-            tab.innerHTML = `<span class="stickynote-tab-part ${noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty'}" data-part="title">T</span><span class="stickynote-tab-part ${noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty'}" data-part="content">C</span>`;
+            tab.innerHTML = `<span class="stickynote-tab-part ${noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty'}" data-part="title"><span>Titulo</span></span>
+                             <span class="stickynote-tab-part ${noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty'}" data-part="content"><span>Cuerpo</span></span>`;
+
             tab.addEventListener('click', (e) => {
                 e.stopPropagation();
                 noteData.activeTab = i;
