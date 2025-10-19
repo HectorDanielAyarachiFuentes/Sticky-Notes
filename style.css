@@ -38,19 +38,25 @@ body {
     color: var(--text-primary);
 }
 /* --- CURSORES PERSONALIZADOS --- */
+/* --- CURSORES PERSONALIZADOS --- */
+
 /* Cursor por defecto */
-body {
-    cursor: url('cursors/cursor.svg') 10 2, auto;
-}
-/* Cursor de mano para elementos clickeables */
-button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sidebar-expander, .search-result-item, .trash-item-actions button, #close-popover-btn, .modal-close-btn, .connect-btn, .stickynote-tab, .background-preview, #board-manager li, .resizer {
-    cursor: url('cursors/hand.svg') 8 2, pointer;
-}
-/* Cursor de agarre para elementos que se están arrastrando */
-.dragging, .palette-note:active {
-    cursor: url('cursors/grabing.svg') 16 16, grabbing;
+/* Usamos !important para anular cualquier regla de JS o librerías */
+body, #board-container, #board {
+    cursor: url('cursors/cursor.svg') 10 2, auto !important;
 }
 
+/* Cursor de mano para elementos clickeables */
+/* También necesita !important para poder anular la regla de body */
+button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sidebar-expander, .search-result-item, .trash-item-actions button, #close-popover-btn, .modal-close-btn, .connect-btn, .stickynote-tab, .background-preview, #board-manager li, .resizer {
+    cursor: url('cursors/hand.svg') 8 2, pointer !important;
+}
+
+/* Cursor de agarre para elementos que se están arrastrando o agarrando */
+/* También necesita !important (incluyendo tu nueva regla .stickynote) */
+.dragging, .palette-note:active, .stickynote {
+    cursor: url('cursors/grabing.svg') 16 16, grabbing !important;
+}
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
 #board-manager {
     /* El ancho ahora se controla por JS, con un valor inicial y límites */
@@ -704,8 +710,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     width: 200px;
     min-height: 200px;
     box-shadow: 5px 5px 10px rgba(0,0,0,0.1);
-    padding: 15px;
-    cursor: url('cursors/cursor.svg') 10 2, grab;
+    padding: 15px;    
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     user-select: none;
     box-sizing: border-box;
