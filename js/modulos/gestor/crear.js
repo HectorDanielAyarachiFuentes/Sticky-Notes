@@ -14,7 +14,9 @@ let maxZIndexProvider; // Será una función que nos dé el siguiente z-index
 
 const boardTemplates = {
     kanban: {
-        name: 'Tablero Kanban',
+        name: 'Kanban',
+        description: 'Organiza tareas en columnas de progreso.',
+        icon: '📊',
         notes: [
             { title: 'Por Hacer', content: '', x: 50, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
             { title: 'En Proceso', content: '', x: 400, y: 20, width: 300, height: 600, color: '#E9EBEE', rotation: 0 },
@@ -22,7 +24,9 @@ const boardTemplates = {
         ]
     },
     swot: {
-        name: 'Análisis FODA',
+        name: 'FODA',
+        description: 'Analiza fortalezas, oportunidades, debilidades y amenazas.',
+        icon: '🧭',
         notes: [
             { title: 'Fortalezas', content: '', x: 50, y: 50, width: 350, height: 250, color: '#C8E6C9', rotation: -1 },
             { title: 'Oportunidades', content: '', x: 450, y: 50, width: 350, height: 250, color: '#BBDEFB', rotation: 1 },
@@ -32,12 +36,16 @@ const boardTemplates = {
     },
     mindmap: {
         name: 'Mapa Mental',
+        description: 'Inicia una lluvia de ideas desde un concepto central.',
+        icon: '🧠',
         notes: [
             { title: 'Idea Central', content: '', x: 400, y: 300, width: 250, height: 150, color: '#B2EBF2', rotation: 0 },
         ]
     },
     eisenhower: {
-        name: 'Matriz de Eisenhower',
+        name: 'Eisenhower',
+        description: 'Prioriza tareas por urgencia e importancia.',
+        icon: '⚖️',
         notes: [
             { title: 'Urgente / Importante', content: '(Hacer)', x: 50, y: 50, width: 400, height: 300, color: '#FFCDD2', rotation: 0.5 },
             { title: 'No Urgente / Importante', content: '(Planificar)', x: 500, y: 50, width: 400, height: 300, color: '#BBDEFB', rotation: -0.5 },
@@ -47,6 +55,8 @@ const boardTemplates = {
     },
     retro: {
         name: 'Retrospectiva',
+        description: 'Reflexiona sobre lo bueno, lo malo y las acciones a tomar.',
+        icon: '🎯',
         notes: [
             { title: '¿Qué salió bien? 👍', content: '', x: 50, y: 20, width: 300, height: 600, color: '#C8E6C9', rotation: 0 },
             { title: '¿Qué se puede mejorar? 🤔', content: '', x: 400, y: 20, width: 300, height: 600, color: '#BBDEFB', rotation: 0 },
@@ -67,31 +77,46 @@ export function initializeCreateTab(appStateRef, switchBoardFunc, maxZIndexProvi
     switchBoard = switchBoardFunc;
     maxZIndexProvider = maxZIndexProviderFunc;
 
-    const addBoardBtn = document.querySelector("#add-board-btn");
-    const templateContainer = document.querySelector("#template-container");
+    const createTabContent = document.querySelector("#tab-content-create");
 
-    if (!addBoardBtn || !templateContainer) {
+    if (!createTabContent) {
         console.warn("No se encontraron los elementos de la pestaña 'Crear'.");
         return;
     }
 
+    // Limpiar contenido previo
+    createTabContent.innerHTML = '';
+
     // Configurar botón de nuevo tablero en blanco
+    const addBoardBtn = document.createElement('button');
+    addBoardBtn.id = 'add-board-btn';
     addBoardBtn.innerHTML = '<span class="icon">🎪</span> Nuevo Tablero';
     addBoardBtn.addEventListener('click', addNewBoard);
+    createTabContent.appendChild(addBoardBtn);
 
-    // Renderizar botones de plantillas dinámicamente
+    // Título para la sección de plantillas
     const templateTitle = document.createElement('p');
     templateTitle.className = 'tab-title';
     templateTitle.textContent = 'Crear desde plantilla:';
-    templateContainer.appendChild(templateTitle);
+    createTabContent.appendChild(templateTitle);
 
+    // Contenedor para las tarjetas de plantillas
+    const templateContainer = document.createElement('div');
+    templateContainer.id = 'template-container';
+    createTabContent.appendChild(templateContainer);
+
+    // Renderizar tarjetas de plantillas dinámicamente
     Object.keys(boardTemplates).forEach(key => {
-        const btn = document.createElement('button');
-        btn.className = 'template-btn';
-        btn.dataset.template = key;
-        btn.textContent = boardTemplates[key].name;
-        btn.addEventListener('click', () => createBoardFromTemplate(key));
-        templateContainer.appendChild(btn);
+        const template = boardTemplates[key];
+        const card = document.createElement('div');
+        card.className = 'template-card';
+        card.dataset.template = key;
+        card.innerHTML = `
+            <div class="template-card-icon">${template.icon}</div>
+            <div class="template-card-name">${template.name}</div>
+            <div class="template-card-desc">${template.description}</div>`;
+        card.addEventListener('click', () => createBoardFromTemplate(key));
+        templateContainer.appendChild(card);
     });
 }
 

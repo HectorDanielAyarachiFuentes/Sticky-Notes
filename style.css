@@ -375,24 +375,58 @@ body.sidebar-resizing * {
 
 /* --- SECCIÓN DE PLANTILLAS --- */
 #template-container {
-    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
-    border-top: 1px solid rgba(60, 60, 67, 0.2);
-    border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
-    border-image-slice: 1;
-    padding-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
 }
-#template-container .tab-title { /* Reutilizamos el estilo de título de pestaña */
-    margin: 0 0 10px 0;
-    font-size: 0.9em;
-    font-weight: normal;
-    color: var(--text-light);
-    opacity: 0.8;
+
+.template-card {
+    background: var(--surface-dark);
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "icon name"
+        "icon desc";
+    gap: 0 12px;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+    cursor: var(--cursor-pointer, pointer) !important;
 }
-.template-btn {
-    background-color: var(--color-secondary);
-    margin-top: 8px;
+
+.template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+    background: var(--gradient-primary);
 }
-.template-btn:hover { background-color: var(--color-accent); }
+
+.template-card-icon {
+    grid-area: icon;
+    font-size: 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.template-card-name {
+    grid-area: name;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.template-card-desc {
+    grid-area: desc;
+    font-size: 0.85em;
+    opacity: 0.7;
+    line-height: 1.4;
+}
 
 /* --- ESTILOS PARA LA PESTAÑA DE LÍNEAS --- */
 .style-option {
