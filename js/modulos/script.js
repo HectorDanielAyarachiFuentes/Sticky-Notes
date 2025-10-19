@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { initializeNoteInteractions } = await import('./gestor/interaccionesNotas.js');
     // ¡NUEVO! Importamos el módulo de creación
     const { initializeCreateTab } = await import('./gestor/crear.js');
+    const { initializeCursorManager } = await import('./gestor/cursor.js');
 
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
@@ -71,6 +72,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const aboutModal = document.querySelector("#about-modal");
     const closeAboutModalBtn = aboutModal.querySelector(".modal-close-btn");
     const aboutModalAudio = document.querySelector("#about-modal-audio");
+    const cursorColorInput = document.querySelector("#cursor-color-input");
+    const resetCursorBtn = document.querySelector("#reset-cursor-btn");
 
     /**
      * Convierte un color HEX a HSL.
@@ -830,6 +833,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ¡NUEVO! Inicializar el módulo de creación
         initializeCreateTab(appState, switchBoard, () => ++maxZIndex);
         
+        const cursorDOM = { cursorColorInput, resetCursorBtn };
+        const cursorCallbacks = { saveState };
+        initializeCursorManager(appState, cursorDOM, cursorCallbacks);
+
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
         const setSidebarCollapsed = (collapsed) => {

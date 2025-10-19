@@ -41,31 +41,31 @@ body {
 /* --- CURSORES PERSONALIZADOS --- */
 
 /* Cursor por defecto */
-/* Usamos !important para anular cualquier regla de JS o librerías */
+/* La URL del cursor se define con una variable CSS (--cursor-default) que se puede cambiar con JS */
 body, #board-container {
-    cursor: url('cursors/cursor.svg') 10 2, auto !important;
+    cursor: var(--cursor-default, url('cursors/cursor.svg') 10 2, auto) !important;
 }
 
 /* Cursor por defecto para las notas, para que no herede el de agarre al mover */
 .stickynote {
-    cursor: url('cursors/cursor.svg') 10 2, auto;
+    cursor: var(--cursor-default, url('cursors/cursor.svg') 10 2, auto);
 }
 
 /* Cursor de mano para elementos clickeables */
 /* También necesita !important para poder anular la regla de body */
 button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sidebar-expander, .search-result-item, .trash-item-actions button, #close-popover-btn, .modal-close-btn, .connect-btn, .stickynote-tab, .background-preview, #board-manager li {
-    cursor: url('cursors/hand.svg') 8 2, pointer !important; /* Eliminado .resizer de aquí */
+    cursor: var(--cursor-pointer, url('cursors/hand.svg') 8 2, pointer) !important;
 }
 
 /* Cursor de agarre para elementos que se están arrastrando o agarrando */
 /* También necesita !important (incluyendo tu nueva regla .stickynote) */
 .dragging, .palette-note:active {
-    cursor: url('cursors/grabing.svg') 16 16, grabbing !important; /* Eliminamos .stickynote de aquí */
+    cursor: var(--cursor-grabbing, url('cursors/grabing.svg') 16 16, grabbing) !important;
 }
 
 /* Cursor de texto para áreas de escritura */
 .stickynote-title, .stickynote-text, #board-manager #search-input, #share-link-output {
-    cursor: url('cursors/cursor-text.svg') 8 8, text !important;
+    cursor: var(--cursor-text, url('cursors/cursor-text.svg') 8 8, text) !important;
 }
 
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
@@ -344,7 +344,7 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
     top: 0;
     width: 5px;
     height: 100%;
-    cursor: url('cursors/cursor-ew-resize.svg') 16 16, ew-resize !important;
+    cursor: var(--cursor-ew_resize, url('cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
     z-index: 201; /* Por encima del contenido del panel */
     background-color: transparent;
     transition: background-color 0.2s ease;
@@ -357,7 +357,7 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
 /* Cuando se está redimensionando, aplicamos el cursor a todo el body */
 body.sidebar-resizing,
 body.sidebar-resizing * {
-    cursor: url('cursors/cursor-ew-resize.svg') 16 16, ew-resize !important;
+    cursor: var(--cursor-ew_resize, url('cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
 }
 
 /* --- SECCIÓN DE PLANTILLAS --- */
