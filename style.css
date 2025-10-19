@@ -53,8 +53,8 @@ body, #board-container {
 
 /* Cursor de mano para elementos clickeables */
 /* También necesita !important para poder anular la regla de body */
-button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sidebar-expander, .search-result-item, .trash-item-actions button, #close-popover-btn, .modal-close-btn, .connect-btn, .stickynote-tab, .background-preview, #board-manager li, .resizer {
-    cursor: url('cursors/hand.svg') 8 2, pointer !important;
+button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sidebar-expander, .search-result-item, .trash-item-actions button, #close-popover-btn, .modal-close-btn, .connect-btn, .stickynote-tab, .background-preview, #board-manager li {
+    cursor: url('cursors/hand.svg') 8 2, pointer !important; /* Eliminado .resizer de aquí */
 }
 
 /* Cursor de agarre para elementos que se están arrastrando o agarrando */
@@ -344,7 +344,7 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
     top: 0;
     width: 5px;
     height: 100%;
-    cursor: ew-resize;
+    cursor: url('cursors/cursor-ew-resize.svg') 16 16, ew-resize !important;
     z-index: 201; /* Por encima del contenido del panel */
     background-color: transparent;
     transition: background-color 0.2s ease;
@@ -352,6 +352,12 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
 #sidebar-resizer:hover,
 #sidebar-resizer.resizing {
     background-color: var(--color-primary);
+}
+
+/* Cuando se está redimensionando, aplicamos el cursor a todo el body */
+body.sidebar-resizing,
+body.sidebar-resizing * {
+    cursor: url('cursors/cursor-ew-resize.svg') 16 16, ew-resize !important;
 }
 
 /* --- SECCIÓN DE PLANTILLAS --- */

@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const handlePointerDown = (e) => {
             e.preventDefault();
             resizer.classList.add('resizing');
-            document.body.style.cursor = 'col-resize';
+            document.body.classList.add('sidebar-resizing');
             document.body.style.userSelect = 'none';
             const handlePointerMove = (moveEvent) => {
                 let newWidth = Math.max(minWidth, Math.min(moveEvent.clientX, maxWidth));
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             const handlePointerUp = () => {
                 resizer.classList.remove('resizing');
-                document.body.style.cursor = '';
+                document.body.classList.remove('sidebar-resizing');
                 document.body.style.userSelect = '';
                 appState.sidebarWidth = parseInt(boardManager.style.width, 10);
                 saveState();
