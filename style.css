@@ -367,6 +367,12 @@ body.sidebar-resizing * {
     cursor: var(--cursor-ew_resize, url('cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
 }
 
+/* Cuando se está redimensionando una NOTA, forzamos el cursor de redimensionar en todo el body */
+body.sidebar-resizing,
+body.sidebar-resizing * {
+    cursor: var(--cursor-se_resize, se-resize) !important;
+}
+
 /* --- SECCIÓN DE PLANTILLAS --- */
 #template-container {
     /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sólido. */
@@ -1006,7 +1012,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             right: 2px;
             width: 20px;
             height: 20px;
-            cursor: var(--cursor-se_resize, se-resize);
+            cursor: var(--cursor-se_resize, se-resize) !important;
             transition: background 0.2s ease;
             background:
                 linear-gradient(135deg, transparent 60%, rgba(0,0,0,0.4) 61%, rgba(0,0,0,0.4) 65%, transparent 66%),
