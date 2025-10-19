@@ -186,8 +186,34 @@
         </div>
 
         <div id="tab-content-cursor" class="tab-content">
-            <!-- El contenido se genera dinámicamente con JS -->
-            <p class="empty-trash-message">Cargando opciones...</p>
+            <p class="tab-title">Personalización del Cursor</p>
+
+            <div class="cursor-settings-card">
+                <div class="style-option color-option">
+                    <label for="cursor-color-input">Color Principal</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="cursor-color-input" value="#FFFFFF">
+                    </div>
+                </div>
+                <div class="style-option toggle-option">
+                    <label for="rainbow-cursor-toggle">Modo Arcoíris</label>
+                    <label class="switch">
+                        <input type="checkbox" id="rainbow-cursor-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="style-option style-option-slider" id="rainbow-speed-container">
+                <label for="rainbow-speed-input">Velocidad del Arcoíris</label>
+                <input type="range" id="rainbow-speed-input" min="1" max="10" step="1" value="5">
+                <span class="range-value" id="rainbow-speed-value">5</span>
+            </div>
+
+            <button id="reset-cursor-btn">⭯ Restablecer Cursores</button>
+
+            <p class="tab-title preview-title">Previsualización (pasa el ratón)</p>
+            <div id="cursor-preview-area"></div>
         </div>
     </div>
 

@@ -9,6 +9,12 @@ let appState;
 let DOM;
 let Callbacks;
 
+// --- Estado del Modo Arcoíris ---
+let isRainbowModeActive = false;
+let rainbowAnimationId = null;
+let currentHue = 0;
+let rainbowSpeed = 5;
+
 // --- Plantillas SVG basadas en tus archivos originales ---
 // Se reemplazarán los colores del gradiente con marcadores de posición.
 const CURSOR_TEMPLATES = {
@@ -117,7 +123,9 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
         return;
     }
 
+    // Renderizar las opciones y previsualizaciones
     renderCursorOptions(cursorTabContent);
+    renderCursorPreviews();
 
     const cursorColorInput = document.getElementById('cursor-color-input');
     const resetCursorBtn = document.getElementById('reset-cursor-btn');
@@ -125,10 +133,20 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
     // Cargar y aplicar el color guardado
     const savedColor = appState.settings?.cursorColor;
     applyCursorColor(savedColor || '#FFFFFF');
-    if (cursorColorInput) cursorColorInput.value = savedColor || '#FFFFFF';
+    cursorColorInput.value = savedColor || '#FFFFFF';
+
+    // Cargar estado del modo arcoíris
+    rainbowSpeed = appState.settings?.cursorRainbowSpeed || 5;
+    DOM.rainbowSpeedInput.value = rainbowSpeed;
+    DOM.rainbowSpeedValue.textContent = rainbowSpeed;
+
+    if (appState.settings?.cursorRainbowMode) {
+        toggleRainbowMode(true);
+    }
 
     // Añadir listeners
     DOM.cursorColorInput.addEventListener('input', (e) => {
+        toggleRainbowMode(false); // Desactivar modo arcoíris al elegir color
         applyCursorColor(e.target.value);
     });
     
@@ -137,6 +155,16 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
     });
 
     DOM.resetCursorBtn.addEventListener('click', resetCursor);
+    DOM.rainbowCursorToggle.addEventListener('change', (e) => {
+        toggleRainbowMode(e.target.checked);
+    });
+    DOM.rainbowSpeedInput.addEventListener('input', (e) => {
+        rainbowSpeed = parseInt(e.target.value, 10);
+        DOM.rainbowSpeedValue.textContent = rainbowSpeed;
+        if (!appState.settings) appState.settings = {};
+        appState.settings.cursorRainbowSpeed = rainbowSpeed;
+        Callbacks.saveState();
+    });
 }
 
 /**
@@ -144,17 +172,60 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
  * @param {HTMLElement} container - El contenedor de la pestaña.
  */
 function renderCursorOptions(container) {
-    container.innerHTML = `
-        <p class="tab-title">Color del Cursor</p>
-        <div class="style-option">
-            <label for="cursor-color-input">Elige un color:</label>
-            <input type="color" id="cursor-color-input" value="#FFFFFF">
-        </div>
-        <button id="reset-cursor-btn">Restablecer Cursores</button>
-    `;
     // Re-asignar referencias DOM después de renderizar
     DOM.cursorColorInput = document.getElementById('cursor-color-input');
     DOM.resetCursorBtn = document.getElementById('reset-cursor-btn');
+    DOM.rainbowCursorToggle = document.getElementById('rainbow-cursor-toggle');
+    DOM.rainbowSpeedInput = document.getElementById('rainbow-speed-input');
+    DOM.rainbowSpeedValue = document.getElementById('rainbow-speed-value');
+    DOM.rainbowSpeedContainer = document.getElementById('rainbow-speed-container');
+    DOM.cursorPreviewArea = document.getElementById('cursor-preview-area');
+    DOM.colorInputWrapper = document.querySelector('.color-input-wrapper');
+}
+
+/**
+ * Renderiza las previsualizaciones de los cursores.
+ */
+function renderCursorPreviews() {
+    DOM.cursorPreviewArea.innerHTML = ''; // Limpiamos el área
+    const previews = [
+        { label: 'Normal', type: 'default' },
+        { label: 'Mano', type: 'pointer' },
+        { label: 'Texto', type: 'text' },
+        { label: 'Agarrar', type: 'grabbing' }
+    ];
+
+    previews.forEach(preview => {
+        const item = document.createElement('div');
+        item.className = 'cursor-preview-item';
+        item.style.cursor = `var(--cursor-${preview.type}, auto)`; // Previsualización al pasar el ratón
+
+        // Eventos para cambiar el cursor globalmente en la previsualización
+        item.addEventListener('mouseenter', () => {
+            document.body.style.cursor = `var(--cursor-${preview.type}, auto)`;
+        });
+        item.addEventListener('mouseleave', () => {
+            // Vuelve al cursor por defecto de la app
+            document.body.style.cursor = '';
+        });
+        
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'cursor-preview-icon';
+        iconContainer.id = `preview-icon-${preview.type}`;
+        iconContainer.innerHTML = CURSOR_TEMPLATES[preview.type].template
+            .replace(/{c1}/g, '#ffffff')
+            .replace(/{c2}/g, '#dddddd')
+            .replace(/{c3}/g, '#bbbbbb')
+            .replace(/{c4}/g, '#999999');
+
+        const label = document.createElement('span');
+        label.className = 'cursor-preview-label';
+        label.textContent = preview.label;
+
+        item.appendChild(iconContainer);
+        item.appendChild(label);
+        DOM.cursorPreviewArea.appendChild(item);
+    });
 }
 
 /**
@@ -162,14 +233,32 @@ function renderCursorOptions(container) {
  * @param {string} color - El nuevo color en formato hexadecimal.
  */
 function applyCursorColor(color) {
-    const shades = generateShades(color);
     const root = document.documentElement;
+    let shades;
+
+    if (isRainbowModeActive) {
+        // Modo Arcoíris: Generar un gradiente de colores en lugar de sombras.
+        // Cada "sombra" será un color diferente del arcoíris.
+        shades = {
+            light: hslToHex(((currentHue + 30) % 360) / 360, 0.9, 0.7), // c1
+            mid:   hslToHex(currentHue / 360, 0.9, 0.65),                // c2
+            dark:  hslToHex(((currentHue - 30 + 360) % 360) / 360, 0.9, 0.55), // c3
+            border:hslToHex(((currentHue - 60 + 360) % 360) / 360, 0.9, 0.4)  // c4
+        };
+    } else {
+        shades = generateShades(color);
+    }
+
     Object.entries(CURSOR_TEMPLATES).forEach(([name, { template, hotspot }]) => {
         const finalSvg = template
             .replace(/{c1}/g, shades.light)
             .replace(/{c2}/g, shades.mid)
             .replace(/{c3}/g, shades.dark)
             .replace(/{c4}/g, shades.border);
+
+        // Actualizar previsualización
+        const previewIcon = document.getElementById(`preview-icon-${name}`);
+        if (previewIcon) previewIcon.innerHTML = finalSvg;
 
         const encodedSvg = encodeURIComponent(finalSvg);
         const cursorValue = `url("data:image/svg+xml,${encodedSvg}") ${hotspot}, auto`;
@@ -180,8 +269,10 @@ function applyCursorColor(color) {
     if (!appState.settings) {
         appState.settings = {};
     }
-    appState.settings.cursorColor = color;
-    if (DOM.cursorColorInput) DOM.cursorColorInput.value = color;
+    if (!isRainbowModeActive) appState.settings.cursorColor = color;
+    DOM.cursorColorInput.value = color;
+    // Actualizar el borde del wrapper del color
+    if (DOM.colorInputWrapper) DOM.colorInputWrapper.style.borderColor = color;
 }
 
 /**
@@ -211,6 +302,61 @@ function generateShades(baseColor) {
 }
 
 /**
+ * Activa o desactiva el modo arcoíris.
+ * @param {boolean} isActive 
+ */
+function toggleRainbowMode(isActive) {
+    isRainbowModeActive = isActive;
+    DOM.rainbowCursorToggle.checked = isActive;
+    DOM.rainbowSpeedContainer.classList.toggle('visible', isActive);
+    DOM.cursorColorInput.disabled = isActive;
+    // Añadir clase para control visual
+    DOM.colorInputWrapper.classList.toggle('disabled', isActive);
+
+    if (!appState.settings) appState.settings = {};
+    appState.settings.cursorRainbowMode = isActive;
+    Callbacks.saveState();
+
+    if (isActive && !rainbowAnimationId) {
+        animateRainbow();
+    } else if (!isActive && rainbowAnimationId) {
+        cancelAnimationFrame(rainbowAnimationId);
+        rainbowAnimationId = null;
+        // Al desactivar, vuelve al color seleccionado
+        applyCursorColor(appState.settings.cursorColor || '#FFFFFF');
+    }
+}
+
+/**
+ * Bucle de animación para el modo arcoíris.
+ */
+function animateRainbow() {
+    currentHue = (currentHue + (rainbowSpeed / 10)) % 360;
+    const newColor = hslToHex(currentHue / 360, 0.8, 0.65);
+    applyCursorColor(newColor);
+    rainbowAnimationId = requestAnimationFrame(animateRainbow);
+}
+
+/**
+ * Convierte HSL a HEX.
+ * @param {number} h Hue (0-1)
+ * @param {number} s Saturation (0-1)
+ * @param {number} l Lightness (0-1)
+ * @returns {string} Color en #RRGGBB
+ */
+function hslToHex(h, s, l) {
+    let r, g, b;
+    if(s === 0) { r = g = b = l; }
+    else {
+        const hue2rgb = (p, q, t) => { if(t < 0) t += 1; if(t > 1) t -= 1; if(t < 1/6) return p + (q - p) * 6 * t; if(t < 1/2) return q; if(t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s; const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+    }
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
  * Restablece el cursor al valor por defecto del navegador.
  */
 function resetCursor() {
@@ -219,13 +365,17 @@ function resetCursor() {
         root.style.removeProperty(`--cursor-${name}`);
     });
 
+    // Detener modo arcoíris si está activo
+    toggleRainbowMode(false);
+
     // Limpiar el color guardado en el estado
     if (appState.settings) {
         delete appState.settings.cursorColor;
+        delete appState.settings.cursorRainbowMode;
     }
     
     // Restablecer el valor del color picker
-    if (DOM.cursorColorInput) DOM.cursorColorInput.value = '#FFFFFF';
+    DOM.cursorColorInput.value = '#FFFFFF';
 
     Callbacks.saveState();
     Callbacks.showToast("Cursores restablecidos a su estilo original.");
