@@ -7,7 +7,8 @@
  * @param {Function} [onPanCallback] - Una función a llamar durante el paneo para actualizar elementos externos.
  */
 export function initializePanning(boardContainer, board, onPanCallback) {
-    boardContainer.style.cursor = 'grab';
+    // Añadimos una clase para indicar que el fondo es "agarrable"
+    boardContainer.classList.add('pannable');
 
     let isPanning = false;
     let lastPointerX = 0;
@@ -30,7 +31,8 @@ export function initializePanning(boardContainer, board, onPanCallback) {
         lastPointerY = e.clientY;
         startScrollLeft = boardContainer.scrollLeft;
         startScrollTop = boardContainer.scrollTop;
-        boardContainer.style.cursor = 'grabbing';
+        // Añadimos una clase al body para cambiar el cursor a "grabbing" globalmente
+        document.body.classList.add('panning');
         boardContainer.style.userSelect = 'none';
     };
 
@@ -52,7 +54,8 @@ export function initializePanning(boardContainer, board, onPanCallback) {
     const stopPanning = () => {
         if (!isPanning) return;
         isPanning = false;
-        boardContainer.style.cursor = 'grab';
+        // Quitamos la clase del body para restaurar el cursor
+        document.body.classList.remove('panning');
         boardContainer.style.userSelect = '';
 
         // Notificar que el paneo ha terminado.

@@ -59,8 +59,15 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
 
 /* Cursor de agarre para elementos que se están arrastrando o agarrando */
 /* También necesita !important (incluyendo tu nueva regla .stickynote) */
-.dragging, .palette-note:active {
+.dragging, .palette-note:active, body.panning, body.panning * {
     cursor: var(--cursor-grabbing, url('cursors/grabing.svg') 16 16, grabbing) !important;
+}
+
+/* Cursor de mano abierta (grab) para el fondo del tablero cuando se puede mover */
+.pannable {
+    /* Usamos el cursor de mano, pero con el valor 'grab' para indicar que se puede agarrar */
+    /* No usamos !important para que la clase .panning pueda sobreescribirlo */
+    cursor: var(--cursor-pointer, url('cursors/hand.svg') 8 2, grab);
 }
 
 /* Cursor de texto para áreas de escritura */
