@@ -188,26 +188,21 @@
         <div id="tab-content-cursor" class="tab-content">
             <p class="tab-title">Personalización del Cursor</p>
 
+            <!-- Tarjeta principal de configuración -->
             <div class="cursor-settings-card">
                 <div class="style-option color-option">
                     <label for="cursor-color-input">Color Principal</label>
-                    <div class="color-input-wrapper">
+                    <div class="color-input-wrapper" title="Elige un color base para el cursor">
                         <input type="color" id="cursor-color-input" value="#FFFFFF">
                     </div>
                 </div>
-                <div class="style-option toggle-option">
-                    <label for="rainbow-cursor-toggle">Modo Arcoíris</label>
-                    <label class="switch">
-                        <input type="checkbox" id="rainbow-cursor-toggle">
-                        <span class="slider round"></span>
-                    </label>
+                <div class="style-option" id="rainbow-mode-container">
+                    <div class="toggle-option">
+                        <label for="rainbow-cursor-toggle">Modo Arcoíris</label>
+                        <label class="switch"><input type="checkbox" id="rainbow-cursor-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="style-option-slider" id="rainbow-speed-container"><label for="rainbow-speed-input">Velocidad</label><input type="range" id="rainbow-speed-input" min="1" max="10" step="1" value="5"><span class="range-value" id="rainbow-speed-value">5</span></div>
                 </div>
-            </div>
-
-            <div class="style-option style-option-slider" id="rainbow-speed-container">
-                <label for="rainbow-speed-input">Velocidad del Arcoíris</label>
-                <input type="range" id="rainbow-speed-input" min="1" max="10" step="1" value="5">
-                <span class="range-value" id="rainbow-speed-value">5</span>
             </div>
 
             <button id="reset-cursor-btn">⭯ Restablecer Cursores</button>

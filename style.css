@@ -1435,12 +1435,13 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 .cursor-settings-card {
     background: var(--surface-dark);
     border-radius: 12px; /* Bordes más redondeados */
-    padding: 20px;
+    padding: 15px;
     display: grid; /* Usamos grid para un layout más robusto */
-    grid-template-columns: 1fr 1fr;
-    gap: 20px 25px;
+    grid-template-columns: 1fr;
+    gap: 15px;
     border: 1px solid transparent; /* Para la transición */
     transition: all 0.3s ease;
+    margin-bottom: 15px;
 }
 
 .cursor-settings-card > .style-option {
@@ -1449,7 +1450,6 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 
 /* El contenedor del color principal ocupa toda la primera fila */
 .color-option {
-    grid-column: 1 / -1; /* Ocupa todo el ancho */
     display: flex;
     flex-direction: column; /* Label arriba, input abajo */
     gap: 10px;
@@ -1477,13 +1477,16 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     background: none;
 }
 
+.style-option#rainbow-mode-container {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 10px 15px;
+}
+
 .toggle-option {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0,0,0,0.2);
-    padding: 10px 15px;
-    border-radius: 8px;
 }
 
 .toggle-option label {
@@ -1491,24 +1494,28 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     font-weight: bold;
 }
 
-/* Estilos para el interruptor (toggle switch) */
-.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #4a4a4c; transition: .4s; }
-.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
-input:checked + .slider { background-color: var(--color-primary); }
-input:focus + .slider { box-shadow: 0 0 1px var(--color-primary); }
-input:checked + .slider:before { transform: translateX(22px); }
-.slider.round { border-radius: 28px; }
-.slider.round:before { border-radius: 50%; }
+/* Estilos para el interruptor (toggle switch) - Se mantienen igual */
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; } .switch input { opacity: 0; width: 0; height: 0; } .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #4a4a4c; transition: .4s; } .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; } input:checked + .slider { background-color: var(--color-primary); } input:focus + .slider { box-shadow: 0 0 1px var(--color-primary); } input:checked + .slider:before { transform: translateX(22px); } .slider.round { border-radius: 28px; } .slider.round:before { border-radius: 50%; }
 
 #rainbow-speed-container {
-    display: none; /* Oculto por defecto */
-    grid-column: 1 / -1; /* Ocupa todo el ancho cuando es visible */
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease;
+    margin-top: 0;
 }
 
 #rainbow-speed-container.visible {
-    display: block;
+    max-height: 100px; /* Suficiente para contener el slider */
+    opacity: 1;
+    margin-top: 15px; /* Espacio cuando es visible */
+}
+
+#rainbow-speed-container .style-option-slider {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
 }
 
 /* Estilos cuando el modo arcoíris está activo */
@@ -1520,10 +1527,9 @@ input:checked + .slider:before { transform: translateX(22px); }
     cursor: not-allowed !important;
 }
 
-/* Botón de Restablecer Cursores */
-#reset-cursors-btn {
-    grid-column: 1 / -1; /* Ocupa todo el ancho del grid */
-    margin-top: 10px; /* Espacio sobre el botón */
+/* Botón de Restablecer Cursores - Ahora es #reset-cursor-btn */
+#reset-cursor-btn {
+    margin-top: 0; /* Ya no necesita margen superior */
     padding: 12px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-light);
@@ -1536,7 +1542,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     justify-content: center;
     gap: 8px;
 }
-#reset-cursors-btn:hover {
+#reset-cursor-btn:hover {
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: var(--bg-dark);
@@ -1544,17 +1550,17 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 /* Área de previsualización del cursor */
 .preview-title {
-    margin-top: 25px; /* Espacio entre la tarjeta de ajustes y la previsualización */
-    font-size: 1.1em;
+    margin-top: 20px; /* Espacio entre el botón y la previsualización */
+    font-size: 1em;
     font-weight: bold;
     color: var(--text-light);
     opacity: 0.9;
-    margin: 0 0 15px 0;
+    margin-bottom: 15px;
     text-align: center;
 }
 #cursor-preview-area {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 15px;
 }
 .cursor-preview-item {
@@ -1563,6 +1569,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-radius: 12px;
     display: flex;
     align-items: center;
+    flex-direction: column;
     gap: 12px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 1px solid rgba(255,255,255,0.1);
@@ -1586,8 +1593,9 @@ input:checked + .slider:before { transform: translateX(22px); }
     filter: none !important;
 }
 .cursor-preview-label {
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: bold;
+    text-align: center;
 }
 
 .share-card {

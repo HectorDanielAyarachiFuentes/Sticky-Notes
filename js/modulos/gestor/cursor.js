@@ -307,7 +307,7 @@ function generateShades(baseColor) {
  */
 function toggleRainbowMode(isActive) {
     isRainbowModeActive = isActive;
-    DOM.rainbowCursorToggle.checked = isActive;
+    if (DOM.rainbowCursorToggle) DOM.rainbowCursorToggle.checked = isActive;
     DOM.rainbowSpeedContainer.classList.toggle('visible', isActive);
     DOM.cursorColorInput.disabled = isActive;
     // Añadir clase para control visual
