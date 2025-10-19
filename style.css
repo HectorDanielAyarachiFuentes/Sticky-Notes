@@ -1427,36 +1427,70 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     backdrop-filter: blur(5px);
 }
 /* --- PESTAÑA DE CURSOR --- */
+/* Contenedor principal de la pestaña para permitir scroll si es necesario */
+#tab-content-cursor {
+    overflow-y: auto;
+}
+
 .cursor-settings-card {
     background: var(--surface-dark);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    border-radius: 12px; /* Bordes más redondeados */
+    padding: 20px;
+    display: grid; /* Usamos grid para un layout más robusto */
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 25px;
+    border: 1px solid transparent; /* Para la transición */
+    transition: all 0.3s ease;
 }
+
+.cursor-settings-card > .style-option {
+    margin-bottom: 0; /* Reseteamos el margen de los style-option hijos */
+}
+
+/* El contenedor del color principal ocupa toda la primera fila */
 .color-option {
+    grid-column: 1 / -1; /* Ocupa todo el ancho */
     display: flex;
-    justify-content: space-between;
+    flex-direction: column; /* Label arriba, input abajo */
+    gap: 10px;
+}
+
+.color-input-wrapper {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 5px;
+    transition: border-color 0.3s ease;
+    display: flex; /* Para centrar el input de color */
+    justify-content: center;
     align-items: center;
 }
-.color-input-wrapper {
-    border: 2px solid var(--surface-dark);
-    border-radius: 8px;
-    padding: 4px;
-    transition: border-color 0.3s ease;
+
+.color-input-wrapper:hover {
+    border-color: var(--color-primary);
 }
+
+.color-input-wrapper input[type="color"] {
+    width: 100%;
+    height: 45px; /* Más grande y fácil de clickear */
+    border: none;
+    padding: 0;
+    background: none;
+}
+
 .toggle-option {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0;
+    background: rgba(0,0,0,0.2);
+    padding: 10px 15px;
     border-radius: 8px;
 }
+
 .toggle-option label {
     margin-bottom: 0;
+    font-weight: bold;
 }
+
 /* Estilos para el interruptor (toggle switch) */
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -1470,7 +1504,9 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 #rainbow-speed-container {
     display: none; /* Oculto por defecto */
+    grid-column: 1 / -1; /* Ocupa todo el ancho cuando es visible */
 }
+
 #rainbow-speed-container.visible {
     display: block;
 }
@@ -1478,30 +1514,63 @@ input:checked + .slider:before { transform: translateX(22px); }
 /* Estilos cuando el modo arcoíris está activo */
 .color-input-wrapper.disabled {
     border-color: var(--surface-dark) !important;
+    opacity: 0.5;
 }
 .color-input-wrapper.disabled input[type="color"] {
-    opacity: 0.5;
     cursor: not-allowed !important;
+}
+
+/* Botón de Restablecer Cursores */
+#reset-cursors-btn {
+    grid-column: 1 / -1; /* Ocupa todo el ancho del grid */
+    margin-top: 10px; /* Espacio sobre el botón */
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+#reset-cursors-btn:hover {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--bg-dark);
 }
 
 /* Área de previsualización del cursor */
 .preview-title {
-    margin-top: 25px;
+    margin-top: 25px; /* Espacio entre la tarjeta de ajustes y la previsualización */
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--text-light);
+    opacity: 0.9;
+    margin: 0 0 15px 0;
+    text-align: center;
 }
 #cursor-preview-area {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 15px;
 }
 .cursor-preview-item {
     background: var(--surface-dark);
     padding: 15px;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     gap: 12px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.cursor-preview-item:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
 }
 .cursor-preview-icon {
     width: 40px;
@@ -1518,17 +1587,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 .cursor-preview-label {
     font-size: 1em;
-    opacity: 0.8;
-}
-
-/* --- PESTAÑA DE COMPARTIR --- */
-.share-options-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 10px;
-    overflow-y: auto;
-    flex-grow: 1;
+    font-weight: bold;
 }
 
 .share-card {
@@ -1841,4 +1900,3 @@ input:checked + .slider:before { transform: translateX(22px); }
 #tab-content-cursor {
     overflow-y: auto; /* Habilita el scroll vertical si el contenido se desborda */
 }
-
