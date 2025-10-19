@@ -556,6 +556,36 @@ body.sidebar-resizing * {
     cursor: pointer;
 }
 
+/* --- NUEVO: Estilos para tarjetas de "Aplicar a" en Fondos --- */
+.apply-to-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.apply-to-card {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface-dark);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+.apply-to-card:hover {
+    border-color: var(--color-secondary);
+    transform: translateY(-2px);
+}
+.apply-to-card.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--bg-dark);
+}
+.apply-to-icon { font-size: 1.5em; }
+.apply-to-text { font-size: 0.85em; font-weight: bold; }
+
 /* --- ESTILOS PARA LA PESTAÑA DE FONDOS --- */
 #background-options-container {
     margin-top: 15px;
@@ -585,10 +615,13 @@ body.sidebar-resizing * {
     box-shadow: var(--shadow-sm);
 }
 .background-preview:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
+    z-index: 2;
+    position: relative;
 }
 .background-preview.active {
     border-color: var(--color-accent);
+    transform: scale(1.1);
 }
 
 /* --- PALETA DE NOTAS --- */

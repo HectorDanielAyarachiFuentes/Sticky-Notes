@@ -134,13 +134,17 @@
     
         <div id="tab-content-background" class="tab-content">
             <p class="tab-title">Fondos del Tablero</p>
-            <div class="style-option">
-                <label>Aplicar a:</label>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="bg-apply-board" checked><label for="bg-apply-board">Tablero</label>
-                    <input type="checkbox" id="bg-apply-notes"><label for="bg-apply-notes">Notas</label>
+            <div class="style-option apply-to-container">
+                <div class="apply-to-card" id="bg-apply-board">
+                    <div class="apply-to-icon">🖼️</div>
+                    <div class="apply-to-text">Tablero</div>
+                </div>
+                <div class="apply-to-card" id="bg-apply-notes">
+                    <div class="apply-to-icon">📝</div>
+                    <div class="apply-to-text">Notas</div>
                 </div>
             </div>
+
             <button id="reset-background-btn">Fondo por Defecto</button>
             <div id="background-options-container">
                 <!-- Las opciones de fondo se generarán aquí -->

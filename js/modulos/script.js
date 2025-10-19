@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } = await import('./gestor/papelera.js');
     const { initializeNoteInteractions } = await import('./gestor/interaccionesNotas.js');
     // ¡NUEVO! Importamos el módulo de creación
+    const { initializeBackgroundManager, updateBackgroundUI } = await import('./gestor/fondo.js');
     const { initializeCreateTab } = await import('./gestor/crear.js');
     const { initializeCursorManager } = await import('./gestor/cursor.js');
 
@@ -45,10 +46,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lineSizeValue = document.querySelector("#line-size-value");
     const templateContainer = document.querySelector("#template-container"); // Aún lo necesita crear.js
     // Pestaña de fondos
-    const backgroundOptionsContainer = document.querySelector("#background-options-container");
-    const resetBackgroundBtn = document.querySelector("#reset-background-btn");
-    const bgApplyToBoardCheckbox = document.querySelector("#bg-apply-board");
-    const bgApplyToNotesCheckbox = document.querySelector("#bg-apply-notes");
+    const backgroundOptionsContainer = document.getElementById("background-options-container");
+    const resetBackgroundBtn = document.getElementById("reset-background-btn");
+    const bgApplyToBoardCard = document.getElementById("bg-apply-board");
+    const bgApplyToNotesCard = document.getElementById("bg-apply-notes");
     // Menú contextual
     const contextMenu = document.querySelector("#context-menu");
     const ctxDuplicateBtn = document.querySelector("#ctx-duplicate");
@@ -280,10 +281,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         removeActiveLines();
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) return;
-        bgApplyToBoardCheckbox.checked = currentBoard.backgroundApplyTo.board;
-        bgApplyToNotesCheckbox.checked = currentBoard.backgroundApplyTo.notes;
         boardContainer.style.background = currentBoard.backgroundApplyTo.board ? (currentBoard.background || DEFAULT_BOARD_BACKGROUND) : DEFAULT_BOARD_BACKGROUND;
-        updateActiveBackgroundPreview(currentBoard.background);
+        updateBackgroundUI(currentBoard);
         updateZoom();
         if (currentBoard.notes.length === 0) {
             const welcomeMsg = document.createElement('div');
@@ -688,62 +687,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateUI(); // Carga inicial
     }
 
-    function createBackgroundPreviews(title, gradients, isRaw = false) {
-        const categoryTitle = document.createElement('p');
-        categoryTitle.className = 'tab-title';
-        categoryTitle.textContent = title;
-        backgroundOptionsContainer.appendChild(categoryTitle);
-        const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'background-category';
-        gradients.forEach(grad => {
-            const backgroundValue = isRaw ? grad : `linear-gradient(45deg, ${grad.colors.join(', ')})`;
-            const preview = document.createElement('div');
-            preview.className = 'background-preview';
-            preview.style.background = backgroundValue;
-            preview.dataset.background = backgroundValue;
-            preview.title = isRaw ? 'Fondo de rayas' : grad.name;
-            preview.addEventListener('click', () => applyBackground(backgroundValue));
-            categoryContainer.appendChild(preview);
-        });
-        backgroundOptionsContainer.appendChild(categoryContainer);
-    }
-
-    async function initializeBackgroundOptions() {
-        try {
-            const [gradients, stripes] = await Promise.all([
-                fetch('fondo/gradients.json').then(res => res.json()),
-                fetch('fondo/gradientesraya.json').then(res => res.json())
-            ]);
-            createBackgroundPreviews('Gradientes', gradients, false);
-            createBackgroundPreviews('Rayas', stripes, true);
-        } catch (error) {
-            console.error("Error al cargar los fondos:", error);
-            backgroundOptionsContainer.innerHTML = '<p>No se pudieron cargar los fondos.</p>';
-        }
-        resetBackgroundBtn.addEventListener('click', () => applyBackground(null));
-        bgApplyToBoardCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
-        bgApplyToNotesCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
-    }
-
-    function applyBackground(backgroundValue) {
-        const currentBoard = appState.boards[appState.activeBoardId];
-        if (!currentBoard) return;
-        currentBoard.backgroundApplyTo = { board: bgApplyToBoardCheckbox.checked, notes: bgApplyToNotesCheckbox.checked };
-        currentBoard.background = backgroundValue;
-        boardContainer.style.background = currentBoard.backgroundApplyTo.board ? backgroundValue || DEFAULT_BOARD_BACKGROUND : DEFAULT_BOARD_BACKGROUND;
-        document.querySelectorAll('.stickynote').forEach(noteEl => {
-            noteEl.style.backgroundImage = currentBoard.backgroundApplyTo.notes ? backgroundValue : '';
-        });
-        saveState();
-        updateActiveBackgroundPreview(backgroundValue);
-    }
-
-    function updateActiveBackgroundPreview(backgroundValue) {
-        document.querySelectorAll('.background-preview').forEach(p => {
-            p.classList.toggle('active', p.dataset.background === backgroundValue || (!backgroundValue && !p.dataset.background));
-        });
-    }
-
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -854,6 +797,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         initializeLineManager(appState, board, renderActiveBoard);
 
+        const backgroundDOM = {
+            backgroundOptionsContainer,
+            resetBackgroundBtn,
+            bgApplyToBoardCard,
+            bgApplyToNotesCard,
+            boardContainer
+        };
+        const backgroundCallbacks = {
+            saveState, renderActiveBoard,
+            getDefaultBackground: () => DEFAULT_BOARD_BACKGROUND
+        };
+        initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
+
         const trashDOM = { board, trashNotesContainer, trashBoardsContainer, emptyTrashBtn };
         const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, updateBoardSize, hideContextMenu, removeLinesForNote };
         initializeTrashManager(appState, trashDOM, trashCallbacks);
@@ -956,8 +912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderBoardList();
         renderActiveBoard();
         updateBoardSize();
-        initializeLineStyleControls();
-        initializeBackgroundOptions();
+        initializeLineStyleControls();        
         initializeColorPopover();
         initializeSidebarResizing();
         updatePaletteState();

@@ -8,12 +8,14 @@
  * - Aplica el fondo seleccionado al tablero y/o a las notas.
  * - Gestiona el reseteo del fondo.
  * - Actualiza la UI para mostrar el fondo activo.
+ * - Implementa previsualización en vivo al pasar el ratón.
  */
 
 // --- Variables del Módulo ---
 let appState;
 let DOM;
 let Callbacks;
+let originalBackground = null; // Para restaurar en la previsualización
 
 /**
  * Inicializa el gestor de fondos.
@@ -26,13 +28,12 @@ export async function initializeBackgroundManager(appStateRef, domRefs, callback
     DOM = domRefs;
     Callbacks = callbackFuncs;
 
-    if (!DOM.backgroundOptionsContainer || !DOM.resetBackgroundBtn || !DOM.bgApplyToBoardCheckbox || !DOM.bgApplyToNotesCheckbox) {
+    if (!DOM.backgroundOptionsContainer || !DOM.resetBackgroundBtn || !DOM.bgApplyToBoardCard || !DOM.bgApplyToNotesCard) {
         console.warn("No se encontraron los elementos de la pestaña 'Fondo'.");
         return;
     }
 
     try {
-        // Carga los gradientes y rayas en paralelo
         const [gradients, stripes] = await Promise.all([
             fetch('fondo/gradients.json').then(res => res.json()),
             fetch('fondo/gradientesraya.json').then(res => res.json())
@@ -46,8 +47,8 @@ export async function initializeBackgroundManager(appStateRef, domRefs, callback
 
     // Asigna los listeners a los controles
     DOM.resetBackgroundBtn.addEventListener('click', () => applyBackground(null));
-    DOM.bgApplyToBoardCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
-    DOM.bgApplyToNotesCheckbox.addEventListener('change', () => applyBackground(appState.boards[appState.activeBoardId].background));
+    DOM.bgApplyToBoardCard.addEventListener('click', toggleApplyOption);
+    DOM.bgApplyToNotesCard.addEventListener('click', toggleApplyOption);
 }
 
 /**
@@ -72,46 +73,95 @@ function createBackgroundPreviews(title, gradients, isRaw = false) {
         preview.style.background = backgroundValue;
         preview.dataset.background = backgroundValue;
         preview.title = isRaw ? 'Fondo de rayas' : grad.name;
+        
         preview.addEventListener('click', () => applyBackground(backgroundValue));
+        preview.addEventListener('mouseenter', () => previewBackground(backgroundValue));
+        preview.addEventListener('mouseleave', restoreOriginalBackground);
+
         categoryContainer.appendChild(preview);
     });
     DOM.backgroundOptionsContainer.appendChild(categoryContainer);
 }
 
 /**
- * Aplica un nuevo fondo al tablero y/o a las notas.
+ * Previsualiza un fondo temporalmente al pasar el ratón.
+ * @param {string|null} backgroundValue - El valor del fondo a previsualizar.
+ */
+function previewBackground(backgroundValue) {
+    const currentBoard = appState.boards[appState.activeBoardId];
+    if (!currentBoard) return;
+
+    originalBackground = {
+        background: currentBoard.background,
+        applyTo: { ...currentBoard.backgroundApplyTo }
+    };
+
+    const applyToBoard = DOM.bgApplyToBoardCard.classList.contains('active');
+    const applyToNotes = DOM.bgApplyToNotesCard.classList.contains('active');
+
+    DOM.boardContainer.style.background = applyToBoard ? backgroundValue : Callbacks.getDefaultBackground();
+    document.querySelectorAll('.stickynote').forEach(noteEl => {
+        noteEl.style.backgroundImage = applyToNotes ? backgroundValue : '';
+    });
+}
+
+/**
+ * Restaura el fondo original después de que el ratón deja una previsualización.
+ */
+function restoreOriginalBackground() {
+    if (!originalBackground) return;
+
+    DOM.boardContainer.style.background = originalBackground.applyTo.board ? originalBackground.background : Callbacks.getDefaultBackground();
+    document.querySelectorAll('.stickynote').forEach(noteEl => {
+        noteEl.style.backgroundImage = originalBackground.applyTo.notes ? originalBackground.background : '';
+    });
+    originalBackground = null;
+}
+
+/**
+ * Aplica un nuevo fondo al tablero y/o a las notas de forma permanente.
  * @param {string|null} backgroundValue - El valor CSS del fondo a aplicar, o null para resetear.
  */
 function applyBackground(backgroundValue) {
     const currentBoard = appState.boards[appState.activeBoardId];
     if (!currentBoard) return;
 
-    // Actualiza el estado de la aplicación
     currentBoard.backgroundApplyTo = {
-        board: DOM.bgApplyToBoardCheckbox.checked,
-        notes: DOM.bgApplyToNotesCheckbox.checked
+        board: DOM.bgApplyToBoardCard.classList.contains('active'),
+        notes: DOM.bgApplyToNotesCard.classList.contains('active')
     };
     currentBoard.background = backgroundValue;
 
-    // Aplica los estilos al DOM
-    // La constante DEFAULT_BOARD_BACKGROUND la gestiona el script principal
-    DOM.boardContainer.style.background = currentBoard.backgroundApplyTo.board ? backgroundValue : '';
-    document.querySelectorAll('.stickynote').forEach(noteEl => {
-        noteEl.style.backgroundImage = currentBoard.backgroundApplyTo.notes ? backgroundValue : '';
-    });
-
     Callbacks.saveState();
-    updateActiveBackgroundPreview(backgroundValue);
+    Callbacks.renderActiveBoard(); // Dejamos que el renderizador principal se encargue
 }
 
 /**
- * Actualiza la UI de las previsualizaciones para marcar cuál está activa.
- * Esta función se exporta para que el script principal pueda llamarla al cambiar de tablero.
- * @param {string|null} backgroundValue - El valor del fondo activo.
+ * Maneja el clic en las tarjetas de "Aplicar a".
+ * @param {Event} e - El evento de clic.
  */
-export function updateActiveBackgroundPreview(backgroundValue) {
+function toggleApplyOption(e) {
+    const card = e.currentTarget;
+    card.classList.toggle('active');
+    // Aplicamos el cambio inmediatamente con el fondo actual
+    applyBackground(appState.boards[appState.activeBoardId].background);
+}
+
+/**
+ * Actualiza la UI para marcar la previsualización y las opciones activas.
+ * Esta función se exporta para que el script principal pueda llamarla.
+ * @param {object} currentBoard - El tablero activo.
+ */
+export function updateBackgroundUI(currentBoard) {
+    if (!currentBoard) return;
+
+    // Actualizar tarjetas de "Aplicar a"
+    DOM.bgApplyToBoardCard.classList.toggle('active', currentBoard.backgroundApplyTo.board);
+    DOM.bgApplyToNotesCard.classList.toggle('active', currentBoard.backgroundApplyTo.notes);
+
+    // Actualizar previsualización de fondo activa
     document.querySelectorAll('.background-preview').forEach(p => {
-        // Compara el data-attribute. El 'null' se maneja implícitamente si `backgroundValue` es null o undefined.
-        p.classList.toggle('active', p.dataset.background === backgroundValue);
+        const isActive = p.dataset.background === currentBoard.background || (!currentBoard.background && !p.dataset.background);
+        p.classList.toggle('active', isActive);
     });
 }
