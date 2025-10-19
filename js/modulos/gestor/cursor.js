@@ -83,6 +83,20 @@ const CURSOR_TEMPLATES = {
   </g>
 </svg>`,
         hotspot: '16 16'
+    },
+    se_resize: {
+        template: `
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="grad-se-resize"><stop offset="0%" stop-color="{c1}"/><stop offset="70%" stop-color="{c2}"/><stop offset="100%" stop-color="{c3}"/></radialGradient>
+    <linearGradient id="edge-se-resize"><stop offset="0%" stop-color="{c4}"/><stop offset="100%" stop-color="{c3}"/></linearGradient>
+    <filter id="sdw-se-resize" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/><feOffset in="blur" dx="1.5" dy="1.5" result="offsetBlur"/><feFlood flood-color="#000" flood-opacity="0.5" result="offsetColor"/><feComposite in="offsetColor" in2="offsetBlur" operator="in" result="shadow"/><feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g filter="url(#sdw-se-resize)">
+    <path d="M6 6 L26 26 M19 6 L6 6 L6 19 M13 26 L26 26 L26 13" fill="none" stroke="url(#grad-se-resize)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>`,
+        hotspot: '16 16'
     }
 };
 
