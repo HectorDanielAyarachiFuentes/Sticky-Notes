@@ -1,8 +1,37 @@
 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <!-- Gradiente verde para dar más volumen -->
+    <linearGradient id="text-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#D4FC6B; stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A3D231; stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente para el brillo metálico -->
+    <linearGradient id="metallic-shine-text" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF; stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#FFFFFF; stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#FFFFFF; stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Gradiente para el borde verde -->
+    <linearGradient id="edge-gradient-text" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7FA028; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5C7A1C; stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente radial para la profundidad -->
+    <radialGradient id="depth-gradient-text" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8CB527; stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Filtro de sombra mejorado -->
     <filter id="drop-shadow-text" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
-      <feOffset in="blur" dx="1" dy="1" result="offsetBlur"/>
+      <feOffset in="blur" dx="1.5" dy="1.5" result="offsetBlur"/>
       <feFlood flood-color="#000000" flood-opacity="0.5" result="offsetColor"/>
       <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="shadow"/>
       <feMerge>
@@ -10,13 +39,59 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    
+    <!-- Filtro para el efecto de relieve -->
+    <filter id="emboss-text" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="0.5"/>
+      <feSpecularLighting result="specOut" in="blur" specularConstant="1.5" specularExponent="20" lighting-color="white">
+        <fePointLight x="-50" y="30" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut2"/>
+      <feComposite in="SourceGraphic" in2="specOut2" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <!-- Filtro para el efecto de luz interior -->
+    <filter id="inner-glow-text">
+      <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <g filter="url(#drop-shadow-text)">
+  
+  <!-- Capa de sombra profunda -->
+  <g opacity="0.7">
     <path 
-      fill="#FFFFFF" 
-      stroke="#000000" 
-      stroke-width="1"
+      fill="#000000" 
       d="M 8 3 C 8.862 3 9.573 3.287 10.06 3.566 C 10.234 3.665 10.381 3.764 10.5 3.852 C 10.619 3.764 10.766 3.665 10.94 3.566 C 11.427 3.287 12.138 3 13 3 C 13.552 3 13.552 4 13 4 C 12.362 4 11.823 4.213 11.436 4.434 C 11.248 4.541 11.101 4.648 11 4.728 L 11 10.5 L 12 10.5 C 12.552 10.5 12.552 11.5 12 11.5 L 11 11.5 L 11 17.272 C 11.1 17.352 11.248 17.459 11.436 17.566 C 11.823 17.787 12.362 18 13 18 C 13.552 18 13.552 19 13 19 C 11.94 18.434 11.059 18.145 10.5 17.864 C 9.941 18.145 9.06 18.434 8 19 C 7.448 19 7.448 18 8 18 C 8.638 18 9.177 17.787 9.564 17.566 C 9.752 17.459 9.9 17.352 10 17.272 L 10 11.5 L 9 11.5 C 8.448 11.5 8.448 10.5 9 10.5 L 10 10.5 L 10 4.728 C 9.9 4.648 9.752 4.541 9.564 4.434 C 9.177 4.213 8.638 4 8 4 C 7.448 4 7.448 3 8 3 z"
-    />
+      transform="translate(2, 2)" />
   </g>
+  
+  <!-- Capa principal con efectos 3D -->
+  <g filter="url(#drop-shadow-text)">
+    <!-- Capa base con relieve -->
+    <path 
+      fill="#769725" 
+      d="M 8 3 C 8.862 3 9.573 3.287 10.06 3.566 C 10.234 3.665 10.381 3.764 10.5 3.852 C 10.619 3.764 10.766 3.665 10.94 3.566 C 11.427 3.287 12.138 3 13 3 C 13.552 3 13.552 4 13 4 C 12.362 4 11.823 4.213 11.436 4.434 C 11.248 4.541 11.101 4.648 11 4.728 L 11 10.5 L 12 10.5 C 12.552 10.5 12.552 11.5 12 11.5 L 11 11.5 L 11 17.272 C 11.1 17.352 11.248 17.459 11.436 17.566 C 11.823 17.787 12.362 18 13 18 C 13.552 18 13.552 19 13 19 C 11.94 18.434 11.059 18.145 10.5 17.864 C 9.941 18.145 9.06 18.434 8 19 C 7.448 19 7.448 18 8 18 C 8.638 18 9.177 17.787 9.564 17.566 C 9.752 17.459 9.9 17.352 10 17.272 L 10 11.5 L 9 11.5 C 8.448 11.5 8.448 10.5 9 10.5 L 10 10.5 L 10 4.728 C 9.9 4.648 9.752 4.541 9.564 4.434 C 9.177 4.213 8.638 4 8 4 C 7.448 4 7.448 3 8 3 z"
+      transform="translate(0.5, 0.5)" />
+    
+    <!-- Capa principal con gradiente radial para dar más profundidad -->
+    <path 
+      fill="url(#depth-gradient-text)" 
+      stroke="url(#edge-gradient-text)" 
+      stroke-width="1"
+      d="M 8 3 C 8.862 3 9.573 3.287 10.06 3.566 C 10.234 3.665 10.381 3.764 10.5 3.852 C 10.619 3.764 10.766 3.665 10.94 3.566 C 11.427 3.287 12.138 3 13 3 C 13.552 3 13.552 4 13 4 C 12.362 4 11.823 4.213 11.436 4.434 C 11.248 4.541 11.101 4.648 11 4.728 L 11 10.5 L 12 10.5 C 12.552 10.5 12.552 11.5 12 11.5 L 11 11.5 L 11 17.272 C 11.1 17.352 11.248 17.459 11.436 17.566 C 11.823 17.787 12.362 18 13 18 C 13.552 18 13.552 19 13 19 C 11.94 18.434 11.059 18.145 10.5 17.864 C 9.941 18.145 9.06 18.434 8 19 C 7.448 19 7.448 18 8 18 C 8.638 18 9.177 17.787 9.564 17.566 C 9.752 17.459 9.9 17.352 10 17.272 L 10 11.5 L 9 11.5 C 8.448 11.5 8.448 10.5 9 10.5 L 10 10.5 L 10 4.728 C 9.9 4.648 9.752 4.541 9.564 4.434 C 9.177 4.213 8.638 4 8 4 C 7.448 4 7.448 3 8 3 z" />
+    
+    <!-- Capa de brillo metálico -->
+    <path 
+      fill="url(#metallic-shine-text)" 
+      opacity="0.6" 
+      filter="url(#emboss-text)"
+      d="M 8 3 C 8.862 3 9.573 3.287 10.06 3.566 C 10.234 3.665 10.381 3.764 10.5 3.852 C 10.619 3.764 10.766 3.665 10.94 3.566 C 11.427 3.287 12.138 3 13 3 C 13.552 3 13.552 4 13 4 C 12.362 4 11.823 4.213 11.436 4.434 C 11.248 4.541 11.101 4.648 11 4.728 L 11 10.5 L 12 10.5 C 12.552 10.5 12.552 11.5 12 11.5 L 11 11.5 L 11 17.272 C 11.1 17.352 11.248 17.459 11.436 17.566 C 11.823 17.787 12.362 18 13 18 C 13.552 18 13.552 19 13 19 C 11.94 18.434 11.059 18.145 10.5 17.864 C 9.941 18.145 9.06 18.434 8 19 C 7.448 19 7.448 18 8 18 C 8.638 18 9.177 17.787 9.564 17.566 C 9.752 17.459 9.9 17.352 10 17.272 L 10 11.5 L 9 11.5 C 8.448 11.5 8.448 10.5 9 10.5 L 10 10.5 L 10 4.728 C 9.9 4.648 9.752 4.541 9.564 4.434 C 9.177 4.213 8.638 4 8 4 C 7.448 4 7.448 3 8 3 z" />
+  </g>
+  
+  <!-- Puntos de luz para efecto de brillo en las partes más prominentes -->
+  <ellipse cx="10.5" cy="5" rx="2" ry="1" fill="white" opacity="0.7" filter="url(#inner-glow-text)" />
+  <ellipse cx="10.5" cy="17" rx="2" ry="1" fill="white" opacity="0.7" filter="url(#inner-glow-text)" />
 </svg>

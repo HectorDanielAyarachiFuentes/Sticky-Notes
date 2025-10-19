@@ -5,35 +5,102 @@
      viewBox="-150 -150 1222 1222">
   
   <defs>
-    
+    <!-- Gradiente mejorado para dar más volumen -->
     <linearGradient id="top-gradient-hand" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#D7FC75; stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#D4FC6B; stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#C2FB3B; stop-opacity:1" />
       <stop offset="100%" style="stop-color:#A3D231; stop-opacity:1" />
     </linearGradient>
     
-    <filter id="drop-shadow-hand" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur"/>
-      <feOffset in="blur" dx="12" dy="12" result="offsetBlur"/>
-      <feFlood flood-color="#000000" flood-opacity="0.3" result="offsetColor"/>
+    <!-- Gradiente para el brillo metálico -->
+    <linearGradient id="metallic-shine-hand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF; stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#FFFFFF; stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#FFFFFF; stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Gradiente para el borde -->
+    <linearGradient id="edge-gradient-hand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7FA028; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5C7A1C; stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente para la profundidad -->
+    <radialGradient id="depth-gradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8CB527; stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Filtro de sombra mejorado -->
+    <filter id="drop-shadow-hand" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
+      <feOffset in="blur" dx="8" dy="8" result="offsetBlur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.4" result="offsetColor"/>
       <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="shadow"/>
       <feMerge>
         <feMergeNode in="shadow"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    
+    <!-- Filtro para el efecto de relieve -->
+    <filter id="emboss-hand" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="2"/>
+      <feSpecularLighting result="specOut" in="blur" specularConstant="1.5" specularExponent="20" lighting-color="white">
+        <fePointLight x="-50" y="30" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut2"/>
+      <feComposite in="SourceGraphic" in2="specOut2" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <!-- Filtro para el efecto de luz interior -->
+    <filter id="inner-glow-hand">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
   
-  <g filter="url(#drop-shadow-hand)">
+  <!-- Capa de sombra profunda -->
+  <g opacity="0.7">
+    <path 
+       d="M811.832,189.516c1.6-11.2,4-27.5-2.9-38.1c-17.8-27.5-67.1-16.7-70.2,16.5l-60.3,244.5c-0.6,2.3-4,1.899-3.9-0.5 c1.801-73.8,8.101-339.8,8.101-340c-1.2-24.4-21.101-37.1-41.3-37.6c-22.5-0.6-43.101,14.8-44.601,38.5l-33.5,332.1 c-0.3,2.399-3.8,2.399-4,0c-6.899-83.5-32.8-365.4-33-367.3c-1.2-24.4-21.1-37.1-41.3-37.6c-21.7-0.6-43.201,16-44.6,38.5 l-4.101,366.5c0,2.3-3.399,2.7-3.899,0.5c-14.9-60.3-68.4-330.2-68.5-330.4c-6.4-28.4-23.9-36.7-44.7-35.9 c-23.101,0.8-43.3,17.9-43.2,42.2l53.6,468.8c0,4.9-3.6,9-8.5,9.7h-0.1c-15.7-0.5-71.4-21.5-107.9-74.2c-4.7-6.8-9-13-13-18.7 c-34.1-48.899-100.2-21.899-90.9,33.7c8.5,51,193.3,306.6,193.3,306.6v0.301h406.1l39.7-66.7 c14.101-23.8,21.601-50.9,21.601-78.601c0,0,0-147.3-0.101-162.899c0-0.9,0.101-1.8,0.2-2.7 C772.631,476.716,804.531,240.416,811.832,189.516z"
+       fill="#000000"
+       transform="translate(18, 18)" />
+  </g>
   
+  <!-- Capa principal con efectos 3D -->
+  <g filter="url(#drop-shadow-hand)">
+    <!-- Capa base con relieve -->
     <path 
        d="M811.832,189.516c1.6-11.2,4-27.5-2.9-38.1c-17.8-27.5-67.1-16.7-70.2,16.5l-60.3,244.5c-0.6,2.3-4,1.899-3.9-0.5 c1.801-73.8,8.101-339.8,8.101-340c-1.2-24.4-21.101-37.1-41.3-37.6c-22.5-0.6-43.101,14.8-44.601,38.5l-33.5,332.1 c-0.3,2.399-3.8,2.399-4,0c-6.899-83.5-32.8-365.4-33-367.3c-1.2-24.4-21.1-37.1-41.3-37.6c-21.7-0.6-43.201,16-44.6,38.5 l-4.101,366.5c0,2.3-3.399,2.7-3.899,0.5c-14.9-60.3-68.4-330.2-68.5-330.4c-6.4-28.4-23.9-36.7-44.7-35.9 c-23.101,0.8-43.3,17.9-43.2,42.2l53.6,468.8c0,4.9-3.6,9-8.5,9.7h-0.1c-15.7-0.5-71.4-21.5-107.9-74.2c-4.7-6.8-9-13-13-18.7 c-34.1-48.899-100.2-21.899-90.9,33.7c8.5,51,193.3,306.6,193.3,306.6v0.301h406.1l39.7-66.7 c14.101-23.8,21.601-50.9,21.601-78.601c0,0,0-147.3-0.101-162.899c0-0.9,0.101-1.8,0.2-2.7 C772.631,476.716,804.531,240.416,811.832,189.516z"
        style="fill:#769725;"
-       transform="translate(12, 12)" />
-       
+       transform="translate(6, 6)" />
+    
+    <!-- Capa principal con gradiente radial para dar más profundidad -->
     <path 
        d="M811.832,189.516c1.6-11.2,4-27.5-2.9-38.1c-17.8-27.5-67.1-16.7-70.2,16.5l-60.3,244.5c-0.6,2.3-4,1.899-3.9-0.5 c1.801-73.8,8.101-339.8,8.101-340c-1.2-24.4-21.101-37.1-41.3-37.6c-22.5-0.6-43.101,14.8-44.601,38.5l-33.5,332.1 c-0.3,2.399-3.8,2.399-4,0c-6.899-83.5-32.8-365.4-33-367.3c-1.2-24.4-21.1-37.1-41.3-37.6c-21.7-0.6-43.201,16-44.6,38.5 l-4.101,366.5c0,2.3-3.399,2.7-3.899,0.5c-14.9-60.3-68.4-330.2-68.5-330.4c-6.4-28.4-23.9-36.7-44.7-35.9 c-23.101,0.8-43.3,17.9-43.2,42.2l53.6,468.8c0,4.9-3.6,9-8.5,9.7h-0.1c-15.7-0.5-71.4-21.5-107.9-74.2c-4.7-6.8-9-13-13-18.7 c-34.1-48.899-100.2-21.899-90.9,33.7c8.5,51,193.3,306.6,193.3,306.6v0.301h406.1l39.7-66.7 c14.101-23.8,21.601-50.9,21.601-78.601c0,0,0-147.3-0.101-162.899c0-0.9,0.101-1.8,0.2-2.7 C772.631,476.716,804.531,240.416,811.832,189.516z"
-       style="fill:url(#top-gradient-hand);" />
-       
+       style="fill:url(#depth-gradient);" />
+    
+    <!-- Capa de brillo metálico -->
+    <path 
+       d="M811.832,189.516c1.6-11.2,4-27.5-2.9-38.1c-17.8-27.5-67.1-16.7-70.2,16.5l-60.3,244.5c-0.6,2.3-4,1.899-3.9-0.5 c1.801-73.8,8.101-339.8,8.101-340c-1.2-24.4-21.101-37.1-41.3-37.6c-22.5-0.6-43.101,14.8-44.601,38.5l-33.5,332.1 c-0.3,2.399-3.8,2.399-4,0c-6.899-83.5-32.8-365.4-33-367.3c-1.2-24.4-21.1-37.1-41.3-37.6c-21.7-0.6-43.201,16-44.6,38.5 l-4.101,366.5c0,2.3-3.399,2.7-3.899,0.5c-14.9-60.3-68.4-330.2-68.5-330.4c-6.4-28.4-23.9-36.7-44.7-35.9 c-23.101,0.8-43.3,17.9-43.2,42.2l53.6,468.8c0,4.9-3.6,9-8.5,9.7h-0.1c-15.7-0.5-71.4-21.5-107.9-74.2c-4.7-6.8-9-13-13-18.7 c-34.1-48.899-100.2-21.899-90.9,33.7c8.5,51,193.3,306.6,193.3,306.6v0.301h406.1l39.7-66.7 c14.101-23.8,21.601-50.9,21.601-78.601c0,0,0-147.3-0.101-162.899c0-0.9,0.101-1.8,0.2-2.7 C772.631,476.716,804.531,240.416,811.832,189.516z"
+       style="fill:url(#metallic-shine-hand); opacity:0.6;" 
+       filter="url(#emboss-hand)" />
+    
+    <!-- Capa de borde para dar profundidad -->
+    <path 
+       d="M811.832,189.516c1.6-11.2,4-27.5-2.9-38.1c-17.8-27.5-67.1-16.7-70.2,16.5l-60.3,244.5c-0.6,2.3-4,1.899-3.9-0.5 c1.801-73.8,8.101-339.8,8.101-340c-1.2-24.4-21.101-37.1-41.3-37.6c-22.5-0.6-43.101,14.8-44.601,38.5l-33.5,332.1 c-0.3,2.399-3.8,2.399-4,0c-6.899-83.5-32.8-365.4-33-367.3c-1.2-24.4-21.1-37.1-41.3-37.6c-21.7-0.6-43.201,16-44.6,38.5 l-4.101,366.5c0,2.3-3.399,2.7-3.899,0.5c-14.9-60.3-68.4-330.2-68.5-330.4c-6.4-28.4-23.9-36.7-44.7-35.9 c-23.101,0.8-43.3,17.9-43.2,42.2l53.6,468.8c0,4.9-3.6,9-8.5,9.7h-0.1c-15.7-0.5-71.4-21.5-107.9-74.2c-4.7-6.8-9-13-13-18.7 c-34.1-48.899-100.2-21.899-90.9,33.7c8.5,51,193.3,306.6,193.3,306.6v0.301h406.1l39.7-66.7 c14.101-23.8,21.601-50.9,21.601-78.601c0,0,0-147.3-0.101-162.899c0-0.9,0.101-1.8,0.2-2.7 C772.631,476.716,804.531,240.416,811.832,189.516z"
+       style="fill:none; stroke:url(#edge-gradient-hand); stroke-width:2; opacity:0.8;" />
   </g>
+  
+  <!-- Puntos de luz para efecto de brillo en los dedos -->
+  <ellipse cx="550" cy="200" rx="20" ry="12" fill="white" opacity="0.7" filter="url(#inner-glow-hand)" transform="rotate(-30 550 200)" />
+  <ellipse cx="620" cy="250" rx="18" ry="10" fill="white" opacity="0.6" filter="url(#inner-glow-hand)" transform="rotate(-20 620 250)" />
+  <ellipse cx="680" cy="300" rx="15" ry="8" fill="white" opacity="0.5" filter="url(#inner-glow-hand)" transform="rotate(-15 680 300)" />
+  <ellipse cx="450" cy="400" rx="25" ry="15" fill="white" opacity="0.6" filter="url(#inner-glow-hand)" transform="rotate(-10 450 400)" />
 </svg>

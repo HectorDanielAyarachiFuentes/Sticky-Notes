@@ -1,8 +1,37 @@
 <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <!-- Gradiente verde para dar más volumen -->
+    <linearGradient id="ew-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#D4FC6B; stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A3D231; stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente para el brillo metálico -->
+    <linearGradient id="metallic-shine-ew" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF; stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#FFFFFF; stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#FFFFFF; stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Gradiente para el borde verde -->
+    <linearGradient id="edge-gradient-ew" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7FA028; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5C7A1C; stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente radial para la profundidad -->
+    <radialGradient id="depth-gradient-ew" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#E5FF9D; stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#C2FB3B; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8CB527; stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Filtro de sombra mejorado -->
     <filter id="drop-shadow-ew" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
-      <feOffset in="blur" dx="1" dy="1" result="offsetBlur"/>
+      <feOffset in="blur" dx="1.5" dy="1.5" result="offsetBlur"/>
       <feFlood flood-color="#000000" flood-opacity="0.5" result="offsetColor"/>
       <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="shadow"/>
       <feMerge>
@@ -10,15 +39,68 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    
+    <!-- Filtro para el efecto de relieve -->
+    <filter id="emboss-ew" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="0.5"/>
+      <feSpecularLighting result="specOut" in="blur" specularConstant="1.5" specularExponent="20" lighting-color="white">
+        <fePointLight x="-50" y="30" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut2"/>
+      <feComposite in="SourceGraphic" in2="specOut2" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <!-- Filtro para el efecto de luz interior -->
+    <filter id="inner-glow-ew">
+      <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <g filter="url(#drop-shadow-ew)">
+  
+  <!-- Capa de sombra profunda -->
+  <g opacity="0.7">
     <path 
-      fill="#FFFFFF" 
-      stroke="#000000" 
-      stroke-width="1.5"
+      fill="#000000" 
       stroke-linecap="round"
       stroke-linejoin="round"
       d="M 4 16 L 28 16 M 10 11 L 4 16 L 10 21 M 22 11 L 28 16 L 22 21"
-    />
+      transform="translate(2, 2)" />
   </g>
+  
+  <!-- Capa principal con efectos 3D -->
+  <g filter="url(#drop-shadow-ew)">
+    <!-- Capa base con relieve -->
+    <path 
+      fill="#769725" 
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M 4 16 L 28 16 M 10 11 L 4 16 L 10 21 M 22 11 L 28 16 L 22 21"
+      transform="translate(0.5, 0.5)" />
+    
+    <!-- Capa principal con gradiente radial para dar más profundidad -->
+    <path 
+      fill="url(#depth-gradient-ew)" 
+      stroke="url(#edge-gradient-ew)" 
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M 4 16 L 28 16 M 10 11 L 4 16 L 10 21 M 22 11 L 28 16 L 22 21" />
+    
+    <!-- Capa de brillo metálico -->
+    <path 
+      fill="url(#metallic-shine-ew)" 
+      opacity="0.6" 
+      filter="url(#emboss-ew)"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M 4 16 L 28 16 M 10 11 L 4 16 L 10 21 M 22 11 L 28 16 L 22 21" />
+  </g>
+  
+  <!-- Puntos de luz para efecto de brillo en las partes más prominentes -->
+  <ellipse cx="7" cy="16" rx="2" ry="1" fill="white" opacity="0.7" filter="url(#inner-glow-ew)" />
+  <ellipse cx="25" cy="16" rx="2" ry="1" fill="white" opacity="0.7" filter="url(#inner-glow-ew)" />
+  <ellipse cx="16" cy="16" rx="2" ry="1" fill="white" opacity="0.5" filter="url(#inner-glow-ew)" />
 </svg>
