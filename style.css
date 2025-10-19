@@ -42,8 +42,13 @@ body {
 
 /* Cursor por defecto */
 /* Usamos !important para anular cualquier regla de JS o librerías */
-body, #board-container, #board {
+body, #board-container {
     cursor: url('cursors/cursor.svg') 10 2, auto !important;
+}
+
+/* Cursor por defecto para las notas, para que no herede el de agarre al mover */
+.stickynote {
+    cursor: url('cursors/cursor.svg') 10 2, auto;
 }
 
 /* Cursor de mano para elementos clickeables */
@@ -54,9 +59,15 @@ button, a, .tab-btn, .board-item-btn, #sidebar-collapse-btn, #about-btn, #sideba
 
 /* Cursor de agarre para elementos que se están arrastrando o agarrando */
 /* También necesita !important (incluyendo tu nueva regla .stickynote) */
-.dragging, .palette-note:active, .stickynote {
-    cursor: url('cursors/grabing.svg') 16 16, grabbing !important;
+.dragging, .palette-note:active {
+    cursor: url('cursors/grabing.svg') 16 16, grabbing !important; /* Eliminamos .stickynote de aquí */
 }
+
+/* Cursor de texto para áreas de escritura */
+.stickynote-title, .stickynote-text, #board-manager #search-input, #share-link-output {
+    cursor: url('cursors/cursor-text.svg') 8 8, text !important;
+}
+
 /* --- PANEL DE GESTIÓN DE TABLEROS --- */
 #board-manager {
     /* El ancho ahora se controla por JS, con un valor inicial y límites */
@@ -724,7 +735,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             font-weight: bold;
             font-size: 1.1em;
             padding-bottom: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 8px;            
             border-bottom: 1px solid var(--border-color);
             outline: none;
             cursor: text;
@@ -795,7 +806,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             border: none;
             resize: none;
             font-family: 'Kalam', cursive;
-            font-size: 18px;            cursor: text; /* Cursor de texto normal */
+            font-size: 18px;
+            /* El cursor personalizado se aplica globalmente arriba */
             outline: none; /* Sin borde al hacer foco */
             padding: 5px;
             margin: -5px; /* Compensa el padding para alinear con el borde */
