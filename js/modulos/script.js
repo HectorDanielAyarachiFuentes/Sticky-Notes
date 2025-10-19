@@ -38,11 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const zoomResetBtn = document.querySelector("#zoom-reset-btn");
     const zoomLevelDisplay = document.querySelector("#zoom-level-display");
     // Controles de estilo de línea
-    const lineOpacityInput = document.querySelector("#line-opacity-input");
     const lineColorInput = document.querySelector("#line-color-input");
-    const linePathSelect = document.querySelector("#line-path-select");
+    const lineOpacityInput = document.querySelector("#line-opacity-input");
+    const lineOpacityValue = document.querySelector("#line-opacity-value");
     const lineSizeInput = document.querySelector("#line-size-input");
-    const linePlugSelect = document.querySelector("#line-plug-select");
+    const lineSizeValue = document.querySelector("#line-size-value");
     const templateContainer = document.querySelector("#template-container"); // Aún lo necesita crear.js
     // Pestaña de fondos
     const backgroundOptionsContainer = document.querySelector("#background-options-container");
@@ -633,23 +633,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function initializeLineStyleControls() {
-        const { color, opacity, path, size, endPlug } = appState.lineOptions;
-        lineColorInput.value = color;
-        lineOpacityInput.value = opacity;
-        linePathSelect.value = path;
-        lineSizeInput.value = size;
-        linePlugSelect.value = endPlug;
-        const updateLineStyle = () => {
-            appState.lineOptions.color = lineColorInput.value;
-            appState.lineOptions.opacity = parseFloat(lineOpacityInput.value);
-            appState.lineOptions.path = linePathSelect.value;
-            appState.lineOptions.size = parseInt(lineSizeInput.value, 10);
-            appState.lineOptions.endPlug = linePlugSelect.value;
+        const linePathSelect = document.getElementById('line-path-select');
+        const linePlugSelect = document.getElementById('line-plug-select');
+    
+        const updateUI = () => {
+            const { color, opacity, path, size, endPlug } = appState.lineOptions;
+            lineColorInput.value = color;
+            lineOpacityInput.value = opacity;
+            lineOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+            lineSizeInput.value = size;
+            lineSizeValue.textContent = size;
+    
+            linePathSelect.querySelector('.active')?.classList.remove('active');
+            linePathSelect.querySelector(`[data-value="${path}"]`)?.classList.add('active');
+    
+            linePlugSelect.querySelector('.active')?.classList.remove('active');
+            linePlugSelect.querySelector(`[data-value="${endPlug}"]`)?.classList.add('active');
+        };
+    
+        const saveAndRerender = () => {
             saveState();
             renderActiveBoard();
         };
-        [lineColorInput, lineOpacityInput, linePathSelect, lineSizeInput, linePlugSelect].forEach(el =>
-            el.addEventListener('change', updateLineStyle));
+    
+        lineColorInput.addEventListener('input', (e) => {
+            appState.lineOptions.color = e.target.value;
+            saveAndRerender();
+        });
+    
+        lineOpacityInput.addEventListener('input', (e) => {
+            const newOpacity = parseFloat(e.target.value);
+            appState.lineOptions.opacity = newOpacity;
+            lineOpacityValue.textContent = `${Math.round(newOpacity * 100)}%`;
+            saveAndRerender();
+        });
+    
+        lineSizeInput.addEventListener('input', (e) => {
+            const newSize = parseInt(e.target.value, 10);
+            appState.lineOptions.size = newSize;
+            lineSizeValue.textContent = newSize;
+            saveAndRerender();
+        });
+    
+        linePathSelect.addEventListener('click', (e) => {
+            const btn = e.target.closest('.visual-select-btn');
+            if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); }
+        });
+    
+        linePlugSelect.addEventListener('click', (e) => {
+            const btn = e.target.closest('.visual-select-btn');
+            if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); }
+        });
+    
+        updateUI(); // Carga inicial
     }
 
     function createBackgroundPreviews(title, gradients, isRaw = false) {
@@ -925,7 +961,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeColorPopover();
         initializeSidebarResizing();
         updatePaletteState();
-        initializeShareAndImport(appState, showToast, switchBoard, saveState, renderBoardList);
+        initializeShareAndImport(appState, {
+            showToast,
+            switchBoard,
+            saveState,
+            renderBoardList
+        });
         initializeAboutModalFeature();
         initializePanning(boardContainer, board, updateAllLinesPosition);
         boardContainer.addEventListener('scroll', updateAllLinesPosition);

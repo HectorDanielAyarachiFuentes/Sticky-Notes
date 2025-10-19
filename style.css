@@ -430,12 +430,14 @@ body.sidebar-resizing * {
 
 /* --- ESTILOS PARA LA PESTAÑA DE LÍNEAS --- */
 .style-option {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+    position: relative; /* Para el posicionamiento del valor del range */
 }
 .style-option label {
     display: block;
     font-size: 0.9em;
     margin-bottom: 8px;
+    font-weight: bold;
     opacity: 0.8;
 }
 .style-option input[type="color"],
@@ -451,12 +453,94 @@ body.sidebar-resizing * {
     font-family: 'Nunito', sans-serif;
 }
 .style-option input[type="color"] {
-    padding: 4px;
-    height: 40px;
+    padding: 0;
+    height: 38px;
+    border-radius: 6px;
+    border: 2px solid var(--surface-dark);
+    background: none;
+    transition: border-color 0.2s ease;
+}
+.style-option input[type="color"]:hover {
+    border-color: var(--color-primary);
 }
 .style-option input[type="range"] {
     padding: 0;
     background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: var(--surface-dark);
+    border-radius: 4px;
+    outline: none;
+    transition: background 0.2s ease;
+}
+.style-option input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--text-light);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 3px solid var(--bg-dark);
+    transition: background 0.2s ease;
+}
+.style-option input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--color-primary);
+}
+.style-option input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--text-light);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 3px solid var(--bg-dark);
+}
+.style-option-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+.style-option-slider {
+    position: relative;
+}
+.range-value {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.8em;
+    font-weight: bold;
+    opacity: 0.7;
+}
+.visual-select-container {
+    display: flex;
+    gap: 8px;
+}
+.visual-select-btn {
+    flex: 1;
+    background: var(--surface-dark);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    padding: 8px;
+    transition: all 0.2s ease;
+}
+.visual-select-btn:hover {
+    border-color: var(--color-secondary);
+    transform: translateY(-2px);
+}
+.visual-select-btn.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+}
+.visual-select-btn img {
+    width: 100%;
+    height: 24px;
+    filter: invert(1) opacity(0.8);
+    transition: filter 0.2s ease;
+}
+.visual-select-btn.active img {
+    filter: invert(0) opacity(1);
 }
 
 .checkbox-group {
@@ -1308,6 +1392,54 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     box-shadow: var(--shadow-lg);
     animation: toast-fade-in-out 4s ease-in-out forwards;
     backdrop-filter: blur(5px);
+}
+/* --- PESTAÑA DE COMPARTIR --- */
+.share-options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.share-card {
+    background: var(--surface-dark);
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "icon name"
+        "icon desc";
+    gap: 0 12px;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+    cursor: var(--cursor-pointer, pointer) !important;
+}
+
+.share-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-secondary);
+    background: var(--gradient-primary);
+}
+
+.share-card-icon { grid-area: icon; font-size: 2em; display: flex; justify-content: center; align-items: center; }
+.share-card-name { grid-area: name; font-weight: bold; font-size: 1.1em; }
+.share-card-desc { grid-area: desc; font-size: 0.85em; opacity: 0.7; line-height: 1.4; }
+
+#share-link-output {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--surface-dark);
+    background: var(--surface-dark);
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+    box-sizing: border-box; resize: none; height: 80px; display: none; /* Oculto por defecto */
 }
 
 /* --- MODAL GENÉRICO --- */

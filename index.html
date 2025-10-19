@@ -59,37 +59,76 @@
         </div>
     
         <div id="tab-content-lines" class="tab-content">
-            <p class="tab-title">Estilos de Conexión</p>
-            <div class="style-option">
-                <label for="line-color-input">Color</label>
-                <input type="color" id="line-color-input">
+            <p class="tab-title">Estilo de Conexión</p>
+            <div class="style-option-grid">
+                <div class="style-option style-option-color">
+                    <label for="line-color-input">Color</label>
+                    <input type="color" id="line-color-input">
+                </div>
+                <div class="style-option style-option-slider">
+                    <label for="line-opacity-input">Opacidad</label>
+                    <input type="range" id="line-opacity-input" min="0.1" max="1" step="0.1">
+                    <span class="range-value" id="line-opacity-value"></span>
+                </div>
+                <div class="style-option style-option-slider">
+                    <label for="line-size-input">Grosor</label>
+                    <input type="range" id="line-size-input" min="1" max="15" step="1">
+                    <span class="range-value" id="line-size-value"></span>
+                </div>
             </div>
+
             <div class="style-option">
-                <label for="line-opacity-input">Opacidad</label>
-                <input type="range" id="line-opacity-input" min="0.1" max="1" step="0.1">
+                <label>Trazado</label>
+                <div class="visual-select-container" id="line-path-select">
+                    <button class="visual-select-btn" data-value="fluid" title="Fluido">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="straight" title="Recto">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="arc" title="Arco">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 Q 50 5, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="grid" title="Cuadrícula">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
             </div>
+
             <div class="style-option">
-                <label for="line-path-select">Trazado</label>
-                <select id="line-path-select">
-                    <option value="fluid">Fluido</option>
-                    <option value="straight">Recto</option>
-                    <option value="arc">Arco</option>
-                    <option value="grid">Cuadrícula</option>
-                </select>
-            </div>
-            <div class="style-option">
-                <label for="line-size-input">Grosor</label>
-                <input type="range" id="line-size-input" min="1" max="15" step="1">
-            </div>
-            <div class="style-option">
-                <label for="line-plug-select">Punta</label>
-                <select id="line-plug-select">
-                    <option value="arrow1">Flecha 1</option>
-                    <option value="arrow2">Flecha 2</option>
-                    <option value="arrow3">Flecha 3</option>
-                    <option value="disc">Círculo</option>
-                    <option value="square">Cuadrado</option>
-                </select>
+                <label>Punta</label>
+                <div class="visual-select-container" id="line-plug-select">
+                    <button class="visual-select-btn" data-value="arrow1" title="Flecha 1">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 80 20" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <path d="M95 20 L 75 10 V 30 Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="arrow2" title="Flecha 2">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <path d="M75 10 L 95 20 L 75 30" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="arrow3" title="Flecha 3">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 85 20" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <path d="M95 20 L 80 12 L 80 28 Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="disc" title="Círculo">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 85 20" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <circle cx="90" cy="20" r="8" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button class="visual-select-btn" data-value="square" title="Cuadrado">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 82 20" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <rect x="82" y="12" width="16" height="16" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     
@@ -109,11 +148,27 @@
         </div>
     
         <div id="tab-content-share" class="tab-content">
-            <p class="tab-title">Compartir e Importar</p>
-            <p>Genera un enlace con los datos de tu tablero actual. El enlace se copiará automáticamente.</p>
-            <button id="share-board-btn">🔗 Generar Enlace</button>
-            <textarea id="share-link-output" readonly placeholder="Aquí aparecerá tu enlace para compartir..."></textarea>
-            <p class="import-info">Para importar, simplemente abre un enlace generado en tu navegador.</p>
+            <p class="tab-title">Compartir y Exportar</p>
+            <div class="share-options-container">
+                <div class="share-card" id="share-board-btn">
+                    <div class="share-card-icon">🔗</div>
+                    <div class="share-card-name">Compartir por Enlace</div>
+                    <div class="share-card-desc">Genera un enlace único de tu tablero para compartirlo.</div>
+                </div>
+                <textarea id="share-link-output" readonly placeholder="Aquí aparecerá tu enlace..."></textarea>
+                
+                <div class="share-card" id="export-json-btn">
+                    <div class="share-card-icon">💾</div>
+                    <div class="share-card-name">Exportar a JSON</div>
+                    <div class="share-card-desc">Guarda una copia de tu tablero en un archivo.</div>
+                </div>
+                <div class="share-card" id="import-json-btn">
+                    <div class="share-card-icon">📤</div>
+                    <div class="share-card-name">Importar desde JSON</div>
+                    <div class="share-card-desc">Carga un tablero desde un archivo guardado.</div>
+                    <input type="file" id="import-json-input" accept=".json" style="display: none;">
+                </div>
+            </div>
         </div>
 
         <div id="tab-content-trash" class="tab-content">
