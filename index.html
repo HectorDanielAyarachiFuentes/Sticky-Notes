@@ -29,289 +29,298 @@
 </head>
 <body>
 
-<div id="board-manager">
+<aside id="board-manager" role="complementary" aria-label="Panel de gestión de tableros">
     <h3>
         Gestor 
-        <button id="about-btn" title="Sobre mí">
-            <img src="svg/sobremi.svg" alt="Sobre mí">
+        <button id="about-btn" aria-label="Abrir información sobre el desarrollador">
+            <img src="svg/sobremi.svg" alt="">
         </button>
-        <span id="sidebar-collapse-btn" title="Ocultar panel"><img src="svg/izquierda.svg" alt="Ocultar"></span></h3>
+        <span id="sidebar-collapse-btn" role="button" tabindex="0" aria-label="Ocultar panel lateral"><img src="svg/izquierda.svg" alt=""></span>
+    </h3>
 
-    <div class="tab-nav">
-        <button class="tab-btn active" data-tab="boards" title="Tableros">🗂️<span class="tab-text">Tableros</span></button>
-        <button class="tab-btn" data-tab="create" title="Crear">✨<span class="tab-text">Crear</span></button>
-        <button class="tab-btn" data-tab="lines" title="Líneas">☍<span class="tab-text">Líneas</span></button>
-        <button class="tab-btn" data-tab="share" title="Compartir">🔗<span class="tab-text">Compartir</span></button>
-        <button class="tab-btn" data-tab="background" title="Fondo">🎨<span class="tab-text">Fondo</span></button>
-        <button class="tab-btn" data-tab="cursor" title="Cursor">👆<span class="tab-text">Cursor</span></button>
-        <button class="tab-btn" data-tab="trash" title="Papelera">🗑️<span class="tab-text">Papelera</span></button>
-    </div>
+    <nav class="tab-nav" role="tablist" aria-label="Navegación del panel de control">
+        <button class="tab-btn active" data-tab="boards" role="tab" aria-selected="true" aria-controls="tab-content-boards" id="tab-boards">🗂️<span class="tab-text">Tableros</span></button>
+        <button class="tab-btn" data-tab="create" role="tab" aria-selected="false" aria-controls="tab-content-create" id="tab-create">✨<span class="tab-text">Crear</span></button>
+        <button class="tab-btn" data-tab="lines" role="tab" aria-selected="false" aria-controls="tab-content-lines" id="tab-lines">☍<span class="tab-text">Líneas</span></button>
+        <button class="tab-btn" data-tab="share" role="tab" aria-selected="false" aria-controls="tab-content-share" id="tab-share">🔗<span class="tab-text">Compartir</span></button>
+        <button class="tab-btn" data-tab="background" role="tab" aria-selected="false" aria-controls="tab-content-background" id="tab-background">🎨<span class="tab-text">Fondo</span></button>
+        <button class="tab-btn" data-tab="cursor" role="tab" aria-selected="false" aria-controls="tab-content-cursor" id="tab-cursor">👆<span class="tab-text">Cursor</span></button>
+        <button class="tab-btn" data-tab="trash" role="tab" aria-selected="false" aria-controls="tab-content-trash" id="tab-trash">🗑️<span class="tab-text">Papelera</span></button>
+    </nav>
 
     <div id="tab-content-container">
-        <div id="tab-content-boards" class="tab-content active">
-            <input type="search" id="search-input" placeholder="🔎 Buscar en tableros...">
-            <div id="global-search-results"></div>
-            <ul id="board-list"></ul>
-        </div>
+        <section id="tab-content-boards" class="tab-content active" role="tabpanel" aria-labelledby="tab-boards">
+            <input type="search" id="search-input" aria-label="Buscar tableros y notas" placeholder="🔎 Buscar en tableros...">
+            <div id="global-search-results" role="region" aria-live="polite" aria-label="Resultados de búsqueda"></div>
+            <ul id="board-list" role="list" aria-label="Lista de tableros disponibles"></ul>
+        </section>
 
-        <div id="tab-content-create" class="tab-content">
+        <section id="tab-content-create" class="tab-content" role="tabpanel" aria-labelledby="tab-create" aria-hidden="true">
             <!-- El contenido se genera dinámicamente con JS para un diseño más rico -->
-        </div>
+        </section>
     
-        <div id="tab-content-lines" class="tab-content">
+        <section id="tab-content-lines" class="tab-content" role="tabpanel" aria-labelledby="tab-lines" aria-hidden="true">
             <p class="tab-title">Estilo de Conexión</p>
             <div class="style-option-grid">
                 <div class="style-option style-option-color">
                     <label for="line-color-input">Color</label>
-                    <input type="color" id="line-color-input">
+                    <input type="color" id="line-color-input" aria-label="Seleccionar color de línea de conexión">
                 </div>
                 <div class="style-option style-option-slider">
                     <label for="line-opacity-input">Opacidad</label>
-                    <input type="range" id="line-opacity-input" min="0.1" max="1" step="0.1">
-                    <span class="range-value" id="line-opacity-value"></span>
+                    <input type="range" id="line-opacity-input" min="0.1" max="1" step="0.1" aria-label="Ajustar opacidad de línea" aria-valuemin="0.1" aria-valuemax="1" aria-valuenow="1">
+                    <span class="range-value" id="line-opacity-value" aria-live="polite"></span>
                 </div>
                 <div class="style-option style-option-slider">
                     <label for="line-size-input">Grosor</label>
-                    <input type="range" id="line-size-input" min="1" max="15" step="1">
-                    <span class="range-value" id="line-size-value"></span>
+                    <input type="range" id="line-size-input" min="1" max="15" step="1" aria-label="Ajustar grosor de línea" aria-valuemin="1" aria-valuemax="15" aria-valuenow="2">
+                    <span class="range-value" id="line-size-value" aria-live="polite"></span>
                 </div>
             </div>
 
             <div class="style-option">
-                <label>Trazado</label>
-                <div class="visual-select-container" id="line-path-select">
-                    <button class="visual-select-btn" data-value="fluid" title="Fluido">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                <label id="line-path-label">Trazado</label>
+                <div class="visual-select-container" id="line-path-select" role="radiogroup" aria-labelledby="line-path-label">
+                    <button class="visual-select-btn" data-value="fluid" role="radio" aria-checked="false" aria-label="Trazado fluido">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
                     </button>
-                    <button class="visual-select-btn" data-value="straight" title="Recto">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    <button class="visual-select-btn" data-value="straight" role="radio" aria-checked="false" aria-label="Trazado recto">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
                     </button>
-                    <button class="visual-select-btn" data-value="arc" title="Arco">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 Q 50 5, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    <button class="visual-select-btn" data-value="arc" role="radio" aria-checked="false" aria-label="Trazado en arco">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 Q 50 5, 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
                     </button>
-                    <button class="visual-select-btn" data-value="grid" title="Cuadrícula">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+                    <button class="visual-select-btn" data-value="grid" role="radio" aria-checked="false" aria-label="Trazado en cuadrícula">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
                     </button>
                 </div>
             </div>
 
             <div class="style-option">
-                <label>Punta</label>
-                <div class="visual-select-container" id="line-plug-select">
-                    <button class="visual-select-btn" data-value="arrow1" title="Flecha 1">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                <label id="line-plug-label">Punta</label>
+                <div class="visual-select-container" id="line-plug-select" role="radiogroup" aria-labelledby="line-plug-label">
+                    <button class="visual-select-btn" data-value="arrow1" role="radio" aria-checked="false" aria-label="Punta de flecha tipo 1">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                             <path d="M5 20 L 80 20" stroke="currentColor" stroke-width="4" fill="none"/>
                             <path d="M95 20 L 75 10 V 30 Z" fill="currentColor"/>
                         </svg>
                     </button>
-                    <button class="visual-select-btn" data-value="arrow2" title="Flecha 2">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <button class="visual-select-btn" data-value="arrow2" role="radio" aria-checked="false" aria-label="Punta de flecha tipo 2">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                             <path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none"/>
                             <path d="M75 10 L 95 20 L 75 30" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
-                    <button class="visual-select-btn" data-value="arrow3" title="Flecha 3">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <button class="visual-select-btn" data-value="arrow3" role="radio" aria-checked="false" aria-label="Punta de flecha tipo 3">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                             <path d="M5 20 L 85 20" stroke="currentColor" stroke-width="4" fill="none"/>
                             <path d="M95 20 L 80 12 L 80 28 Z" fill="currentColor"/>
                         </svg>
                     </button>
-                    <button class="visual-select-btn" data-value="disc" title="Círculo">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <button class="visual-select-btn" data-value="disc" role="radio" aria-checked="false" aria-label="Punta circular">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                             <path d="M5 20 L 85 20" stroke="currentColor" stroke-width="4" fill="none"/>
                             <circle cx="90" cy="20" r="8" fill="currentColor"/>
                         </svg>
                     </button>
-                    <button class="visual-select-btn" data-value="square" title="Cuadrado">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <button class="visual-select-btn" data-value="square" role="radio" aria-checked="false" aria-label="Punta cuadrada">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                             <path d="M5 20 L 82 20" stroke="currentColor" stroke-width="4" fill="none"/>
                             <rect x="82" y="12" width="16" height="16" fill="currentColor"/>
                         </svg>
                     </button>
                 </div>
             </div>
-        </div>
+        </section>
     
-        <div id="tab-content-background" class="tab-content">
+        <section id="tab-content-background" class="tab-content" role="tabpanel" aria-labelledby="tab-background" aria-hidden="true">
             <p class="tab-title">Fondos del Tablero</p>
-            <div class="style-option apply-to-container">
-                <div class="apply-to-card" id="bg-apply-board">
-                    <div class="apply-to-icon">🖼️</div>
+            <div class="style-option apply-to-container" role="group" aria-label="Aplicar fondo a">
+                <div class="apply-to-card" id="bg-apply-board" role="button" tabindex="0" aria-pressed="false" aria-label="Aplicar fondo al tablero">
+                    <div class="apply-to-icon" aria-hidden="true">🖼️</div>
                     <div class="apply-to-text">Tablero</div>
                 </div>
-                <div class="apply-to-card" id="bg-apply-notes">
-                    <div class="apply-to-icon">📝</div>
+                <div class="apply-to-card" id="bg-apply-notes" role="button" tabindex="0" aria-pressed="false" aria-label="Aplicar fondo a las notas">
+                    <div class="apply-to-icon" aria-hidden="true">📝</div>
                     <div class="apply-to-text">Notas</div>
                 </div>
             </div>
 
-            <button id="reset-background-btn">Fondo por Defecto</button>
-            <div id="background-options-container">
+            <button id="reset-background-btn" aria-label="Restablecer fondo a valores predeterminados">Fondo por Defecto</button>
+            <div id="background-options-container" role="list" aria-label="Opciones de fondo disponibles">
                 <!-- Las opciones de fondo se generarán aquí -->
             </div>
-        </div>
+        </section>
     
-        <div id="tab-content-share" class="tab-content">
+        <section id="tab-content-share" class="tab-content" role="tabpanel" aria-labelledby="tab-share" aria-hidden="true">
             <p class="tab-title">Compartir y Exportar</p>
             <div class="share-options-container">
-                <div class="share-card" id="share-board-btn">
-                    <div class="share-card-icon">🔗</div>
+                <div class="share-card" id="share-board-btn" role="button" tabindex="0" aria-label="Generar enlace para compartir tablero">
+                    <div class="share-card-icon" aria-hidden="true">🔗</div>
                     <div class="share-card-name">Compartir por Enlace</div>
                     <div class="share-card-desc">Genera un enlace único de tu tablero para compartirlo.</div>
                 </div>
-                <textarea id="share-link-output" readonly placeholder="Aquí aparecerá tu enlace..."></textarea>
+                <textarea id="share-link-output" readonly placeholder="Aquí aparecerá tu enlace..." aria-label="Enlace generado para compartir"></textarea>
                 
-                <div class="share-card" id="export-json-btn">
-                    <div class="share-card-icon">💾</div>
+                <div class="share-card" id="export-json-btn" role="button" tabindex="0" aria-label="Exportar tablero a archivo JSON">
+                    <div class="share-card-icon" aria-hidden="true">💾</div>
                     <div class="share-card-name">Exportar a JSON</div>
                     <div class="share-card-desc">Guarda una copia de tu tablero en un archivo.</div>
                 </div>
-                <div class="share-card" id="import-json-btn">
-                    <div class="share-card-icon">📤</div>
+                <div class="share-card" id="import-json-btn" role="button" tabindex="0" aria-label="Importar tablero desde archivo JSON">
+                    <div class="share-card-icon" aria-hidden="true">📤</div>
                     <div class="share-card-name">Importar desde JSON</div>
                     <div class="share-card-desc">Carga un tablero desde un archivo guardado.</div>
-                    <input type="file" id="import-json-input" accept=".json" style="display: none;">
+                    <input type="file" id="import-json-input" accept=".json" aria-label="Seleccionar archivo JSON para importar" style="display: none;">
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div id="tab-content-trash" class="tab-content">
-            <button id="empty-trash-btn">Vaciar Papelera</button>
-            <div id="trash-list-container">
+        <section id="tab-content-trash" class="tab-content" role="tabpanel" aria-labelledby="tab-trash" aria-hidden="true">
+            <button id="empty-trash-btn" aria-label="Vaciar papelera permanentemente">Vaciar Papelera</button>
+            <div id="trash-list-container" role="region" aria-label="Contenido de la papelera">
                 <p class="trash-section-title">Tableros Eliminados</p>
-                <div id="trash-boards-container"></div>
+                <div id="trash-boards-container" role="list" aria-label="Lista de tableros eliminados"></div>
                 <p class="trash-section-title">Notas Eliminadas</p>
-                <div id="trash-notes-container"></div>
+                <div id="trash-notes-container" role="list" aria-label="Lista de notas eliminadas"></div>
             </div>
-        </div>
+        </section>
 
-        <div id="tab-content-cursor" class="tab-content">
+        <section id="tab-content-cursor" class="tab-content" role="tabpanel" aria-labelledby="tab-cursor" aria-hidden="true">
             <p class="tab-title">Personalización del Cursor</p>
 
             <!-- Tarjeta principal de configuración -->
             <div class="cursor-settings-card">
                 <div class="style-option color-option">
                     <label for="cursor-color-input">Color Principal</label>
-                    <div class="color-input-wrapper" title="Elige un color base para el cursor">
-                        <input type="color" id="cursor-color-input" value="#FFFFFF">
+                    <div class="color-input-wrapper">
+                        <input type="color" id="cursor-color-input" value="#FFFFFF" aria-label="Seleccionar color del cursor">
                     </div>
                 </div>
                 <div class="style-option" id="rainbow-mode-container">
                     <div class="toggle-option">
                         <label for="rainbow-cursor-toggle">Modo Arcoíris</label>
-                        <label class="switch"><input type="checkbox" id="rainbow-cursor-toggle"><span class="slider round"></span></label>
+                        <label class="switch"><input type="checkbox" id="rainbow-cursor-toggle" aria-label="Activar o desactivar modo arcoíris del cursor"><span class="slider round"></span></label>
                     </div>
-                    <div class="style-option-slider" id="rainbow-speed-container"><label for="rainbow-speed-input">Velocidad</label><input type="range" id="rainbow-speed-input" min="1" max="10" step="1" value="5"><span class="range-value" id="rainbow-speed-value">5</span></div>
+                    <div class="style-option-slider" id="rainbow-speed-container">
+                        <label for="rainbow-speed-input">Velocidad</label>
+                        <input type="range" id="rainbow-speed-input" min="1" max="10" step="1" value="5" aria-label="Ajustar velocidad del efecto arcoíris" aria-valuemin="1" aria-valuemax="10" aria-valuenow="5">
+                        <span class="range-value" id="rainbow-speed-value" aria-live="polite">5</span>
+                    </div>
                 </div>
             </div>
 
-            <button id="reset-cursor-btn">⭯ Restablecer Cursores</button>
+            <button id="reset-cursor-btn" aria-label="Restablecer cursores a valores predeterminados">⭯ Restablecer Cursores</button>
 
             <p class="tab-title preview-title">Previsualización (pasa el ratón)</p>
-            <div id="cursor-preview-area"></div>
-        </div>
+            <div id="cursor-preview-area" role="img" aria-label="Área de previsualización del cursor personalizado"></div>
+        </section>
     </div>
 
-    <div id="sidebar-resizer" title="Redimensionar panel"></div>
-</div>
+    <div id="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel lateral" tabindex="0"></div>
+</aside>
 
-<div id="sidebar-expander" title="Mostrar panel"><img src="svg/derecha.svg" alt="Mostrar"></div>
+<button id="sidebar-expander" aria-label="Mostrar panel lateral" aria-expanded="false"><img src="svg/derecha.svg" alt=""></button>
 
-<div id="note-palette">
+<aside id="note-palette" role="complementary" aria-label="Paleta de plantillas de notas">
     <div class="palette-header">
         <div class="palette-title-container">
             <img src="svg/crear-nota.svg" alt="Crear Nota" class="palette-create-icon">
         </div>
-        <button id="pin-palette-btn" title="Fijar paleta">
-            <img src="svg/pin.svg" alt="Fijar" class="pin-icon">
+        <button id="pin-palette-btn" aria-label="Fijar o desfijar paleta" aria-pressed="false">
+            <img src="svg/pin.svg" alt="" class="pin-icon">
         </button>
     </div>
-    <div class="scroll-indicator-up">
-        <img src="svg/arriba.svg" alt="Scroll para ver más">
+    <div class="scroll-indicator-up" aria-hidden="true">
+        <img src="svg/arriba.svg" alt="">
     </div>
-    <div id="palette-scroll-container">
+    <div id="palette-scroll-container" role="list" aria-label="Plantillas de notas disponibles">
         <!-- Las notas de plantilla se generarán aquí con JS -->
     </div>
-    <div class="scroll-indicator">
-        <img src="svg/abajo.svg" alt="Scroll para ver más">
+    <div class="scroll-indicator" aria-hidden="true">
+        <img src="svg/abajo.svg" alt="">
     </div>
-</div>
-<div id="board-container">
-    <div id="board"></div>
-</div>
+</aside>
 
-<div id="zoom-controls">
-    <button id="zoom-in-btn" title="Acercar">+</button>
-    <span id="zoom-level-display">100%</span>
-    <button id="zoom-out-btn" title="Alejar">-</button>
-    <button id="zoom-reset-btn" title="Restablecer Zoom">⛶</button>
+<main id="board-container" role="main" aria-label="Área principal del tablero de notas">
+    <div id="board" role="application" aria-label="Tablero de notas interactivo" aria-roledescription="Espacio de trabajo para organizar notas adhesivas"></div>
+</main>
+
+<nav id="zoom-controls" role="navigation" aria-label="Controles de zoom del tablero">
+    <button id="zoom-in-btn" aria-label="Acercar zoom">+</button>
+    <span id="zoom-level-display" aria-live="polite" aria-atomic="true">100%</span>
+    <button id="zoom-out-btn" aria-label="Alejar zoom">-</button>
+    <button id="zoom-reset-btn" aria-label="Restablecer zoom a 100%">⛶</button>
+</nav>
+
+<div id="trash-can" role="button" tabindex="0" aria-label="Papelera, arrastra aquí para eliminar notas" aria-dropeffect="move">
+    <img src="svg/trash-full-svgrepo-com.svg" alt="">
 </div>
-<div id="trash-can"><img src="svg/trash-full-svgrepo-com.svg" alt="Papelera"></div>
 
 <!-- Menú Contextual Personalizado -->
-<div id="context-menu" class="hidden">
-    <ul>
-        <li id="ctx-duplicate">Duplicar Nota</li>
-        <li id="ctx-change-color">Cambiar Color</li>
-        <li id="ctx-lock">Bloquear Nota</li>
-        <li class="separator"></li>
-        <li id="ctx-delete">Eliminar Nota</li>
+<nav id="context-menu" class="hidden" role="menu" aria-label="Menú contextual de nota">
+    <ul role="none">
+        <li id="ctx-duplicate" role="menuitem" tabindex="-1">Duplicar Nota</li>
+        <li id="ctx-change-color" role="menuitem" tabindex="-1">Cambiar Color</li>
+        <li id="ctx-lock" role="menuitem" tabindex="-1">Bloquear Nota</li>
+        <li class="separator" role="separator"></li>
+        <li id="ctx-delete" role="menuitem" tabindex="-1">Eliminar Nota</li>
     </ul>
-</div>
+</nav>
 
 <!-- Menú Contextual para Pestañas -->
-<div id="tab-context-menu" class="hidden">
-    <ul>
-        <li id="ctx-tab-delete">🗑️ Limpiar Pestaña</li>
+<nav id="tab-context-menu" class="hidden" role="menu" aria-label="Menú contextual de pestaña">
+    <ul role="none">
+        <li id="ctx-tab-delete" role="menuitem" tabindex="-1">🗑️ Limpiar Pestaña</li>
     </ul>
-</div>
+</nav>
 
-<!-- Contenedor para Notificaciones (Toasts) -->
 <!-- Paleta de colores como un Popover -->
-<div id="color-picker-popover" class="hidden">
+<div id="color-picker-popover" class="hidden" role="dialog" aria-labelledby="popover-title" aria-modal="true">
     <div class="popover-header">
-        <h4>Elige un Color</h4>
-        <button id="close-popover-btn">&times;</button>
+        <h4 id="popover-title">Elige un Color</h4>
+        <button id="close-popover-btn" aria-label="Cerrar selector de color">&times;</button>
     </div>
-    <div id="popover-color-palette"></div>
+    <div id="popover-color-palette" role="radiogroup" aria-label="Paleta de colores disponibles"></div>
 </div>
 
 <!-- Modal "Sobre Mí" -->
-<div id="about-modal" class="modal-overlay hidden">
+<div id="about-modal" class="modal-overlay hidden" role="dialog" aria-labelledby="modal-title" aria-modal="true">
     <div class="modal-content">
-        <audio id="about-modal-audio" src="musica/dulcehermosa.mp3" loop></audio>
-        <button class="modal-close-btn">&times;</button>
+        <audio id="about-modal-audio" src="musica/dulcehermosa.mp3" loop aria-label="Música de fondo del modal"></audio>
+        <button class="modal-close-btn" aria-label="Cerrar ventana modal">&times;</button>
         <div class="modal-header">
             <div class="about-image-container">
-                <canvas id="audio-visualizer"></canvas>
+                <canvas id="audio-visualizer" aria-hidden="true"></canvas>
                 <img src="img-about\Dulce.gif" alt="Mascota de la aplicación" class="about-modal-img">
             </div>
-            <h2 class="modal-title">Héctor Daniel Ayarachi Fuentes</h2>
+            <h2 class="modal-title" id="modal-title">Héctor Daniel Ayarachi Fuentes</h2>
             <p class="modal-subtitle">Desarrollador Front-End</p>
         </div>
         <div class="modal-body">
             <p><strong>Sticky Notes v1.0</strong> es un proyecto personal creado para demostrar y practicar mis habilidades en desarrollo web.</p>
             <div class="skills-container">
                 <h3>Tecnologías Utilizadas</h3>
-                <div class="skills-list">
-                    <div class="skill-item"><img src="svg/html5.svg" alt="HTML5"><span>HTML5</span></div>
-                    <div class="skill-item"><img src="svg/css3.svg" alt="CSS3"><span>CSS3</span></div>
-                    <div class="skill-item"><img src="svg/js.svg" alt="JavaScript"><span>JavaScript</span></div>
+                <div class="skills-list" role="list" aria-label="Lista de tecnologías utilizadas">
+                    <div class="skill-item" role="listitem"><img src="svg/html5.svg" alt=""><span>HTML5</span></div>
+                    <div class="skill-item" role="listitem"><img src="svg/css3.svg" alt=""><span>CSS3</span></div>
+                    <div class="skill-item" role="listitem"><img src="svg/js.svg" alt=""><span>JavaScript</span></div>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
             <p>Encuentra más de mis proyectos en</p>
-            <a href="https://github.com/HectorDanielAyarachiFuentes" class="github-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/HectorDanielAyarachiFuentes" class="github-link" target="_blank" rel="noopener noreferrer" aria-label="Visitar perfil de GitHub de Héctor Daniel Ayarachi Fuentes">GitHub</a>
         </div>
     </div>
 </div>
 
-<div id="toast-container"></div>
-    <!-- 1. Cargar la librería LeaderLine como un script global normal -->
-    <script src="js/librerias/leader-line.min.js"></script>
-    <!-- 2. Cargar TU código a través del punto de entrada principal como un módulo -->
-    <script type="module" src="js/principal.js" defer></script>
+<div id="toast-container" role="region" aria-live="polite" aria-label="Notificaciones del sistema"></div>
+
+<!-- 1. Cargar la librería LeaderLine como un script global normal -->
+<script src="js/librerias/leader-line.min.js"></script>
+<!-- 2. Cargar TU código a través del punto de entrada principal como un módulo -->
+<script type="module" src="js/principal.js" defer></script>
 
 </body>
 </html>
