@@ -1711,6 +1711,21 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     transform: scale(0.9);
 }
 
+/* --- NUEVO: Animación para el ícono de alerta --- */
+@keyframes pulse-alert {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 149, 0, 0.7); /* --color-accent con opacidad */
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 15px rgba(255, 149, 0, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 149, 0, 0);
+    }
+}
 /* --- NUEVO: Estilos para el Modal de Confirmación --- */
 .confirmation-modal-content {
     padding: 25px 30px;
@@ -1733,6 +1748,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: pulse-alert 2s infinite cubic-bezier(0.66, 0, 0, 1);
 }
 .confirmation-modal-content .modal-icon-text {
     font-size: 36px;
