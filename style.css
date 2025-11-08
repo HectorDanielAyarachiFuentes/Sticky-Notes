@@ -1171,27 +1171,10 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             transition: all 0.2s ease;            
         }
 
-        /* Nuevo botón para borrar conexiones */
-        .delete-connect-btn {
-            width: 28px;
-            height: 28px;
-            background-color: var(--color-accent);
-            color: white;
-            border-radius: 50%;
-            border: 2px solid var(--surface-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.2s ease;
-        }
         .stickynote:hover .connection-buttons-container {
             opacity: 1;
         }
-        .connect-btn:hover, .delete-connect-btn:hover { transform: scale(1.2); }
-        .connect-btn:hover { background-color: var(--color-accent); }
-        .delete-connect-btn:hover { background-color: #e53935; } /* Rojo más oscuro al hacer hover */
+        .connect-btn:hover { transform: scale(1.2); background-color: var(--color-accent); }
         .stickynote.connection-start { box-shadow: 0 0 20px 8px var(--color-primary); }
 
         /* Estilos del manejador para redimensionar la nota */

@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctxDuplicateBtn = document.querySelector("#ctx-duplicate");
     const ctxLockBtn = document.querySelector("#ctx-lock");
     const ctxDeleteBtn = document.querySelector("#ctx-delete");
+    const ctxDeleteLinesBtn = document.querySelector("#ctx-delete-lines");
     const ctxChangeColorBtn = document.querySelector("#ctx-change-color");
     // Menú contextual de pestañas
     const tabContextMenu = document.querySelector("#tab-context-menu");
@@ -547,18 +548,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         connectionBtnsContainer.appendChild(connectBtn);
 
-        const hasConnections = currentBoard.connections.some(conn => conn.from === noteData.id || conn.to === noteData.id);
-        if (hasConnections) {
-            const deleteConnectBtn = document.createElement("div");
-            deleteConnectBtn.className = 'delete-connect-btn';
-            deleteConnectBtn.innerHTML = '🗑️';
-            deleteConnectBtn.title = 'Borrar conexiones';
-            deleteConnectBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); deleteConnectionsForNote(noteData.id);
-            });
-            connectionBtnsContainer.appendChild(deleteConnectBtn);
-        }
-
         const resizer = document.createElement("div");
         resizer.className = "resizer";
         sticky.appendChild(title);
@@ -594,6 +583,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             contextMenuNoteId = noteElement.dataset.noteId;
             const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
             ctxLockBtn.textContent = noteData.locked ? 'Desbloquear Nota' : 'Bloquear Nota';
+
+            // --- NUEVO: Mostrar/ocultar la opción de eliminar líneas ---
+            const currentBoard = appState.boards[appState.activeBoardId];
+            const hasConnections = currentBoard.connections.some(conn => conn.from === contextMenuNoteId || conn.to === contextMenuNoteId);
+            ctxDeleteLinesBtn.style.display = hasConnections ? 'flex' : 'none';
+            // --- FIN NUEVO ---
+
             contextMenu.style.top = `${e.clientY}px`;
             contextMenu.style.left = `${e.clientX}px`;
             contextMenu.classList.remove('hidden');
@@ -675,6 +671,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function deleteNoteFromContext() {
         if (contextMenuNoteId) moveNoteToTrash(contextMenuNoteId);
+    }
+
+    /**
+     * Inicia la eliminación de conexiones desde el menú contextual.
+     */
+    function deleteLinesFromContext() {
+        if (contextMenuNoteId) deleteConnectionsForNote(contextMenuNoteId);
+        hideContextMenu();
     }
 
     function handleTabSwitching() {
@@ -1040,6 +1044,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctxDuplicateBtn.addEventListener('click', duplicateNote);
         ctxLockBtn.addEventListener('click', toggleLockNote);
         ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
+        ctxDeleteLinesBtn.addEventListener('click', deleteLinesFromContext);
         ctxTabDeleteBtn.addEventListener('click', clearTab);
         emptyTrashBtn.addEventListener('click', emptyTrash);
  
