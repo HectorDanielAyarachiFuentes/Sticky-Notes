@@ -1273,7 +1273,7 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     position: fixed;
     z-index: 2000;
     background: var(--surface-light); /* Usamos el gradiente */
-    border-radius: 8px;
+    border-radius: 12px; /* Aumentamos el redondeo para un look más suave */
     box-shadow: var(--shadow-lg);
     padding: 8px 0;
     min-width: 170px;
