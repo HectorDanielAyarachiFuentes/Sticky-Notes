@@ -97,13 +97,51 @@ export function handleConnectionClick(noteId) {
         // Finalizar conexión
         if (connectionState.startNoteId !== noteId) {
             const currentBoard = appState.boards[appState.activeBoardId];
-            currentBoard.connections.push({ from: connectionState.startNoteId, to: noteId });
-            // appState es una referencia, no necesitamos "guardarlo" desde aquí.
-            // Solicitamos un re-renderizado para que el script principal actualice la UI.
-            if (reRenderCallback) reRenderCallback(true); // El true indica que también hay que guardar el estado.
+            const newConnection = { from: connectionState.startNoteId, to: noteId };
+            currentBoard.connections.push(newConnection);
+            
+            // En lugar de un re-renderizado completo, dibujamos solo la nueva línea.
+            // Esto evita el "salto" de las notas.
+            renderSingleConnection(newConnection);
+            if (reRenderCallback) reRenderCallback(true, false); // Guardar estado, pero no redibujar todo.
         }
         // Resetear estado de conexión
         connectionState.startNoteId = null;
+    }
+}
+
+/**
+ * Dibuja una única conexión sin redibujar todo el tablero.
+ * @param {object} conn - El objeto de conexión con 'from' y 'to'.
+ */
+function renderSingleConnection(conn) {
+    const startEl = board.querySelector(`.stickynote[data-note-id="${conn.from}"]`);
+    const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
+
+    if (startEl && endEl) {
+        const { color, opacity, ...restOptions } = appState.lineOptions;
+
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
+        const line = new LeaderLine(startEl, endEl, {
+            ...restOptions,
+            hide: true,
+            color: hexToRgba(color, opacity),
+            startSocket: 'auto',
+            endSocket: 'auto'
+        });
+        activeLines.push({ line, from: conn.from, to: conn.to });
+
+        // Mostrar la línea con una animación
+        line.show('draw', {
+            duration: 400,
+            timing: 'ease-in-out'
+        });
     }
 }
 

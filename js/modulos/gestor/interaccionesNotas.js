@@ -88,11 +88,15 @@ function handlePointerDown(e) {
         activeNote = isStickyNote;
         activeNoteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === activeNote.dataset.noteId);
         if (activeNoteData.locked) { activeNote = null; return; }
-
+        
         if (!e.target.isContentEditable) e.preventDefault();
         
-        const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
-        const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
+        // ¡CORRECCIÓN! Considerar el paneo actual del tablero para un cálculo de offset preciso.
+        const currentBoard = appState.boards[appState.activeBoardId];
+        const panX = currentBoard.panX || 0;
+        const panY = currentBoard.panY || 0;
+        const mouseXInBoard = (e.clientX - boardRect.left - panX) / appState.zoomLevel;
+        const mouseYInBoard = (e.clientY - boardRect.top - panY) / appState.zoomLevel;
         offsetX = mouseXInBoard - activeNote.offsetLeft;
         offsetY = mouseYInBoard - activeNote.offsetTop;
 
@@ -118,21 +122,25 @@ function handlePointerMove(e) {
     const boardRect = DOM.boardContainer.getBoundingClientRect();
 
     if (isResizing) {
-        const newWidth = (e.clientX - activeNote.getBoundingClientRect().left) / appState.zoomLevel;
-        const newHeight = (e.clientY - activeNote.getBoundingClientRect().top) / appState.zoomLevel;
+        const currentBoard = appState.boards[appState.activeBoardId];
+        const panX = currentBoard.panX || 0;
+        const panY = currentBoard.panY || 0;
+        const noteRect = activeNote.getBoundingClientRect();
+
+        const newWidth = (e.clientX - noteRect.left) / appState.zoomLevel;
+        const newHeight = (e.clientY - noteRect.top) / appState.zoomLevel;
         activeNoteData.width = Math.max(150, newWidth);
         activeNoteData.height = Math.max(150, newHeight);
         activeNote.style.width = `${activeNoteData.width}px`;
         activeNote.style.height = `${activeNoteData.height}px`;
-        Callbacks.updateBoardSize();
     } else {
-        const mouseXInBoard = (e.clientX - boardRect.left) / appState.zoomLevel;
-        const mouseYInBoard = (e.clientY - boardRect.top) / appState.zoomLevel;
+        const currentBoard = appState.boards[appState.activeBoardId];
+        const mouseXInBoard = (e.clientX - boardRect.left - (currentBoard.panX || 0)) / appState.zoomLevel;
+        const mouseYInBoard = (e.clientY - boardRect.top - (currentBoard.panY || 0)) / appState.zoomLevel;
         activeNoteData.x = mouseXInBoard - offsetX;
         activeNoteData.y = mouseYInBoard - offsetY;
         activeNote.style.left = `${activeNoteData.x}px`;
         activeNote.style.top = `${activeNoteData.y}px`;
-        Callbacks.updateBoardSize();
         Callbacks.updateAllLinesPosition();
         activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
     }
@@ -146,11 +154,15 @@ function handlePointerUp(e) {
         const boardRect = DOM.boardContainer.getBoundingClientRect();
         const isOverBoard = e.clientX >= boardRect.left && e.clientX <= boardRect.right && e.clientY >= boardRect.top && e.clientY <= boardRect.bottom;
 
-        if (isOverBoard && !DOM.trashCan.classList.contains('active')) {
+        if (isOverBoard && !DOM.trashCan.classList.contains('active')) {            
             DOM.board.querySelector('.welcome-message')?.remove();
             
-            const mouseXInBoard = (e.clientX - boardRect.left + DOM.boardContainer.scrollLeft) / appState.zoomLevel;
-            const mouseYInBoard = (e.clientY - boardRect.top + DOM.boardContainer.scrollTop) / appState.zoomLevel;
+            // ¡CORRECCIÓN! Considerar el paneo para la posición inicial de la nueva nota.
+            const currentBoard = appState.boards[appState.activeBoardId];
+            const panX = currentBoard?.panX || 0;
+            const panY = currentBoard?.panY || 0;
+            const mouseXInBoard = (e.clientX - boardRect.left - panX) / appState.zoomLevel;
+            const mouseYInBoard = (e.clientY - boardRect.top - panY) / appState.zoomLevel;
 
             const newNoteData = {
                 id: `note-${Date.now()}`,
@@ -173,7 +185,6 @@ function handlePointerUp(e) {
             appState.boards[appState.activeBoardId].notes.push(newNoteData);
             Callbacks.createStickyNoteElement(newNoteData, true);
             Callbacks.saveState();
-            Callbacks.updateBoardSize();
         }
         ghostNote.remove();
         ghostNote = null;
@@ -197,10 +208,6 @@ function handlePointerUp(e) {
     offsetX = 0; offsetY = 0;
     
     Callbacks.saveState();
-    if (appState.boards[appState.activeBoardId].notes.length === 0) {
-        Callbacks.renderActiveBoard();
-        Callbacks.updateBoardSize();
-    }
 }
 
 function handleWheelRotate(e) {
@@ -216,9 +223,12 @@ function handleBoardDoubleClick(e) {
 
     DOM.board.querySelector('.welcome-message')?.remove();
     const boardRect = DOM.boardContainer.getBoundingClientRect();
-    
-    const mouseXInBoard = (e.clientX - boardRect.left + DOM.boardContainer.scrollLeft) / appState.zoomLevel;
-    const mouseYInBoard = (e.clientY - boardRect.top + DOM.boardContainer.scrollTop) / appState.zoomLevel;
+    // ¡CORRECCIÓN! Considerar el paneo para la posición de la nueva nota.
+    const currentBoard = appState.boards[appState.activeBoardId];
+    const panX = currentBoard?.panX || 0;
+    const panY = currentBoard?.panY || 0;
+    const mouseXInBoard = (e.clientX - boardRect.left - panX) / appState.zoomLevel;
+    const mouseYInBoard = (e.clientY - boardRect.top - panY) / appState.zoomLevel;
 
     const newNoteData = {
         id: `note-${Date.now()}`,
@@ -240,5 +250,4 @@ function handleBoardDoubleClick(e) {
     appState.boards[appState.activeBoardId].notes.push(newNoteData);
     Callbacks.createStickyNoteElement(newNoteData, true);
     Callbacks.saveState();
-    Callbacks.updateBoardSize();
 }

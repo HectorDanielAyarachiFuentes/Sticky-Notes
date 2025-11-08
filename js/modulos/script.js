@@ -284,8 +284,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function renderActiveBoard(shouldSave = false) {
+    function renderActiveBoard(shouldSave = false, fullRedraw = true) {
         if (shouldSave) saveState();
+
+        // Si no se necesita un redibujado completo (ej. al añadir una línea), solo salimos.
+        if (!fullRedraw) {
+            return;
+        }
+
         board.innerHTML = '';
         removeActiveLines();
         const currentBoard = appState.boards[appState.activeBoardId];
