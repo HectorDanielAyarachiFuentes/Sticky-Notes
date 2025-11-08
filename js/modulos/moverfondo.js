@@ -1,20 +1,21 @@
 // js/modulos/moverfondo.js
 
 /**
- * Inicializa la funcionalidad de paneo (mover el fondo) en el contenedor del tablero.
+ * Inicializa la funcionalidad de paneo (mover el fondo) usando transformaciones CSS.
  * @param {HTMLElement} boardContainer - El elemento que contiene el tablero y tiene el scroll.
  * @param {HTMLElement} board - El tablero en sí, donde se colocan las notas.
+ * @param {object} appState - El estado de la aplicación para guardar la posición del paneo.
  * @param {Function} [onPanCallback] - Una función a llamar durante el paneo para actualizar elementos externos.
  */
-export function initializePanning(boardContainer, board, onPanCallback) {
+export function initializePanning(boardContainer, board, appState, onPanCallback) {
     // Añadimos una clase para indicar que el fondo es "agarrable"
     boardContainer.classList.add('pannable');
 
     let isPanning = false;
     let lastPointerX = 0;
     let lastPointerY = 0;
-    let startScrollLeft = 0;
-    let startScrollTop = 0;
+    let startPanX = 0;
+    let startPanY = 0;
 
     const startPanning = (e) => {
         // Solo iniciar el paneo si se hace clic directamente en el tablero
@@ -29,23 +30,30 @@ export function initializePanning(boardContainer, board, onPanCallback) {
         isPanning = true;
         lastPointerX = e.clientX;
         lastPointerY = e.clientY;
-        startScrollLeft = boardContainer.scrollLeft;
-        startScrollTop = boardContainer.scrollTop;
+
+        // Obtener la posición actual del paneo del estado de la aplicación
+        const currentBoard = appState.boards[appState.activeBoardId];
+        startPanX = currentBoard.panX || 0;
+        startPanY = currentBoard.panY || 0;
+
         // Añadimos una clase al body para cambiar el cursor a "grabbing" globalmente
         document.body.classList.add('panning');
         boardContainer.style.userSelect = 'none';
     };
 
     const doPanning = (e) => {
-        if (!isPanning) {
-            return;
-        }
+        if (!isPanning) return;
+
         e.preventDefault();
         const dx = e.clientX - lastPointerX;
         const dy = e.clientY - lastPointerY;
 
-        boardContainer.scrollLeft = startScrollLeft - dx;
-        boardContainer.scrollTop = startScrollTop - dy;
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard) return;
+
+        // Actualizamos la posición del paneo en el estado
+        currentBoard.panX = startPanX + dx;
+        currentBoard.panY = startPanY + dy;
 
         // Notificar que el paneo ha ocurrido para que otros elementos se actualicen.
         if (onPanCallback) onPanCallback();
@@ -57,6 +65,11 @@ export function initializePanning(boardContainer, board, onPanCallback) {
         // Quitamos la clase del body para restaurar el cursor
         document.body.classList.remove('panning');
         boardContainer.style.userSelect = '';
+
+        // Guardar el estado al finalizar el paneo (se hará en el callback principal)
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard) return;
+        // No es necesario guardar aquí, el callback se encargará
 
         // Notificar que el paneo ha terminado.
         if (onPanCallback) onPanCallback();

@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         board.innerHTML = '';
         removeActiveLines();
         const currentBoard = appState.boards[appState.activeBoardId];
-        if (!currentBoard) return;
+        if (!currentBoard) { board.style.transform = 'scale(1) translate(0,0)'; return; }
         boardContainer.style.background = currentBoard.backgroundApplyTo.board ? (currentBoard.background || DEFAULT_BOARD_BACKGROUND) : DEFAULT_BOARD_BACKGROUND;
         updateBackgroundUI(currentBoard);
         updateZoom();
@@ -304,29 +304,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderConnections();
     }
 
-    function updateBoardSize() {
-        const currentBoardData = appState.boards[appState.activeBoardId];
-        const PADDING = 1000;
-        if (!currentBoardData || !currentBoardData.notes.length) {
-            board.style.width = `calc(100% + ${PADDING}px)`;
-            board.style.height = `calc(100% + ${PADDING}px)`;
-            return;
-        }
-        let maxX = 0, maxY = 0;
-        currentBoardData.notes.forEach(note => {
-            maxX = Math.max(maxX, note.x + note.width);
-            maxY = Math.max(maxY, note.y + note.height);
-        });
-        board.style.width = `${Math.max(boardContainer.clientWidth + PADDING, maxX + PADDING)}px`;
-        board.style.height = `${Math.max(boardContainer.clientHeight + PADDING, maxY + PADDING)}px`;
-    }
-
     // --- FUNCIONES DE ZOOM ---
     function updateZoom(newZoomLevel) {
         if (newZoomLevel !== undefined) {
             appState.zoomLevel = Math.max(0.2, Math.min(2, newZoomLevel));
         }
-        board.style.transform = `scale(${appState.zoomLevel})`;
+        const currentBoard = appState.boards[appState.activeBoardId];
+        const panX = currentBoard?.panX || 0;
+        const panY = currentBoard?.panY || 0;
+
+        // Ahora el transform combina la escala del zoom y la traslación del paneo
+        board.style.transform = `translate(${panX}px, ${panY}px) scale(${appState.zoomLevel})`;
         zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
         updateAllLinesPosition();
         saveState();
@@ -338,14 +326,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         appState.activeBoardId = boardId;
         saveState();
         renderBoardList();
-        renderActiveBoard();
-        updateBoardSize();
+        renderActiveBoard(); // renderActiveBoard ya llama a updateZoom que aplica el paneo
         searchInput.value = '';
         globalSearchResults.innerHTML = '';
         board.classList.remove('searching');
         if (noteToHighlightId) {
             setTimeout(() => {
-                const noteEl = board.querySelector(`.stickynote[data-note-id="${noteToHighlightId}"]`);
+                const noteEl = board.querySelector(`.stickynote[data-note-id="${noteToHighlightId}"]`); // Esto puede no funcionar como se espera con el paneo
                 if (noteEl) {
                     noteEl.classList.add('highlight');
                     noteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -358,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function createDefaultBoard() {
         const newBoardId = `board-${Date.now()}`;
         appState.boards[newBoardId] = {
-            id: newBoardId, name: "Tablero de Respaldo", notes: [], createdAt: Date.now(),
+            id: newBoardId, name: "Tablero de Respaldo", notes: [], createdAt: Date.now(), panX: 0, panY: 0,
             connections: [], background: null, backgroundApplyTo: { board: true, notes: false }
         };
         return newBoardId;
@@ -944,11 +931,11 @@ document.addEventListener('DOMContentLoaded', async () => {
  
         // Inicializar módulos principales que no dependen de otros
         initializeLineManager(appState, board, renderActiveBoard);
-        initializeAboutModalFeature();
-        initializePanning(boardContainer, board, updateAllLinesPosition);
+        initializePanning(boardContainer, board, appState, () => { updateZoom(); });
         initializeColorPopover();
         initializeSidebarResizing();
         initializeLineStyleControls();
+        initializeAboutModalFeature();
  
         // Inicializar módulos de gestión que necesitan callbacks
         const backgroundDOM = { backgroundOptionsContainer, resetBackgroundBtn, bgApplyToBoardCard, bgApplyToNotesCard, boardContainer };
@@ -956,12 +943,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
  
         const trashDOM = { board, trashNotesContainer, trashBoardsContainer, emptyTrashBtn };
-        const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, updateBoardSize, hideContextMenu, removeLinesForNote };
+        const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, hideContextMenu, removeLinesForNote };
         initializeTrashManager(appState, trashDOM, trashCallbacks);
  
         const noteInteractionDOM = { boardContainer, board, trashCan };
         const noteInteractionCallbacks = {
-            handleConnectionClick, bringToFront, updateBoardSize, updateAllLinesPosition, moveNoteToTrash, saveState,
+            handleConnectionClick, bringToFront, updateAllLinesPosition, moveNoteToTrash, saveState,
             renderActiveBoard, createDefaultBoard, switchBoard, showToast, createStickyNoteElement,
             getNewZIndex: () => ++maxZIndex
         };
@@ -1055,12 +1042,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         zoomInBtn.addEventListener('click', () => updateZoom(appState.zoomLevel + 0.1));
         zoomOutBtn.addEventListener('click', () => updateZoom(appState.zoomLevel - 0.1));
         zoomResetBtn.addEventListener('click', () => updateZoom(1.0));
-        boardContainer.addEventListener('scroll', updateAllLinesPosition);
+        // Ya no se necesita el listener de scroll en boardContainer
  
         // --- RENDERIZADO INICIAL ---
         renderBoardList();
         renderActiveBoard();
-        updateBoardSize();
         updatePaletteState();
     }
  
