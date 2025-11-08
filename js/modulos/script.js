@@ -582,7 +582,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             hideTabContextMenu();
             contextMenuNoteId = noteElement.dataset.noteId;
             const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === contextMenuNoteId);
-            ctxLockBtn.textContent = noteData.locked ? 'Desbloquear Nota' : 'Bloquear Nota';
+            if (noteData.locked) {
+                ctxLockBtn.innerHTML = `<span class="ctx-icon">🔓</span>Desbloquear Nota`;
+            } else {
+                ctxLockBtn.innerHTML = `<span class="ctx-icon">🔒</span>Bloquear Nota`;
+            }
 
             // --- NUEVO: Mostrar/ocultar la opción de eliminar líneas ---
             const currentBoard = appState.boards[appState.activeBoardId];

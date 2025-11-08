@@ -1297,6 +1297,12 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     align-items: center;
     gap: 10px;
 }
+.ctx-icon {
+    display: inline-block;
+    width: 20px; /* Ancho fijo para alinear el texto */
+    text-align: center;
+}
+
 #context-menu li:hover, #tab-context-menu li:hover { background: var(--bg-light); } /* Usamos el gradiente */
 #context-menu li.separator { height: 1px; background-color: var(--border-color); padding: 0; margin: 5px 0; }
 
