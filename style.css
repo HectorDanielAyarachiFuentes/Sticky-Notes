@@ -1130,11 +1130,20 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             background-color: var(--color-primary) !important;
         }
 
-        /* --- Botón para conectar notas --- */
-        .connect-btn {
+        /* --- Contenedor para los botones de conexión --- */
+        .connection-buttons-container {
             position: absolute;
             top: -12px;
             right: -12px;
+            display: flex;
+            gap: 6px;
+            opacity: 0; /* Oculto por defecto */
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+
+        .connect-btn {
+            position: relative; /* Cambiado para que funcione dentro del flex container */
             width: 28px;
             height: 28px;
             background-color: var(--color-primary);
@@ -1146,14 +1155,30 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
             align-items: center;
             font-size: 16px;
             box-shadow: var(--shadow-sm);
-            transition: all 0.2s ease;
-            opacity: 0; /* Oculto por defecto */
-            z-index: 10;
+            transition: all 0.2s ease;            
         }
-        .stickynote:hover .connect-btn {
+
+        /* Nuevo botón para borrar conexiones */
+        .delete-connect-btn {
+            width: 28px;
+            height: 28px;
+            background-color: var(--color-accent);
+            color: white;
+            border-radius: 50%;
+            border: 2px solid var(--surface-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        .stickynote:hover .connection-buttons-container {
             opacity: 1;
         }
-        .connect-btn:hover { transform: scale(1.2); background-color: var(--color-accent); }
+        .connect-btn:hover, .delete-connect-btn:hover { transform: scale(1.2); }
+        .connect-btn:hover { background-color: var(--color-accent); }
+        .delete-connect-btn:hover { background-color: #e53935; } /* Rojo más oscuro al hacer hover */
         .stickynote.connection-start { box-shadow: 0 0 20px 8px var(--color-primary); }
 
         /* Estilos del manejador para redimensionar la nota */

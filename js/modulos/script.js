@@ -392,6 +392,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    /**
+     * Elimina todas las conexiones asociadas a una nota específica.
+     * @param {string} noteId - El ID de la nota.
+     */
+    function deleteConnectionsForNote(noteId) {
+        const currentBoard = appState.boards[appState.activeBoardId];
+        if (!currentBoard) return;
+
+        // Eliminar conexiones del estado
+        currentBoard.connections = currentBoard.connections.filter(
+            conn => conn.from !== noteId && conn.to !== noteId
+        );
+
+        removeLinesForNote(noteId); // Elimina las líneas visuales
+        saveState();
+        showToast('Conexiones eliminadas.');
+    }
     // ¡ELIMINADAS! Las funciones addNewBoard y createBoardFromTemplate se movieron a crear.js
 
     function handleSearch() {
@@ -493,6 +510,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             contentContainer.appendChild(content);
         }
+        const connectionBtnsContainer = document.createElement("div");
+        connectionBtnsContainer.className = 'connection-buttons-container';
+
         const connectBtn = document.createElement("div");
         connectBtn.className = 'connect-btn';
         connectBtn.innerHTML = '☍';
@@ -500,13 +520,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         connectBtn.addEventListener('click', (e) => {
             e.stopPropagation(); handleConnectionClick(noteData.id);
         });
+        connectionBtnsContainer.appendChild(connectBtn);
+
+        const hasConnections = currentBoard.connections.some(conn => conn.from === noteData.id || conn.to === noteData.id);
+        if (hasConnections) {
+            const deleteConnectBtn = document.createElement("div");
+            deleteConnectBtn.className = 'delete-connect-btn';
+            deleteConnectBtn.innerHTML = '🗑️';
+            deleteConnectBtn.title = 'Borrar conexiones';
+            deleteConnectBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); deleteConnectionsForNote(noteData.id);
+            });
+            connectionBtnsContainer.appendChild(deleteConnectBtn);
+        }
+
         const resizer = document.createElement("div");
         resizer.className = "resizer";
         sticky.appendChild(title);
         contentWrapper.appendChild(contentContainer);
         contentWrapper.appendChild(tabContainer);
         sticky.appendChild(contentWrapper);
-        sticky.appendChild(connectBtn);
+        sticky.appendChild(connectionBtnsContainer);
         sticky.appendChild(resizer);
         board.appendChild(sticky);
         if (isNew) {
