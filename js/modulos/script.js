@@ -792,10 +792,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function createConfirmationModal() {
         const modalHTML = `
-            <div class="modal-content">
-                <h3 class="modal-title"></h3>
+            <div class="modal-content confirmation-modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon-container"><div class="modal-icon-text">!</div></div>
+                    <h3 class="modal-title">Alerta</h3>
+                </div>
                 <div class="modal-body"><p></p></div>
-                <div class="modal-footer confirmation-footer">
+                <div class="modal-footer">
                     <div class="dont-ask-again-container"><input type="checkbox" id="confirm-dont-ask-again"><label for="confirm-dont-ask-again">No volver a preguntar</label></div>
                     <div class="confirmation-buttons"><button id="confirm-no-btn" class="modal-btn secondary">Cancelar</button><button id="confirm-yes-btn" class="modal-btn danger">Sí, borrar</button></div>
                 </div>
