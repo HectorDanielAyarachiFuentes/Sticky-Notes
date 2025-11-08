@@ -24,9 +24,10 @@
     <!-- Links -->
     <link rel="icon" href="svg/favicon-nota.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
+    <!-- Optimización de Carga de Fuentes: Preconectar y cargar todas las fuentes aquí -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kalam&family=Nunito:wght@400;700&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -327,9 +328,9 @@
 <div id="toast-container" role="region" aria-live="polite" aria-label="Notificaciones del sistema"></div>
 
 <!-- 1. Cargar la librería LeaderLine como un script global normal -->
-<script src="js/librerias/leader-line.min.js"></script>
+<script src="js/librerias/leader-line.min.js" async></script>
 <!-- 2. Cargar TU código a través del punto de entrada principal como un módulo -->
-<script type="module" src="js/principal.js" defer></script>
+<script type="module" src="js/modulos/script.js" defer></script>
 
 </body>
 </html>

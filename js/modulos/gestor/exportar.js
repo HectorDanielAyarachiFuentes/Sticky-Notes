@@ -88,12 +88,13 @@ export function initializeShareAndImport(appState, callbacks) {
                 // Validar datos importados
                 if (!Array.isArray(importedData.notes)) throw new Error("Datos de tablero inválidos.");
 
-                const newBoardId = createBoardFromData(importedData, `Copia de Tablero`);
+                const newBoardName = `Copia de Tablero`;
+                const newBoardId = createBoardFromData(importedData, newBoardName);
                 
                 // Cambiar a la vista del tablero recién importado.
                 switchBoard(newBoardId); 
 
-                showToast(`✨ Tablero "${boardData.name}" importado con éxito.`);
+                showToast(`✨ Tablero "${newBoardName}" importado con éxito.`);
 
                 // Limpia la URL para que no se re-importe al recargar la página.
                 const cleanUrl = new URL(window.location.origin + window.location.pathname);

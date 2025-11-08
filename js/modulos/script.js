@@ -1,27 +1,49 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // --- IMPORTACIÓN DE MÓDULOS ---
-    const { initializePanning } = await import('./moverfondo.js');
-    const { initializeShareAndImport } = await import('./gestor/exportar.js');
-    const { initializeAboutModalFeature } = await import('./sobremi.js');
-    const {
+    // Optimización de Carga: Cargar todos los módulos en paralelo
+    const [
+        panningModule,
+        shareModule,
+        aboutModalModule,
+        lineManagerModule,
+        trashManagerModule,
+        noteInteractionsModule,
+        backgroundManagerModule,
+        createTabModule,
+        cursorManagerModule
+    ] = await Promise.all([
+        import('./moverfondo.js'),
+        import('./gestor/exportar.js'),
+        import('./sobremi.js'),
+        import('./gestor/lineas.js'),
+        import('./gestor/papelera.js'),
+        import('./gestor/interaccionesNotas.js'),
+        import('./gestor/fondo.js'),
+        import('./gestor/crear.js'),
+        import('./gestor/cursor.js')
+    ]);
+
+    const { initializePanning } = panningModule;
+    const { initializeShareAndImport } = shareModule;
+    const { initializeAboutModalFeature } = aboutModalModule;
+    const { 
         initializeLineManager,
         renderConnections,
         removeActiveLines,
         updateAllLinesPosition,
         handleConnectionClick,
         removeLinesForNote
-    } = await import('./gestor/lineas.js');
-    const {
+    } = lineManagerModule;
+    const { 
         initializeTrashManager,
         moveNoteToTrash,
         renderTrash,
         emptyTrash
-    } = await import('./gestor/papelera.js');
-    const { initializeNoteInteractions } = await import('./gestor/interaccionesNotas.js');
-    // ¡NUEVO! Importamos el módulo de creación
-    const { initializeBackgroundManager, updateBackgroundUI } = await import('./gestor/fondo.js');
-    const { initializeCreateTab } = await import('./gestor/crear.js');
-    const { initializeCursorManager } = await import('./gestor/cursor.js');
+    } = trashManagerModule;
+    const { initializeNoteInteractions } = noteInteractionsModule;
+    const { initializeBackgroundManager, updateBackgroundUI } = backgroundManagerModule;
+    const { initializeCreateTab } = createTabModule;
+    const { initializeCursorManager } = cursorManagerModule;
 
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
