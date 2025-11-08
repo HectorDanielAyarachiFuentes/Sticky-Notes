@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const aboutModalAudio = document.querySelector("#about-modal-audio");
     const cursorColorInput = document.querySelector("#cursor-color-input");
     const resetCursorBtn = document.querySelector("#reset-cursor-btn");
+    // Elementos para el nuevo modal de confirmación (se crearán dinámicamente)
+    let confirmationModal, confirmYesBtn, confirmNoBtn, confirmDontAskAgain;
+    let resolveConfirmationPromise = null;
+
 
     /**
      * Convierte un color HEX a HSL.
@@ -209,13 +213,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 boards: {
                     [initialBoardId]: {
                         id: initialBoardId, name: 'Tablero Principal', notes: [], connections: [],
-                        background: null, backgroundApplyTo: { board: true, notes: false }
+                        background: null,
+                        backgroundApplyTo: { board: true, notes: false }
                     }
                 },
                 boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
                 isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
                 lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', endPlug: 'arrow1' }
             };
+        }
+        if (appState.lineOptions.promptBeforeDelete === undefined) {
+            appState.lineOptions.promptBeforeDelete = true;
         }
     }
 
@@ -394,20 +402,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     /**
      * Elimina todas las conexiones asociadas a una nota específica.
+     * Ahora maneja una confirmación opcional.
      * @param {string} noteId - El ID de la nota.
      */
-    function deleteConnectionsForNote(noteId) {
-        const currentBoard = appState.boards[appState.activeBoardId];
-        if (!currentBoard) return;
+    async function deleteConnectionsForNote(noteId) {
+        const performDelete = () => {
+            const currentBoard = appState.boards[appState.activeBoardId];
+            if (!currentBoard) return;
+    
+            // Eliminar conexiones del estado
+            currentBoard.connections = currentBoard.connections.filter(
+                conn => conn.from !== noteId && conn.to !== noteId
+            );
+    
+            removeLinesForNote(noteId); // Elimina las líneas visuales
+            renderActiveBoard(true); // Re-renderiza el tablero para quitar el botón de borrado y guarda el estado
+            showToast('Conexiones eliminadas.');
+        };
 
-        // Eliminar conexiones del estado
-        currentBoard.connections = currentBoard.connections.filter(
-            conn => conn.from !== noteId && conn.to !== noteId
-        );
+        if (appState.lineOptions.promptBeforeDelete) {
+            const userResponse = await showConfirmationModal(
+                '¿Estás seguro de que quieres borrar todas las conexiones de esta nota?',
+                'Esta acción no se puede deshacer.'
+            );
 
-        removeLinesForNote(noteId); // Elimina las líneas visuales
-        saveState();
-        showToast('Conexiones eliminadas.');
+            if (userResponse.confirmed) {
+                performDelete();
+            }
+            // La lógica para 'dontAskAgain' se maneja dentro de showConfirmationModal
+        } else {
+            performDelete();
+        }
     }
     // ¡ELIMINADAS! Las funciones addNewBoard y createBoardFromTemplate se movieron a crear.js
 
@@ -668,6 +693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function initializeLineStyleControls() {
         const linePathSelect = document.getElementById('line-path-select');
         const linePlugSelect = document.getElementById('line-plug-select');
+        const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
     
         const updateUI = () => {
             const { color, opacity, path, size, endPlug } = appState.lineOptions;
@@ -682,11 +708,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             linePlugSelect.querySelector('.active')?.classList.remove('active');
             linePlugSelect.querySelector(`[data-value="${endPlug}"]`)?.classList.add('active');
+
+            // Actualizar el nuevo checkbox
+            promptDeleteCheckbox.checked = appState.lineOptions.promptBeforeDelete;
         };
     
         const saveAndRerender = () => {
             saveState();
-            renderActiveBoard();
+            renderActiveBoard(true); // CORREGIDO: Asegurarse de guardar el estado
         };
     
         lineColorInput.addEventListener('input', (e) => {
@@ -710,15 +739,82 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         linePathSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
-            if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); }
+            if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
         });
     
         linePlugSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
-            if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); }
+            if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
         });
     
+        promptDeleteCheckbox.addEventListener('change', (e) => {
+            appState.lineOptions.promptBeforeDelete = e.target.checked;
+            saveState();
+            showToast(e.target.checked ? 'Se volverá a pedir confirmación al borrar conexiones.' : 'No se pedirá confirmación al borrar conexiones.');
+        });
+
         updateUI(); // Carga inicial
+    }
+
+    /**
+     * Muestra un modal de confirmación personalizable y devuelve una promesa.
+     * @param {string} title - El título del modal.
+     * @param {string} message - El mensaje del cuerpo del modal.
+     * @returns {Promise<{confirmed: boolean, dontAskAgain: boolean}>}
+     */
+    function showConfirmationModal(title, message) {
+        confirmationModal.querySelector('.modal-title').textContent = title;
+        confirmationModal.querySelector('.modal-body p').textContent = message;
+        confirmationModal.classList.remove('hidden');
+        confirmDontAskAgain.checked = false; // Reset checkbox
+
+        return new Promise(resolve => {
+            resolveConfirmationPromise = resolve;
+        });
+    }
+
+    function handleConfirmation(confirmed) {
+        if (!resolveConfirmationPromise) return;
+
+        const dontAskAgain = confirmDontAskAgain.checked;
+        if (dontAskAgain) {
+            appState.lineOptions.promptBeforeDelete = false;
+            saveState();
+            // Actualizar la UI de la pestaña de líneas si está visible
+            const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
+            if(promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
+        }
+
+        resolveConfirmationPromise({ confirmed, dontAskAgain });
+        confirmationModal.classList.add('hidden');
+        resolveConfirmationPromise = null;
+    }
+
+    function createConfirmationModal() {
+        const modalHTML = `
+            <div class="modal-content">
+                <h3 class="modal-title"></h3>
+                <div class="modal-body"><p></p></div>
+                <div class="modal-footer confirmation-footer">
+                    <div class="dont-ask-again-container"><input type="checkbox" id="confirm-dont-ask-again"><label for="confirm-dont-ask-again">No volver a preguntar</label></div>
+                    <div class="confirmation-buttons"><button id="confirm-no-btn" class="modal-btn secondary">Cancelar</button><button id="confirm-yes-btn" class="modal-btn danger">Sí, borrar</button></div>
+                </div>
+            </div>`;
+        confirmationModal = document.createElement('div');
+        confirmationModal.id = 'confirmation-modal';
+        confirmationModal.className = 'modal-overlay hidden';
+        confirmationModal.innerHTML = modalHTML;
+        document.body.appendChild(confirmationModal);
+
+        confirmYesBtn = document.getElementById('confirm-yes-btn');
+        confirmNoBtn = document.getElementById('confirm-no-btn');
+        confirmDontAskAgain = document.getElementById('confirm-dont-ask-again');
+
+        confirmYesBtn.addEventListener('click', () => handleConfirmation(true));
+        confirmNoBtn.addEventListener('click', () => handleConfirmation(false));
+        confirmationModal.addEventListener('click', (e) => {
+            if (e.target === confirmationModal) handleConfirmation(false);
+        });
     }
 
     function showToast(message) {
@@ -826,28 +922,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- INICIALIZACIÓN DE LA APP ---
-    function initializeApp() {
+    async function initializeApp() {
         loadState();
-
+        createConfirmationModal();
+ 
+        // Inicializar módulos principales que no dependen de otros
         initializeLineManager(appState, board, renderActiveBoard);
-
-        const backgroundDOM = {
-            backgroundOptionsContainer,
-            resetBackgroundBtn,
-            bgApplyToBoardCard,
-            bgApplyToNotesCard,
-            boardContainer
-        };
-        const backgroundCallbacks = {
-            saveState, renderActiveBoard,
-            getDefaultBackground: () => DEFAULT_BOARD_BACKGROUND
-        };
-        initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
-
+        initializeAboutModalFeature();
+        initializePanning(boardContainer, board, updateAllLinesPosition);
+        initializeColorPopover();
+        initializeSidebarResizing();
+        initializeLineStyleControls();
+ 
+        // Inicializar módulos de gestión que necesitan callbacks
+        const backgroundDOM = { backgroundOptionsContainer, resetBackgroundBtn, bgApplyToBoardCard, bgApplyToNotesCard, boardContainer };
+        const backgroundCallbacks = { saveState, renderActiveBoard, getDefaultBackground: () => DEFAULT_BOARD_BACKGROUND };
+        await initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
+ 
         const trashDOM = { board, trashNotesContainer, trashBoardsContainer, emptyTrashBtn };
         const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, updateBoardSize, hideContextMenu, removeLinesForNote };
         initializeTrashManager(appState, trashDOM, trashCallbacks);
-
+ 
         const noteInteractionDOM = { boardContainer, board, trashCan };
         const noteInteractionCallbacks = {
             handleConnectionClick, bringToFront, updateBoardSize, updateAllLinesPosition, moveNoteToTrash, saveState,
@@ -855,14 +950,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             getNewZIndex: () => ++maxZIndex
         };
         initializeNoteInteractions(appState, noteInteractionDOM, noteInteractionCallbacks);
-
-        // ¡NUEVO! Inicializar el módulo de creación
+ 
         initializeCreateTab(appState, switchBoard, () => ++maxZIndex);
-        
+ 
         const cursorDOM = { cursorColorInput, resetCursorBtn };
-        const cursorCallbacks = { saveState };
-        initializeCursorManager(appState, cursorDOM, cursorCallbacks);
-
+        initializeCursorManager(appState, cursorDOM, { saveState });
+ 
+        initializeShareAndImport(appState, { showToast, switchBoard, saveState, renderBoardList });
+ 
+        // --- EVENT LISTENERS GLOBALES ---
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
         const setSidebarCollapsed = (collapsed) => {
@@ -885,7 +981,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         expander.addEventListener('click', () => setSidebarCollapsed(false));
         boardManager.style.width = `${appState.sidebarWidth || 260}px`;
         if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
-
+ 
         handleTabSwitching();
         
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
@@ -924,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
         setTimeout(updateScrollIndicator, 100);
-
+ 
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         searchInput.addEventListener('input', handleSearch);
         document.addEventListener('contextmenu', handleContextMenu);
@@ -938,28 +1034,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctxDeleteBtn.addEventListener('click', deleteNoteFromContext);
         ctxTabDeleteBtn.addEventListener('click', clearTab);
         emptyTrashBtn.addEventListener('click', emptyTrash);
-
+ 
         zoomInBtn.addEventListener('click', () => updateZoom(appState.zoomLevel + 0.1));
         zoomOutBtn.addEventListener('click', () => updateZoom(appState.zoomLevel - 0.1));
         zoomResetBtn.addEventListener('click', () => updateZoom(1.0));
-
+        boardContainer.addEventListener('scroll', updateAllLinesPosition);
+ 
+        // --- RENDERIZADO INICIAL ---
         renderBoardList();
         renderActiveBoard();
         updateBoardSize();
-        initializeLineStyleControls();        
-        initializeColorPopover();
-        initializeSidebarResizing();
         updatePaletteState();
-        initializeShareAndImport(appState, {
-            showToast,
-            switchBoard,
-            saveState,
-            renderBoardList
-        });
-        initializeAboutModalFeature();
-        initializePanning(boardContainer, board, updateAllLinesPosition);
-        boardContainer.addEventListener('scroll', updateAllLinesPosition);
     }
-
+ 
     initializeApp();
 });

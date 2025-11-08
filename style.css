@@ -556,6 +556,19 @@ body.sidebar-resizing * {
     cursor: pointer;
 }
 
+/* --- NUEVO: Estilos para el checkbox de confirmación en la pestaña de líneas --- */
+.prompt-delete-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-dark);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+.prompt-delete-container label {
+    margin: 0;
+}
 /* --- NUEVO: Estilos para tarjetas de "Aplicar a" en Fondos --- */
 .apply-to-container {
     display: flex;
