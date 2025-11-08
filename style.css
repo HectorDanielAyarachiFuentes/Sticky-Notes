@@ -1292,7 +1292,8 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
 }
 #context-menu li, #tab-context-menu li {
     padding: 10px 20px;
-    transition: background-color 0.2s ease;
+    /* --- MEJORA: Transición más pulida para el efecto hover --- */
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1303,7 +1304,14 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     text-align: center;
 }
 
-#context-menu li:hover, #tab-context-menu li:hover { background: var(--bg-light); } /* Usamos el gradiente */
+/* --- MEJORA: Efecto hover más notorio --- */
+#context-menu li:hover, #tab-context-menu li:hover {
+    background: var(--gradient-primary); /* Usamos el gradiente principal */
+    color: var(--text-light); /* Cambiamos el color del texto a claro para que contraste */
+    transform: translateX(5px); /* Desplazamiento sutil */
+    box-shadow: var(--shadow-sm); /* Añadimos una sombra suave */
+}
+
 #context-menu li.separator { height: 1px; background-color: var(--border-color); padding: 0; margin: 5px 0; }
 
 /* --- PESTAÑA DE PAPELERA --- */
