@@ -1312,6 +1312,17 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     box-shadow: var(--shadow-sm); /* Añadimos una sombra suave */
 }
 
+/* --- NUEVO: Estilo especial para la opción de eliminar --- */
+#context-menu #ctx-delete {
+    color: #c0392b; /* Un tono de rojo no tan agresivo */
+    font-weight: bold;
+}
+
+#context-menu #ctx-delete:hover {
+    background: #c0392b; /* Fondo rojo al pasar el ratón */
+    color: var(--text-light); /* Texto blanco para contraste */
+}
+
 #context-menu li.separator { height: 1px; background-color: var(--border-color); padding: 0; margin: 5px 0; }
 
 /* --- PESTAÑA DE PAPELERA --- */
