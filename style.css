@@ -1281,9 +1281,17 @@ body:not(.palette-pinned) #board-manager.collapsed ~ #note-palette {
     border: 1px solid rgba(60, 60, 67, 0.2);
     border-image: var(--border-color) 1; /* Aplicar el gradiente como borde */
     border-image-slice: 1;
+    /* --- NUEVO: Animación de aparición --- */
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top left; /* La animación se origina desde donde se hace clic */
+    transition: opacity 0.2s ease-out, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 #context-menu.hidden, #tab-context-menu.hidden {
-    display: none;
+    /* Reemplazamos display:none para permitir la animación de salida */
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none; /* Evita que el menú oculto sea clickeable */
 }
 #context-menu ul, #tab-context-menu ul {
     list-style: none;
