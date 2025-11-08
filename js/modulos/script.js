@@ -799,7 +799,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="modal-body"><p></p></div>
                 <div class="modal-footer">
-                    <div class="dont-ask-again-container"><input type="checkbox" id="confirm-dont-ask-again"><label for="confirm-dont-ask-again">No volver a preguntar</label></div>
+                    <div class="dont-ask-again-container">
+                        <label for="confirm-dont-ask-again">No volver a preguntar</label>
+                        <label class="switch">
+                            <input type="checkbox" id="confirm-dont-ask-again"><span class="slider round"></span>
+                        </label>
+                    </div>
                     <div class="confirmation-buttons"><button id="confirm-no-btn" class="modal-btn secondary">Cancelar</button><button id="confirm-yes-btn" class="modal-btn danger">Sí, borrar</button></div>
                 </div>
             </div>`;
