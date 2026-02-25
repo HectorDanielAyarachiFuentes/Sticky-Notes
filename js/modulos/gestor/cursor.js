@@ -15,6 +15,12 @@ let rainbowAnimationId = null;
 let currentHue = 0;
 let rainbowSpeed = 5;
 
+// --- Caché de frames pre-computados para el arcoíris ---
+// Generamos 60 entradas (una por grado de hue) al activar el modo,
+// así durante la animación solo hacemos un lookup de array, sin codificar SVGs.
+let _rainbowFrameCache = [];
+let _rainbowFrameIndex = 0;
+
 // --- Plantillas SVG basadas en tus archivos originales ---
 // Se reemplazarán los colores del gradiente con marcadores de posición.
 const CURSOR_TEMPLATES = {
@@ -149,7 +155,7 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
         toggleRainbowMode(false); // Desactivar modo arcoíris al elegir color
         applyCursorColor(e.target.value);
     });
-    
+
     DOM.cursorColorInput.addEventListener('change', () => {
         Callbacks.saveState(); // Guardar el estado solo cuando se confirma el color
     });
@@ -208,7 +214,7 @@ function renderCursorPreviews() {
             // Vuelve al cursor por defecto de la app
             document.body.style.cursor = '';
         });
-        
+
         const iconContainer = document.createElement('div');
         iconContainer.className = 'cursor-preview-icon';
         iconContainer.id = `preview-icon-${preview.type}`;
@@ -237,13 +243,11 @@ function applyCursorColor(color) {
     let shades;
 
     if (isRainbowModeActive) {
-        // Modo Arcoíris: Generar un gradiente de colores en lugar de sombras.
-        // Cada "sombra" será un color diferente del arcoíris.
         shades = {
-            light: hslToHex(((currentHue + 30) % 360) / 360, 0.9, 0.7), // c1
-            mid:   hslToHex(currentHue / 360, 0.9, 0.65),                // c2
-            dark:  hslToHex(((currentHue - 30 + 360) % 360) / 360, 0.9, 0.55), // c3
-            border:hslToHex(((currentHue - 60 + 360) % 360) / 360, 0.9, 0.4)  // c4
+            light: hslToHex(((currentHue + 30) % 360) / 360, 0.9, 0.7),
+            mid: hslToHex(currentHue / 360, 0.9, 0.65),
+            dark: hslToHex(((currentHue - 30 + 360) % 360) / 360, 0.9, 0.55),
+            border: hslToHex(((currentHue - 60 + 360) % 360) / 360, 0.9, 0.4)
         };
     } else {
         shades = generateShades(color);
@@ -256,23 +260,68 @@ function applyCursorColor(color) {
             .replace(/{c3}/g, shades.dark)
             .replace(/{c4}/g, shades.border);
 
-        // Actualizar previsualización
-        const previewIcon = document.getElementById(`preview-icon-${name}`);
-        if (previewIcon) previewIcon.innerHTML = finalSvg;
+        // Solo actualizar previsualización si NO estamos en modo arcoíris (durante animación es innecesario)
+        if (!isRainbowModeActive) {
+            const previewIcon = document.getElementById(`preview-icon-${name}`);
+            if (previewIcon) previewIcon.innerHTML = finalSvg;
+        }
 
         const encodedSvg = encodeURIComponent(finalSvg);
         const cursorValue = `url("data:image/svg+xml,${encodedSvg}") ${hotspot}, auto`;
         root.style.setProperty(`--cursor-${name}`, cursorValue);
     });
 
-    // Guardar el color en el estado de la aplicación
-    if (!appState.settings) {
-        appState.settings = {};
+    if (!appState.settings) appState.settings = {};
+    if (!isRainbowModeActive) {
+        appState.settings.cursorColor = color;
+        DOM.cursorColorInput.value = color;
+        if (DOM.colorInputWrapper) DOM.colorInputWrapper.style.borderColor = color;
     }
-    if (!isRainbowModeActive) appState.settings.cursorColor = color;
-    DOM.cursorColorInput.value = color;
-    // Actualizar el borde del wrapper del color
-    if (DOM.colorInputWrapper) DOM.colorInputWrapper.style.borderColor = color;
+}
+
+/**
+ * Pre-computa todos los frames del arcoíris y los almacena en caché.
+ * Se ejecuta UNA sola vez al activar el modo, evitando codificación SVG durante la animación.
+ * @param {number} frameCount - Cantidad de frames a pre-computar.
+ */
+function buildRainbowFrameCache(frameCount = 60) {
+    _rainbowFrameCache = [];
+    const root = document.documentElement;
+    const entries = Object.entries(CURSOR_TEMPLATES);
+
+    for (let i = 0; i < frameCount; i++) {
+        const hue = (i / frameCount) * 360;
+        const shades = {
+            light: hslToHex(((hue + 30) % 360) / 360, 0.9, 0.7),
+            mid: hslToHex(hue / 360, 0.9, 0.65),
+            dark: hslToHex(((hue - 30 + 360) % 360) / 360, 0.9, 0.55),
+            border: hslToHex(((hue - 60 + 360) % 360) / 360, 0.9, 0.4)
+        };
+        const frameProps = {};
+        entries.forEach(([name, { template, hotspot }]) => {
+            const finalSvg = template
+                .replace(/{c1}/g, shades.light)
+                .replace(/{c2}/g, shades.mid)
+                .replace(/{c3}/g, shades.dark)
+                .replace(/{c4}/g, shades.border);
+            const encodedSvg = encodeURIComponent(finalSvg);
+            frameProps[name] = `url("data:image/svg+xml,${encodedSvg}") ${hotspot}, auto`;
+        });
+        _rainbowFrameCache.push(frameProps);
+    }
+}
+
+/**
+ * Aplica un frame pre-computado del caché del arcoíris.
+ * Costo: solo array lookup + N setProperty() — cero cálculos SVG.
+ */
+function applyRainbowFrame() {
+    const root = document.documentElement;
+    const frame = _rainbowFrameCache[_rainbowFrameIndex];
+    if (!frame) return;
+    for (const [name, cursorValue] of Object.entries(frame)) {
+        root.style.setProperty(`--cursor-${name}`, cursorValue);
+    }
 }
 
 /**
@@ -310,7 +359,6 @@ function toggleRainbowMode(isActive) {
     if (DOM.rainbowCursorToggle) DOM.rainbowCursorToggle.checked = isActive;
     DOM.rainbowSpeedContainer.classList.toggle('visible', isActive);
     DOM.cursorColorInput.disabled = isActive;
-    // Añadir clase para control visual
     DOM.colorInputWrapper.classList.toggle('disabled', isActive);
 
     if (!appState.settings) appState.settings = {};
@@ -318,10 +366,14 @@ function toggleRainbowMode(isActive) {
     Callbacks.saveState();
 
     if (isActive && !rainbowAnimationId) {
+        // Pre-computar todos los frames ANTES de iniciar la animación
+        buildRainbowFrameCache(60);
+        _rainbowFrameIndex = 0;
         animateRainbow();
     } else if (!isActive && rainbowAnimationId) {
-        cancelAnimationFrame(rainbowAnimationId);
+        clearTimeout(rainbowAnimationId);
         rainbowAnimationId = null;
+        _rainbowFrameCache = []; // Liberar memoria
         // Al desactivar, vuelve al color seleccionado
         applyCursorColor(appState.settings.cursorColor || '#FFFFFF');
     }
@@ -329,12 +381,18 @@ function toggleRainbowMode(isActive) {
 
 /**
  * Bucle de animación para el modo arcoíris.
+ * Ultra-optimizado: usa frames pre-computados — costo mínimo, solo array lookup.
  */
 function animateRainbow() {
-    currentHue = (currentHue + (rainbowSpeed / 10)) % 360;
-    const newColor = hslToHex(currentHue / 360, 0.8, 0.65);
-    applyCursorColor(newColor);
-    rainbowAnimationId = requestAnimationFrame(animateRainbow);
+    if (!isRainbowModeActive) return;
+
+    // Avanzar frames por ticks según la velocidad (1–10 → 1–3 frames por tick)
+    const framesPerTick = Math.max(1, Math.round((rainbowSpeed / 10) * 3));
+    _rainbowFrameIndex = (_rainbowFrameIndex + framesPerTick) % _rainbowFrameCache.length;
+    applyRainbowFrame();
+
+    // ~12fps: suficiente para ver el efecto sin cargar el CPU
+    rainbowAnimationId = setTimeout(animateRainbow, 80);
 }
 
 /**
@@ -346,11 +404,11 @@ function animateRainbow() {
  */
 function hslToHex(h, s, l) {
     let r, g, b;
-    if(s === 0) { r = g = b = l; }
+    if (s === 0) { r = g = b = l; }
     else {
-        const hue2rgb = (p, q, t) => { if(t < 0) t += 1; if(t > 1) t -= 1; if(t < 1/6) return p + (q - p) * 6 * t; if(t < 1/2) return q; if(t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+        const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
         const q = l < 0.5 ? l * (1 + s) : l + s - l * s; const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+        r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
     }
     const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
@@ -373,7 +431,7 @@ function resetCursor() {
         delete appState.settings.cursorColor;
         delete appState.settings.cursorRainbowMode;
     }
-    
+
     // Restablecer el valor del color picker
     DOM.cursorColorInput.value = '#FFFFFF';
 
