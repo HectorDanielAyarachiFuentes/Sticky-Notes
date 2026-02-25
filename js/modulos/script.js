@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { initializePanning } = panningModule;
     const { initializeShareAndImport } = shareModule;
     const { initializeAboutModalFeature } = aboutModalModule;
-    const { 
+    const {
         initializeLineManager,
         renderConnections,
         removeActiveLines,
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         handleConnectionClick,
         removeLinesForNote
     } = lineManagerModule;
-    const { 
+    const {
         initializeTrashManager,
         moveNoteToTrash,
         renderTrash,
@@ -425,12 +425,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const performDelete = () => {
             const currentBoard = appState.boards[appState.activeBoardId];
             if (!currentBoard) return;
-    
+
             // Eliminar conexiones del estado
             currentBoard.connections = currentBoard.connections.filter(
                 conn => conn.from !== noteId && conn.to !== noteId
             );
-    
+
             removeLinesForNote(noteId); // Elimina las líneas visuales
             renderActiveBoard(true); // Re-renderiza el tablero para quitar el botón de borrado y guarda el estado
             showToast('Conexiones eliminadas.');
@@ -717,7 +717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const linePathSelect = document.getElementById('line-path-select');
         const linePlugSelect = document.getElementById('line-plug-select');
         const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
-    
+
         const updateUI = () => {
             const { color, opacity, path, size, endPlug } = appState.lineOptions;
             lineColorInput.value = color;
@@ -725,51 +725,51 @@ document.addEventListener('DOMContentLoaded', async () => {
             lineOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
             lineSizeInput.value = size;
             lineSizeValue.textContent = size;
-    
+
             linePathSelect.querySelector('.active')?.classList.remove('active');
             linePathSelect.querySelector(`[data-value="${path}"]`)?.classList.add('active');
-    
+
             linePlugSelect.querySelector('.active')?.classList.remove('active');
             linePlugSelect.querySelector(`[data-value="${endPlug}"]`)?.classList.add('active');
 
             // Actualizar el nuevo checkbox
             promptDeleteCheckbox.checked = appState.lineOptions.promptBeforeDelete;
         };
-    
+
         const saveAndRerender = () => {
             saveState();
             renderActiveBoard(true); // CORREGIDO: Asegurarse de guardar el estado
         };
-    
+
         lineColorInput.addEventListener('input', (e) => {
             appState.lineOptions.color = e.target.value;
             saveAndRerender();
         });
-    
+
         lineOpacityInput.addEventListener('input', (e) => {
             const newOpacity = parseFloat(e.target.value);
             appState.lineOptions.opacity = newOpacity;
             lineOpacityValue.textContent = `${Math.round(newOpacity * 100)}%`;
             saveAndRerender();
         });
-    
+
         lineSizeInput.addEventListener('input', (e) => {
             const newSize = parseInt(e.target.value, 10);
             appState.lineOptions.size = newSize;
             lineSizeValue.textContent = newSize;
             saveAndRerender();
         });
-    
+
         linePathSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
             if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
         });
-    
+
         linePlugSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
             if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
         });
-    
+
         promptDeleteCheckbox.addEventListener('change', (e) => {
             appState.lineOptions.promptBeforeDelete = e.target.checked;
             saveState();
@@ -805,7 +805,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveState();
             // Actualizar la UI de la pestaña de líneas si está visible
             const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
-            if(promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
+            if (promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
         }
 
         resolveConfirmationPromise({ confirmed, dontAskAgain });
@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initializeApp() {
         loadState();
         createConfirmationModal();
- 
+
         // Inicializar módulos principales que no dependen de otros
         initializeLineManager(appState, board, renderActiveBoard);
         initializePanning(boardContainer, board, appState, () => { updateZoom(); });
@@ -964,16 +964,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeSidebarResizing();
         initializeLineStyleControls();
         initializeAboutModalFeature();
- 
+
         // Inicializar módulos de gestión que necesitan callbacks
         const backgroundDOM = { backgroundOptionsContainer, resetBackgroundBtn, bgApplyToBoardCard, bgApplyToNotesCard, boardContainer };
         const backgroundCallbacks = { saveState, renderActiveBoard, getDefaultBackground: () => DEFAULT_BOARD_BACKGROUND };
         await initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
- 
+
         const trashDOM = { board, trashNotesContainer, trashBoardsContainer, emptyTrashBtn };
         const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, hideContextMenu, removeLinesForNote };
         initializeTrashManager(appState, trashDOM, trashCallbacks);
- 
+
         const noteInteractionDOM = { boardContainer, board, trashCan };
         const noteInteractionCallbacks = {
             handleConnectionClick, bringToFront, updateAllLinesPosition, moveNoteToTrash, saveState,
@@ -981,14 +981,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             getNewZIndex: () => ++maxZIndex
         };
         initializeNoteInteractions(appState, noteInteractionDOM, noteInteractionCallbacks);
- 
+
         initializeCreateTab(appState, switchBoard, () => ++maxZIndex);
- 
+
         const cursorDOM = { cursorColorInput, resetCursorBtn };
         initializeCursorManager(appState, cursorDOM, { saveState });
- 
+
         initializeShareAndImport(appState, { showToast, switchBoard, saveState, renderBoardList });
- 
+
         // --- EVENT LISTENERS GLOBALES ---
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
@@ -1012,9 +1012,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         expander.addEventListener('click', () => setSidebarCollapsed(false));
         boardManager.style.width = `${appState.sidebarWidth || 260}px`;
         if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
- 
+
         handleTabSwitching();
-        
+
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
         const scrollIndicatorUp = paletteScrollContainer.previousElementSibling;
         const scrollIndicator = paletteScrollContainer.nextElementSibling;
@@ -1030,10 +1030,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         const updateScrollIndicator = () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
             const isScrollable = scrollHeight > clientHeight;
-            scrollIndicator.style.opacity = (isScrollable && scrollTop + clientHeight < scrollHeight - 10) ? '1' : '0';
-            scrollIndicatorUp.style.opacity = (isScrollable && scrollTop > 10) ? '1' : '0';
+            const showDown = isScrollable && scrollTop + clientHeight < scrollHeight - 10;
+            const showUp = isScrollable && scrollTop > 10;
+            scrollIndicator.style.opacity = showDown ? '1' : '0';
+            scrollIndicatorUp.style.opacity = showUp ? '1' : '0';
+            scrollIndicator.classList.toggle('visible', showDown);
+            scrollIndicatorUp.classList.toggle('visible', showUp);
         };
+        let lastScrollTop = paletteScrollContainer.scrollTop;
         paletteScrollContainer.addEventListener('scroll', () => {
+            const currentScrollTop = paletteScrollContainer.scrollTop;
+            const direction = currentScrollTop > lastScrollTop ? 'down' : 'up';
+            lastScrollTop = currentScrollTop;
+
+            // Trigger cinematic animation in the correct direction
+            if (direction === 'down') {
+                scrollIndicator.classList.remove('scrolling-down');
+                void scrollIndicator.offsetWidth; // reflow to restart animation
+                scrollIndicator.classList.add('scrolling-down');
+                scrollIndicator.addEventListener('animationend', () => scrollIndicator.classList.remove('scrolling-down'), { once: true });
+            } else {
+                scrollIndicatorUp.classList.remove('scrolling-up');
+                void scrollIndicatorUp.offsetWidth;
+                scrollIndicatorUp.classList.add('scrolling-up');
+                scrollIndicatorUp.addEventListener('animationend', () => scrollIndicatorUp.classList.remove('scrolling-up'), { once: true });
+            }
+
             updateScrollIndicator();
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
             const blockHeight = scrollHeight / 4;
@@ -1051,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
         setTimeout(updateScrollIndicator, 100);
- 
+
         pinPaletteBtn.addEventListener('click', togglePalettePin);
         searchInput.addEventListener('input', handleSearch);
         document.addEventListener('contextmenu', handleContextMenu);
@@ -1066,17 +1088,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctxDeleteLinesBtn.addEventListener('click', deleteLinesFromContext);
         ctxTabDeleteBtn.addEventListener('click', clearTab);
         emptyTrashBtn.addEventListener('click', emptyTrash);
- 
+
         zoomInBtn.addEventListener('click', () => updateZoom(appState.zoomLevel + 0.1));
         zoomOutBtn.addEventListener('click', () => updateZoom(appState.zoomLevel - 0.1));
         zoomResetBtn.addEventListener('click', () => updateZoom(1.0));
         // Ya no se necesita el listener de scroll en boardContainer
- 
+
         // --- RENDERIZADO INICIAL ---
         renderBoardList();
         renderActiveBoard();
         updatePaletteState();
     }
- 
+
     initializeApp();
 });
