@@ -479,6 +479,11 @@ body.panning * {
     transform: translateY(-50%) translateX(0);
 }
 
+/* El expander de la paleta NO se muestra en desktop, solo en móvil mediante media query */
+#palette-expander {
+    display: none;
+}
+
 /* --- TIRADOR PARA REDIMENSIONAR EL PANEL --- */
 #sidebar-resizer {
     position: absolute;
@@ -2767,4 +2772,183 @@ input:checked+.slider:before {
 #tab-content-cursor {
     overflow-y: auto;
     /* Habilita el scroll vertical si el contenido se desborda */
+}
+
+/* --- RESPONSIVE DESIGN: TABLET & MOBILE --- */
+
+/* TABLET MODO: <= 1024px */
+@media (max-width: 1024px) {
+    #board-manager {
+        width: 320px;
+        /* Reducir el ancho del sidebar izquierdo */
+    }
+
+    #note-palette {
+        width: 70px;
+        /* Reducir el panel derecho */
+    }
+}
+
+/* MOBILE MODO: <= 768px */
+@media (max-width: 768px) {
+
+    /* 1. Panel de Gestión (Izquierdo) Flotante / Drawer */
+    #board-manager {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 85vw;
+        /* Ocupa la mayor parte de la pantalla */
+        max-width: 350px;
+        z-index: 1000;
+        transform: translateX(0);
+        /* Visible = 0. Colapsado = gestionado dinamicamente / por clase */
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    #board-manager.collapsed {
+        transform: translateX(-100%);
+        margin-left: 0;
+        /* Anulamos el margin-left que se usa en desktop */
+    }
+
+    #sidebar-expander {
+        z-index: 999;
+    }
+
+    /* Tabs scrollables horizontalmente si son muchos */
+    .tab-nav {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
+        min-width: 70px;
+    }
+
+    #tab-content-container {
+        /* Permitiremos que se scrollee todo el contenido y usamos flex */
+        min-height: 400px;
+    }
+
+    /* 2. Paleta de Plantillas -> Fijar al lado DERECHO de la pantalla */
+    #note-palette {
+        position: fixed;
+        right: 0;
+        top: 0;
+        height: 100vh;
+        width: 90px;
+        transform: none;
+        z-index: 900;
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* Paleta colapsada: se desliza fuera de la pantalla por la derecha */
+    #note-palette.palette-collapsed {
+        transform: translateX(100%);
+    }
+
+    /* La paleta no debe desaparecer cuando el sidebar está colapsado */
+    #board-manager.collapsed~#note-palette {
+        margin-left: 0 !important;
+    }
+
+    /* Pestaña para abrir la paleta (visible solo en móvil) */
+    #palette-expander {
+        display: flex;
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%) translateX(0);
+        width: 25px;
+        height: 60px;
+        background: var(--bg-dark);
+        color: var(--text-light);
+        border-radius: 8px 0 0 8px;
+        align-items: center;
+        justify-content: center;
+        box-shadow: -2px 0px 8px rgba(0, 0, 0, 0.3);
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+        z-index: 901;
+        border: none;
+    }
+
+    #palette-expander:hover {
+        background: var(--gradient-primary);
+    }
+
+    #palette-expander img {
+        width: 18px;
+        height: 18px;
+        filter: invert(1);
+        opacity: 0.9;
+    }
+
+    /* Cuando la paleta está visible, la pestaña se oculta deslizando hacia la derecha */
+    #note-palette:not(.palette-collapsed)~* #palette-expander,
+    #palette-expander.palette-visible {
+        transform: translateY(-50%) translateX(200%);
+    }
+
+    /* 3. Controles Flotantes */
+    #zoom-controls {
+        top: auto;
+        left: 50%;
+        bottom: 20px;
+        right: auto;
+        transform: translateX(-50%);
+        padding: 5px 8px;
+        z-index: 800;
+        background: var(--surface-dark);
+    }
+
+    #zoom-level-display {
+        font-size: 0.85em;
+        width: 35px;
+    }
+
+    #zoom-controls button {
+        width: 25px;
+        height: 25px;
+        font-size: 1.1em;
+    }
+
+    #trash-can {
+        right: auto;
+        left: 10px;
+        bottom: 70px;
+        /* Por encima del centro, a la izquierda */
+        width: 50px;
+        height: 50px;
+        z-index: 800;
+    }
+
+    #trash-can img {
+        width: 25px;
+        height: 25px;
+    }
+
+    /* 4. Modales y Popovers */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    #color-picker-popover {
+        width: 90%;
+        max-width: 300px;
+        left: 50% !important;
+        /* Se centra en móviles */
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        position: fixed;
+    }
+
+    /* Ocultamos resizer lateral */
+    #sidebar-resizer {
+        display: none;
+    }
 }

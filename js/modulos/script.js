@@ -1011,7 +1011,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         collapseBtn.addEventListener('click', () => setSidebarCollapsed(true));
         expander.addEventListener('click', () => setSidebarCollapsed(false));
         boardManager.style.width = `${appState.sidebarWidth || 260}px`;
-        if (appState.isSidebarCollapsed) setSidebarCollapsed(true);
+        if (appState.isSidebarCollapsed || window.innerWidth <= 768) setSidebarCollapsed(true);
+
+        // --- Paleta de notas: colapso móvil ---
+        const notePalette = document.querySelector('#note-palette');
+        const paletteCollapseExpander = document.querySelector('#palette-expander');
+        const setPaletteCollapsed = (collapsed) => {
+            notePalette.classList.toggle('palette-collapsed', collapsed);
+            if (paletteCollapseExpander) {
+                paletteCollapseExpander.classList.toggle('palette-visible', !collapsed);
+                paletteCollapseExpander.setAttribute('aria-expanded', String(!collapsed));
+            }
+        };
+        if (paletteCollapseExpander) {
+            paletteCollapseExpander.addEventListener('click', () => setPaletteCollapsed(false));
+        }
+        // Pin-header btn en móvil colapsa la paleta cuando está abierta
+        const pinPaletteBtn = document.querySelector('#pin-palette-btn');
+        if (pinPaletteBtn && window.innerWidth <= 768) {
+            const collapseFromHeader = () => {
+                if (window.innerWidth <= 768) setPaletteCollapsed(true);
+            };
+            // Click en el icono de la nota (create icon) colapsa en móvil
+            document.querySelector('.palette-create-icon')?.addEventListener('click', collapseFromHeader);
+            pinPaletteBtn.addEventListener('click', collapseFromHeader);
+        }
+        // En móvil: la paleta empieza colapsada
+        if (window.innerWidth <= 768) setPaletteCollapsed(true);
+
+        // Auto-colapsar en móvil al hacer clic en el tablero
+        boardContainer.addEventListener('pointerdown', (e) => {
+            if (window.innerWidth <= 768 && !appState.isSidebarCollapsed) {
+                setSidebarCollapsed(true);
+            }
+        });
 
         handleTabSwitching();
 
