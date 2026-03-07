@@ -105,6 +105,17 @@
                     </div>
                 </div>
 
+                <div class="style-option style-option-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div class="toggle-option" style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <label for="line-dash-input" style="margin-bottom: 0;">Línea Animada</label>
+                        <label class="switch"><input type="checkbox" id="line-dash-input" aria-label="Activar o desactivar línea animada"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option" style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <label for="line-shadow-input" style="margin-bottom: 0;">Aplicar Sombra</label>
+                        <label class="switch"><input type="checkbox" id="line-shadow-input" aria-label="Activar o desactivar sombra paralela"><span class="slider round"></span></label>
+                    </div>
+                </div>
+
                 <div class="style-option">
                     <label id="line-path-label">Trazado</label>
                     <div class="visual-select-container" id="line-path-select" role="radiogroup"
@@ -148,7 +159,23 @@
                 </div>
 
                 <div class="style-option">
-                    <label id="line-plug-label">Punta</label>
+                    <label id="line-start-plug-label">Punta de Inicio</label>
+                    <div class="visual-select-container" id="line-start-plug-select" role="radiogroup"
+                        aria-labelledby="line-start-plug-label">
+                        <button class="visual-select-btn" data-value="behind" role="radio" aria-checked="false" aria-label="Sin punta">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" /></svg>
+                        </button>
+                        <button class="visual-select-btn" data-value="arrow1" role="radio" aria-checked="false" aria-label="Punta de flecha tipo 1">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M20 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" /><path d="M5 20 L 25 10 V 30 Z" fill="currentColor" /></svg>
+                        </button>
+                        <button class="visual-select-btn" data-value="disc" role="radio" aria-checked="false" aria-label="Punta circular">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M15 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" /><circle cx="10" cy="20" r="8" fill="currentColor" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="style-option">
+                    <label id="line-plug-label">Punta Final</label>
                     <div class="visual-select-container" id="line-plug-select" role="radiogroup"
                         aria-labelledby="line-plug-label">
                         <button class="visual-select-btn" data-value="arrow1" role="radio" aria-checked="false"

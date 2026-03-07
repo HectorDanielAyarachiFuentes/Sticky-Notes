@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
                 isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
-                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', endPlug: 'arrow1' }
+                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', startPlug: 'behind', endPlug: 'arrow1', dash: false, dropShadow: false }
             };
         }
         if (appState.lineOptions.promptBeforeDelete === undefined) {
@@ -715,11 +715,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function initializeLineStyleControls() {
         const linePathSelect = document.getElementById('line-path-select');
+        const lineStartPlugSelect = document.getElementById('line-start-plug-select');
         const linePlugSelect = document.getElementById('line-plug-select');
+        const lineDashInput = document.getElementById('line-dash-input');
+        const lineShadowInput = document.getElementById('line-shadow-input');
         const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
 
         const updateUI = () => {
-            const { color, opacity, path, size, endPlug } = appState.lineOptions;
+            const { color, opacity, path, size, startPlug, endPlug, dash, dropShadow } = appState.lineOptions;
             lineColorInput.value = color;
             lineOpacityInput.value = opacity;
             lineOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
@@ -729,8 +732,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             linePathSelect.querySelector('.active')?.classList.remove('active');
             linePathSelect.querySelector(`[data-value="${path}"]`)?.classList.add('active');
 
+            lineStartPlugSelect.querySelector('.active')?.classList.remove('active');
+            lineStartPlugSelect.querySelector(`[data-value="${startPlug || 'behind'}"]`)?.classList.add('active');
+
             linePlugSelect.querySelector('.active')?.classList.remove('active');
             linePlugSelect.querySelector(`[data-value="${endPlug}"]`)?.classList.add('active');
+
+            if (lineDashInput) lineDashInput.checked = dash || false;
+            if (lineShadowInput) lineShadowInput.checked = dropShadow || false;
 
             // Actualizar el nuevo checkbox
             promptDeleteCheckbox.checked = appState.lineOptions.promptBeforeDelete;
@@ -762,13 +771,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         linePathSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
-            if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
+            if (btn) { appState.lineOptions.path = btn.dataset.value; updateUI(); saveAndRerender(); }
+        });
+
+        lineStartPlugSelect.addEventListener('click', (e) => {
+            const btn = e.target.closest('.visual-select-btn');
+            if (btn) { appState.lineOptions.startPlug = btn.dataset.value; updateUI(); saveAndRerender(); }
         });
 
         linePlugSelect.addEventListener('click', (e) => {
             const btn = e.target.closest('.visual-select-btn');
-            if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); } // CORREGIDO: Añadido saveAndRerender
+            if (btn) { appState.lineOptions.endPlug = btn.dataset.value; updateUI(); saveAndRerender(); }
         });
+
+        if (lineDashInput) {
+            lineDashInput.addEventListener('change', (e) => {
+                appState.lineOptions.dash = e.target.checked;
+                saveAndRerender();
+            });
+        }
+
+        if (lineShadowInput) {
+            lineShadowInput.addEventListener('change', (e) => {
+                appState.lineOptions.dropShadow = e.target.checked;
+                saveAndRerender();
+            });
+        }
 
         promptDeleteCheckbox.addEventListener('change', (e) => {
             appState.lineOptions.promptBeforeDelete = e.target.checked;

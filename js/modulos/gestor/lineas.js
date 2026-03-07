@@ -54,15 +54,26 @@ export function renderConnections() {
                 return `rgba(${r}, ${g}, ${b}, ${alpha})`;
             };
 
+            const lineOptions = { ...restOptions };
+            
             // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
-            const plugSizeOverride = restOptions.endPlug === 'crosshair' ? { endPlugSize: 0.35 } : {};
+            if (lineOptions.endPlug === 'crosshair') lineOptions.endPlugSize = 0.35;
+            if (lineOptions.startPlug === 'crosshair') lineOptions.startPlugSize = 0.35;
+            
+            // Configurar sombra si está activada
+            if (lineOptions.dropShadow) {
+                lineOptions.dropShadow = { dx: 2, dy: 4, blur: 4, color: 'rgba(0, 0, 0, 0.4)' };
+            }
+            
+            // Configurar animación si está activada
+            if (lineOptions.dash) {
+                lineOptions.dash = { animation: true };
+            }
 
             const line = new LeaderLine(startEl, endEl, {
-                ...restOptions,
-                ...plugSizeOverride,
+                ...lineOptions,
                 hide: true, // Crear la línea oculta
                 color: hexToRgba(color, opacity),
-                startSocket: 'auto',
                 endSocket: 'auto'
             });
             activeLines.push({ line, from: conn.from, to: conn.to });
@@ -132,15 +143,26 @@ function renderSingleConnection(conn) {
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         };
 
+        const lineOptions = { ...restOptions };
+
         // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
-        const plugSizeOverride = restOptions.endPlug === 'crosshair' ? { endPlugSize: 0.35 } : {};
+        if (lineOptions.endPlug === 'crosshair') lineOptions.endPlugSize = 0.35;
+        if (lineOptions.startPlug === 'crosshair') lineOptions.startPlugSize = 0.35;
+
+        // Configurar sombra si está activada
+        if (lineOptions.dropShadow) {
+            lineOptions.dropShadow = { dx: 2, dy: 4, blur: 4, color: 'rgba(0, 0, 0, 0.4)' };
+        }
+        
+        // Configurar animación si está activada
+        if (lineOptions.dash) {
+            lineOptions.dash = { animation: true };
+        }
 
         const line = new LeaderLine(startEl, endEl, {
-            ...restOptions,
-            ...plugSizeOverride,
+            ...lineOptions,
             hide: true,
             color: hexToRgba(color, opacity),
-            startSocket: 'auto',
             endSocket: 'auto'
         });
         activeLines.push({ line, from: conn.from, to: conn.to });
