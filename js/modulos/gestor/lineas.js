@@ -54,8 +54,12 @@ export function renderConnections() {
                 return `rgba(${r}, ${g}, ${b}, ${alpha})`;
             };
 
+            // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
+            const plugSizeOverride = restOptions.endPlug === 'crosshair' ? { endPlugSize: 0.35 } : {};
+
             const line = new LeaderLine(startEl, endEl, {
                 ...restOptions,
+                ...plugSizeOverride,
                 hide: true, // Crear la línea oculta
                 color: hexToRgba(color, opacity),
                 startSocket: 'auto',
@@ -128,8 +132,12 @@ function renderSingleConnection(conn) {
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         };
 
+        // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
+        const plugSizeOverride = restOptions.endPlug === 'crosshair' ? { endPlugSize: 0.35 } : {};
+
         const line = new LeaderLine(startEl, endEl, {
             ...restOptions,
+            ...plugSizeOverride,
             hide: true,
             color: hexToRgba(color, opacity),
             startSocket: 'auto',
