@@ -770,31 +770,57 @@ body.sidebar-resizing * {
 
 .visual-select-container {
     display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: rgba(40, 40, 40, 0.5); /* Subtle container background */
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .visual-select-btn {
     flex: 1;
-    background: var(--surface-dark);
-    border: 2px solid transparent;
+    background: transparent;
+    border: none;
     border-radius: 6px;
-    padding: 8px;
+    padding: 10px 6px;
     transition: all 0.2s ease;
+    color: var(--text-light);
+    opacity: 0.5;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .visual-select-btn:hover {
-    border-color: var(--color-secondary);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0.8;
 }
 
 .visual-select-btn.active {
-    border-color: var(--color-primary);
-    background: var(--color-primary);
+    background: var(--surface-light); /* Light elevated color */
+    color: var(--color-primary); /* Use primary color for the icon */
+    opacity: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.visual-select-btn svg {
+    width: 100%;
+    height: 20px;
+}  
+
+/* For SVG overriding inline stroke-width */
+.visual-select-btn svg path,
+.visual-select-btn svg rect,
+.visual-select-btn svg circle,
+.visual-select-btn svg line {
+    stroke-width: 2.5 !important;
 }
 
 .visual-select-btn img {
     width: 100%;
-    height: 24px;
+    height: 20px;
     filter: invert(1) opacity(0.8);
     transition: filter 0.2s ease;
 }
@@ -1844,8 +1870,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
 /* --- MENÚ CONTEXTUAL --- */
 #context-menu,
-#tab-context-menu,
-#line-context-menu {
+#tab-context-menu {
     position: fixed;
     z-index: 2000;
     background: var(--surface-light);
@@ -1869,8 +1894,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 #context-menu.hidden,
-#tab-context-menu.hidden,
-#line-context-menu.hidden {
+#tab-context-menu.hidden {
     /* Reemplazamos display:none para permitir la animación de salida */
     opacity: 0;
     transform: scale(0.8);
@@ -1879,16 +1903,14 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 #context-menu ul,
-#tab-context-menu ul,
-#line-context-menu ul {
+#tab-context-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
 #context-menu li,
-#tab-context-menu li,
-#line-context-menu li {
+#tab-context-menu li {
     padding: 10px 20px;
     /* --- MEJORA: Transición más pulida para el efecto hover --- */
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1906,8 +1928,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
 /* --- MEJORA: Efecto hover más notorio --- */
 #context-menu li:hover,
-#tab-context-menu li:hover,
-#line-context-menu li:hover {
+#tab-context-menu li:hover {
     background: var(--gradient-primary);
     /* Usamos el gradiente principal */
     color: var(--text-light);
@@ -1919,15 +1940,13 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 /* --- NUEVO: Estilo especial para la opción de eliminar --- */
-#context-menu #ctx-delete,
-#line-context-menu #ctx-line-delete {
+#context-menu #ctx-delete {
     color: #c0392b;
     /* Un tono de rojo no tan agresivo */
     font-weight: bold;
 }
 
-#context-menu #ctx-delete:hover,
-#line-context-menu #ctx-line-delete:hover {
+#context-menu #ctx-delete:hover {
     background: #c0392b;
     /* Fondo rojo al pasar el ratón */
     color: var(--text-light);
@@ -1939,6 +1958,125 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     background-color: var(--border-color);
     padding: 0;
     margin: 5px 0;
+}
+
+/* --- MENÚ CONTEXTUAL DE LÍNEAS (Minimalista) --- */
+#line-context-menu {
+    position: fixed;
+    z-index: 2000;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    padding: 4px 0;
+    min-width: 120px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top left;
+    transition: opacity 0.2s ease-out, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    backdrop-filter: blur(10px);
+}
+
+#line-context-menu.hidden {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+}
+
+#line-context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#line-context-menu li {
+    padding: 8px 16px;
+    color: var(--text-light);
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+#line-context-menu li:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#line-context-menu .ctx-icon {
+    font-size: 1.1em;
+    opacity: 0.7;
+}
+
+#line-context-menu #ctx-line-delete {
+    color: #ff6b6b;
+}
+
+#line-context-menu #ctx-line-delete .ctx-icon {
+    opacity: 1;
+}
+
+#line-context-menu #ctx-line-delete:hover {
+    background: rgba(255, 107, 107, 0.15);
+}
+
+/* Nuevos elementos compactos en el menú de línea */
+#line-context-menu .ctx-slider-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    gap: 10px;
+}
+
+#line-context-menu .ctx-slider-item input[type="range"] {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+#line-context-menu .ctx-slider-item input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+}
+
+#line-context-menu .ctx-visual-item {
+    padding: 4px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#line-context-menu .visual-select-container.mini {
+    padding: 2px;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+#line-context-menu .visual-select-container.mini .visual-select-btn {
+    padding: 4px;
+    border-radius: 4px;
+}
+
+#line-context-menu .visual-select-container.mini svg {
+    height: 14px;
+}
+
+/* Evitar que hover de .ctx-slider-item o .ctx-visual-item pongan fondo si no son botones */
+#line-context-menu li.ctx-slider-item:hover,
+#line-context-menu li.ctx-visual-item:hover {
+    background: transparent;
+    cursor: default;
 }
 
 /* --- PESTAÑA DE PAPELERA --- */

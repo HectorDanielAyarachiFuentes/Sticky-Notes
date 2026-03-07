@@ -426,8 +426,35 @@
     <!-- Menú Contextual para Líneas -->
     <nav id="line-context-menu" class="hidden" role="menu" aria-label="Menú contextual de línea">
         <ul role="none">
-            <li id="ctx-line-edit" role="menuitem" tabindex="-1"><span class="ctx-icon">✏️</span>Editar Texto</li>
-            <li id="ctx-line-delete" role="menuitem" tabindex="-1"><span class="ctx-icon">🗑️</span>Eliminar Línea</li>
+            <li id="ctx-line-edit" role="menuitem" tabindex="-1"><span class="ctx-icon">✏️</span>Texto</li>
+            
+            <li class="ctx-slider-item" role="menuitem" tabindex="-1">
+                <span class="ctx-icon" style="font-size:0.8em;">➖</span>
+                <input type="range" id="ctx-line-size" min="1" max="15" step="1" aria-label="Grosor">
+            </li>
+
+            <li class="ctx-visual-item" role="menuitem" tabindex="-1">
+                <div class="visual-select-container mini" id="ctx-line-path-select">
+                    <button class="visual-select-btn" data-value="straight" aria-label="Recto"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                    <button class="visual-select-btn" data-value="fluid" aria-label="Fluido"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" fill="none"/></svg></button>
+                    <button class="visual-select-btn" data-value="Grid" aria-label="Grid"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                </div>
+            </li>
+
+            <li class="ctx-visual-item" role="menuitem" tabindex="-1">
+                <div class="visual-select-container mini" id="ctx-line-start-plug-select" style="margin-right:2px;">
+                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M20 20 L 95 20" stroke="currentColor" fill="none"/><path d="M5 20 L 25 10 V 30 Z" fill="currentColor"/></svg></button>
+                </div>
+                <div class="visual-select-container mini" id="ctx-line-end-plug-select">
+                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 80 20" stroke="currentColor" fill="none"/><path d="M95 20 L 75 10 V 30 Z" fill="currentColor"/></svg></button>
+                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                </div>
+            </li>
+
+            <li id="ctx-line-color" role="menuitem" tabindex="-1"><span class="ctx-icon">🎨</span>Color</li>
+            <li class="separator" role="separator"></li>
+            <li id="ctx-line-delete" role="menuitem" tabindex="-1"><span class="ctx-icon">🗑️</span>Eliminar</li>
         </ul>
     </nav>
 

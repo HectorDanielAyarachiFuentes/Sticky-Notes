@@ -12,10 +12,17 @@ let reRenderCallback; // Callback para solicitar un re-renderizado completo
 export let activeLines = []; // Almacena las instancias de LeaderLine activas
 let connectionState = { startNoteId: null }; // Gestiona la creación de conexiones en dos pasos
 
-// Elementos y estado para el menú contextual de líneas
 const lineContextMenu = document.getElementById('line-context-menu');
 const ctxLineEdit = document.getElementById('ctx-line-edit');
+const ctxLineColor = document.getElementById('ctx-line-color');
 const ctxLineDelete = document.getElementById('ctx-line-delete');
+
+// Nuevos controles del menú contextual
+const ctxLineSize = document.getElementById('ctx-line-size');
+const ctxLinePathSelect = document.getElementById('ctx-line-path-select');
+const ctxLineStartPlugSelect = document.getElementById('ctx-line-start-plug-select');
+const ctxLineEndPlugSelect = document.getElementById('ctx-line-end-plug-select');
+
 let currentLineContext = null;
 
 /**
@@ -500,9 +507,47 @@ function openLineContextMenu(e, fromId, toId, lineInstance) {
     // Guarda los datos de la línea seleccionada en el estado local
     currentLineContext = { fromId, toId, lineInstance };
 
+    // Pre-llenar valores de los controles
+    const currentBoard = appState.boards[appState.activeBoardId];
+    if (currentBoard && currentBoard.connections) {
+        const connection = currentBoard.connections.find(c => c.from === fromId && c.to === toId);
+        if (connection) {
+            const opts = connection.options || {};
+            
+            // Grosor
+            if (ctxLineSize) {
+                ctxLineSize.value = opts.size || appState.lineOptions.size;
+            }
+
+            // Path
+            if (ctxLinePathSelect) {
+                const pathBtns = ctxLinePathSelect.querySelectorAll('.visual-select-btn');
+                pathBtns.forEach(btn => btn.classList.remove('active'));
+                const activePathBtn = Array.from(pathBtns).find(btn => btn.dataset.value === (opts.path || appState.lineOptions.path));
+                if (activePathBtn) activePathBtn.classList.add('active');
+            }
+
+            // Start Plug
+            if (ctxLineStartPlugSelect) {
+                const startBtns = ctxLineStartPlugSelect.querySelectorAll('.visual-select-btn');
+                startBtns.forEach(btn => btn.classList.remove('active'));
+                const activeStartBtn = Array.from(startBtns).find(btn => btn.dataset.value === (opts.startPlug || appState.lineOptions.startPlug));
+                if (activeStartBtn) activeStartBtn.classList.add('active');
+            }
+
+            // End Plug
+            if (ctxLineEndPlugSelect) {
+                const endBtns = ctxLineEndPlugSelect.querySelectorAll('.visual-select-btn');
+                endBtns.forEach(btn => btn.classList.remove('active'));
+                const activeEndBtn = Array.from(endBtns).find(btn => btn.dataset.value === (opts.endPlug || appState.lineOptions.endPlug));
+                if (activeEndBtn) activeEndBtn.classList.add('active');
+            }
+        }
+    }
+
     // Posiciona el menú cerca del cursor, asegurando que no se salga de la pantalla
-    const menuWidth = 170; // min-width del CSS
-    const menuHeight = 90; // altura aproximada con 2 opciones
+    const menuWidth = 140; // width aproximado con CSS
+    const menuHeight = 160; 
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
@@ -555,7 +600,6 @@ document.addEventListener('closeOtherMenus', () => {
     // Aquí solo añadimos la clase hidden si no estamos controlando nosotros este evento.
 });
 
-// Inicializar eventos de los botones del menú contextual si existen
 if (ctxLineEdit) {
     ctxLineEdit.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -567,6 +611,38 @@ if (ctxLineEdit) {
     });
 }
 
+if (ctxLineColor) {
+    ctxLineColor.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentLineContext) {
+            // Emulate color picker workflow for lines by dispatching custom event or calling global function
+            // We use a prompt for simplicity if standard color picker isn't abstracted, or set it up
+            const currentColor = document.getElementById('line-color-input').value;
+            // Since we don't have a specific global function to open the popover for lines specifically, 
+            // we dispatch a custom event that script.js can listen to, OR just use color input for now.
+            // Let's use a native color picker by creating a hidden input and clicking it.
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = currentColor;
+            colorInput.addEventListener('input', (event) => {
+                const newColor = event.target.value;
+                const currentBoard = appState.boards[appState.activeBoardId];
+                if (currentBoard && currentBoard.connections) {
+                    const connection = currentBoard.connections.find(c => c.from === currentLineContext.fromId && c.to === currentLineContext.toId);
+                    if (connection) {
+                        if (!connection.options) connection.options = {};
+                        connection.options.color = newColor;
+                        if (reRenderCallback) reRenderCallback(true, true);
+                    }
+                }
+            });
+            colorInput.click();
+        }
+        lineContextMenu.classList.add('hidden');
+        // We do not set currentLineContext to null here because the color picker is async
+    });
+}
+
 if (ctxLineDelete) {
     ctxLineDelete.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -575,5 +651,62 @@ if (ctxLineDelete) {
         }
         lineContextMenu.classList.add('hidden');
         currentLineContext = null;
+    });
+}
+
+// Lógica de actualización para las nuevas opciones del menú contextual
+function updateContextLineOption(propertyName, value) {
+    if (!currentLineContext) return;
+    const currentBoard = appState.boards[appState.activeBoardId];
+    if (currentBoard && currentBoard.connections) {
+        const connection = currentBoard.connections.find(c => c.from === currentLineContext.fromId && c.to === currentLineContext.toId);
+        if (connection) {
+            if (!connection.options) connection.options = {};
+            connection.options[propertyName] = value;
+            if (reRenderCallback) reRenderCallback(true, true);
+        }
+    }
+}
+
+if (ctxLineSize) {
+    // Escuchar cambios de slider y evitar que cierre el menú el blur al arrastrar
+    ctxLineSize.addEventListener('input', (e) => {
+        updateContextLineOption('size', parseInt(e.target.value));
+    });
+}
+
+if (ctxLinePathSelect) {
+    ctxLinePathSelect.addEventListener('click', (e) => {
+        const btn = e.target.closest('.visual-select-btn');
+        if (!btn) return;
+        
+        ctxLinePathSelect.querySelectorAll('.visual-select-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        updateContextLineOption('path', btn.dataset.value);
+    });
+}
+
+if (ctxLineStartPlugSelect) {
+    ctxLineStartPlugSelect.addEventListener('click', (e) => {
+        const btn = e.target.closest('.visual-select-btn');
+        if (!btn) return;
+        
+        ctxLineStartPlugSelect.querySelectorAll('.visual-select-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        updateContextLineOption('startPlug', btn.dataset.value);
+    });
+}
+
+if (ctxLineEndPlugSelect) {
+    ctxLineEndPlugSelect.addEventListener('click', (e) => {
+        const btn = e.target.closest('.visual-select-btn');
+        if (!btn) return;
+        
+        ctxLineEndPlugSelect.querySelectorAll('.visual-select-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        updateContextLineOption('endPlug', btn.dataset.value);
     });
 }
