@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
                 isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
-                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', startPlug: 'behind', endPlug: 'arrow1', dash: false, dropShadow: false }
+                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', startPlug: 'behind', endPlug: 'arrow1', dash: false, dropShadow: false, label: '' }
             };
         }
         if (appState.lineOptions.promptBeforeDelete === undefined) {
@@ -719,10 +719,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const linePlugSelect = document.getElementById('line-plug-select');
         const lineDashInput = document.getElementById('line-dash-input');
         const lineShadowInput = document.getElementById('line-shadow-input');
+        const lineLabelInput = document.getElementById('line-label-input');
         const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
 
         const updateUI = () => {
-            const { color, opacity, path, size, startPlug, endPlug, dash, dropShadow } = appState.lineOptions;
+            const { color, opacity, path, size, startPlug, endPlug, dash, dropShadow, label } = appState.lineOptions;
             lineColorInput.value = color;
             lineOpacityInput.value = opacity;
             lineOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
@@ -740,6 +741,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (lineDashInput) lineDashInput.checked = dash || false;
             if (lineShadowInput) lineShadowInput.checked = dropShadow || false;
+            if (lineLabelInput) lineLabelInput.value = label || '';
 
             // Actualizar el nuevo checkbox
             promptDeleteCheckbox.checked = appState.lineOptions.promptBeforeDelete;
@@ -794,6 +796,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (lineShadowInput) {
             lineShadowInput.addEventListener('change', (e) => {
                 appState.lineOptions.dropShadow = e.target.checked;
+                saveAndRerender();
+            });
+        }
+
+        if (lineLabelInput) {
+            lineLabelInput.addEventListener('input', (e) => {
+                appState.lineOptions.label = e.target.value;
                 saveAndRerender();
             });
         }

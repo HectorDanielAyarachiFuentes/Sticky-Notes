@@ -70,6 +70,16 @@ export function renderConnections() {
                 lineOptions.dash = { animation: true };
             }
 
+            // Configurar etiqueta si hay texto
+            if (lineOptions.label && lineOptions.label.trim() !== '') {
+                lineOptions.middleLabel = LeaderLine.pathLabel({
+                    text: lineOptions.label,
+                    color: color,
+                    outlineColor: window.getComputedStyle(document.body).getPropertyValue('--bg-dark').trim() || '#1e1e1e',
+                    lineOffset: 25 // Separarlo un poco de la línea para mejor lectura
+                });
+            }
+
             const line = new LeaderLine(startEl, endEl, {
                 ...lineOptions,
                 hide: true, // Crear la línea oculta
@@ -157,6 +167,16 @@ function renderSingleConnection(conn) {
         // Configurar animación si está activada
         if (lineOptions.dash) {
             lineOptions.dash = { animation: true };
+        }
+
+        // Configurar etiqueta si hay texto
+        if (lineOptions.label && lineOptions.label.trim() !== '') {
+            lineOptions.middleLabel = LeaderLine.pathLabel({
+                text: lineOptions.label,
+                color: color,
+                outlineColor: window.getComputedStyle(document.body).getPropertyValue('--bg-dark').trim() || '#1e1e1e',
+                lineOffset: 25
+            });
         }
 
         const line = new LeaderLine(startEl, endEl, {

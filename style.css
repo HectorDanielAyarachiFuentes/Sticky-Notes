@@ -211,7 +211,9 @@ body.panning * {
 .tab-content {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 20px; /* Respiro al final del scroll */
     position: absolute;
     top: 0;
     left: 0;
@@ -222,6 +224,29 @@ body.panning * {
     transform: translateY(10px);
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* --- Scroll Estilizado para Pestañas y Contenidos Internos --- */
+.tab-content::-webkit-scrollbar,
+.tab-content *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tab-content::-webkit-scrollbar-track,
+.tab-content *::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tab-content::-webkit-scrollbar-thumb,
+.tab-content *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.tab-content::-webkit-scrollbar-thumb:hover,
+.tab-content *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
 }
 
 .tab-content.active {
@@ -236,6 +261,80 @@ body.panning * {
     color: var(--text-light);
     opacity: 0.9;
     margin: 0 0 10px 0;
+}
+
+/* --- COMPARTIR Y EXPORTAR --- */
+.share-options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.share-card {
+    display: grid;
+    grid-template-areas:
+        "icon name"
+        "icon desc";
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    background: var(--surface-dark);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.share-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.share-card-icon {
+    grid-area: icon;
+    font-size: 1.8em;
+    margin-right: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.share-card-name {
+    grid-area: name;
+    font-weight: bold;
+    font-size: 1em;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    align-self: end;
+}
+
+.share-card-desc {
+    grid-area: desc;
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.2;
+    align-self: start;
+}
+
+#share-link-output {
+    background: var(--surface-dark);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.8em;
+    resize: none;
+    height: 40px;
+    transition: all 0.2s ease;
+}
+
+#share-link-output:focus {
+    border-color: var(--color-primary);
+    outline: none;
 }
 
 /* --- LISTA DE TABLEROS --- */
