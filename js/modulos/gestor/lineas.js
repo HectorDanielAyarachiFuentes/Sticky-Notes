@@ -34,7 +34,11 @@ export function initializeLineManager(appStateRef, boardRef, renderCallback) {
  * Elimina todas las instancias de LeaderLine activas del DOM y limpia el array.
  */
 export function removeActiveLines() {
-    activeLines.forEach(l => l.line.remove());
+    activeLines.forEach(l => {
+        l.line.remove();
+        if (l.offsetDivStart) l.offsetDivStart.remove();
+        if (l.offsetDivEnd) l.offsetDivEnd.remove();
+    });
     activeLines = [];
 }
 
@@ -100,16 +104,15 @@ export function renderConnections() {
                 lineOptions.endPlug = tempStartPlug;
             }
 
-            // --- LÓGICA DE SEPARACIÓN (GRAVEDAD BASADA EN ÁNGULOS) ---
+            let offsetDivStart = null;
+            let offsetDivEnd = null;
+
+            // --- LÓGICA DE SEPARACIÓN (ANCLAJES PARALELOS) ---
             if (totalInPair > 1) {
-                lineOptions.path = 'fluid'; // Forzar fluid para usar gravedad manual
-                
-                const r1 = finalStartEl.getBoundingClientRect();
-                const r2 = finalEndEl.getBoundingClientRect();
-                const cx1 = r1.left + r1.width / 2;
-                const cy1 = r1.top + r1.height / 2;
-                const cx2 = r2.left + r2.width / 2;
-                const cy2 = r2.top + r2.height / 2;
+                const cx1 = startRect.left + startRect.width / 2;
+                const cy1 = startRect.top + startRect.height / 2;
+                const cx2 = endRect.left + endRect.width / 2;
+                const cy2 = endRect.top + endRect.height / 2;
                 
                 const dx = cx2 - cx1;
                 const dy = cy2 - cy1;
@@ -119,30 +122,34 @@ export function renderConnections() {
                 const ny = dy / dist;
                 
                 const directionFactor = (indexInPair % 2 === 0) ? -1 : 1;
-                const distanceMultiplier = 0.35 + (Math.floor(indexInPair / 2) * 0.15);
-                const offsetMagnitude = dist * distanceMultiplier;
+                const distanceMultiplier = 25 * Math.ceil(indexInPair / 2);
                 
-                const px = -ny * directionFactor;
-                const py = nx * directionFactor;
+                const px = -ny * directionFactor * distanceMultiplier;
+                const py = nx * directionFactor * distanceMultiplier;
 
-                lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-                lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-            } else if (isSwapped) {
-                if (lineOptions.path === 'fluid' || lineOptions.path === 'arc') {
-                    lineOptions.path = 'fluid';
-                    const r1 = finalStartEl.getBoundingClientRect();
-                    const r2 = finalEndEl.getBoundingClientRect();
-                    const dx = (r2.left + r2.width/2) - (r1.left + r1.width/2);
-                    const dy = (r2.top + r2.height/2) - (r1.top + r1.height/2);
-                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                    const offsetMagnitude = dist * 0.25; 
-                    
-                    const px = -(dy/dist) * 1; 
-                    const py =  (dx/dist) * 1; 
+                offsetDivStart = document.createElement('div');
+                offsetDivStart.style.position = 'absolute';
+                offsetDivStart.style.width = '100%';
+                offsetDivStart.style.height = '100%';
+                offsetDivStart.style.left = `${px}px`;
+                offsetDivStart.style.top = `${py}px`;
+                offsetDivStart.style.pointerEvents = 'none';
+                offsetDivStart.classList.add('connection-anchor');
+                
+                offsetDivEnd = document.createElement('div');
+                offsetDivEnd.style.position = 'absolute';
+                offsetDivEnd.style.width = '100%';
+                offsetDivEnd.style.height = '100%';
+                offsetDivEnd.style.left = `${px}px`;
+                offsetDivEnd.style.top = `${py}px`;
+                offsetDivEnd.style.pointerEvents = 'none';
+                offsetDivEnd.classList.add('connection-anchor');
 
-                    lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-                    lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-                }
+                finalStartEl.appendChild(offsetDivStart);
+                finalEndEl.appendChild(offsetDivEnd);
+
+                finalStartEl = offsetDivStart;
+                finalEndEl = offsetDivEnd;
             }
 
             // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
@@ -175,7 +182,7 @@ export function renderConnections() {
                 color: hexToRgba(color, opacity),
                 endSocket: 'auto'
             });
-            activeLines.push({ line, from: conn.from, to: conn.to });
+            activeLines.push({ line, from: conn.from, to: conn.to, offsetDivStart, offsetDivEnd, indexInPair, totalInPair });
 
             // Mostrar la línea con una animación de dibujado
             line.show('draw', {
@@ -201,7 +208,50 @@ export function renderConnections() {
  * Esencial para el zoom, paneo y arrastre de notas.
  */
 export function updateAllLinesPosition() {
-    activeLines.forEach(l => l.line.position());
+    activeLines.forEach(l => {
+        if (l.totalInPair > 1 && l.offsetDivStart && l.offsetDivEnd) {
+            const startEl = board.querySelector(`.stickynote[data-note-id="${l.from}"]`);
+            const endEl = board.querySelector(`.stickynote[data-note-id="${l.to}"]`);
+            if (startEl && endEl) {
+                const r1 = startEl.getBoundingClientRect();
+                const r2 = endEl.getBoundingClientRect();
+                let finalStartEl = startEl;
+                let finalEndEl = endEl;
+
+                if (r1.left > r2.left) {
+                    finalStartEl = endEl;
+                    finalEndEl = startEl;
+                }
+
+                const rFinal1 = finalStartEl.getBoundingClientRect();
+                const rFinal2 = finalEndEl.getBoundingClientRect();
+
+                const cx1 = rFinal1.left + rFinal1.width / 2;
+                const cy1 = rFinal1.top + rFinal1.height / 2;
+                const cx2 = rFinal2.left + rFinal2.width / 2;
+                const cy2 = rFinal2.top + rFinal2.height / 2;
+                
+                const dx = cx2 - cx1;
+                const dy = cy2 - cy1;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                
+                const nx = dx / dist;
+                const ny = dy / dist;
+                
+                const directionFactor = (l.indexInPair % 2 === 0) ? -1 : 1;
+                const distanceMultiplier = 25 * Math.ceil(l.indexInPair / 2);
+                
+                const px = -ny * directionFactor * distanceMultiplier;
+                const py = nx * directionFactor * distanceMultiplier;
+
+                l.offsetDivStart.style.left = `${px}px`;
+                l.offsetDivStart.style.top = `${py}px`;
+                l.offsetDivEnd.style.left = `${px}px`;
+                l.offsetDivEnd.style.top = `${py}px`;
+            }
+        }
+        l.line.position();
+    });
 }
 
 /**
@@ -292,16 +342,15 @@ function renderSingleConnection(conn) {
             lineOptions.endPlug = tempStartPlug;
         }
 
+        let offsetDivStart = null;
+        let offsetDivEnd = null;
+
         // --- LÓGICA DE SEPARACIÓN ---
         if (totalInPair > 1) {
-            lineOptions.path = 'fluid'; 
-            
-            const r1 = finalStartEl.getBoundingClientRect();
-            const r2 = finalEndEl.getBoundingClientRect();
-            const cx1 = r1.left + r1.width / 2;
-            const cy1 = r1.top + r1.height / 2;
-            const cx2 = r2.left + r2.width / 2;
-            const cy2 = r2.top + r2.height / 2;
+            const cx1 = startRect.left + startRect.width / 2;
+            const cy1 = startRect.top + startRect.height / 2;
+            const cx2 = endRect.left + endRect.width / 2;
+            const cy2 = endRect.top + endRect.height / 2;
             
             const dx = cx2 - cx1;
             const dy = cy2 - cy1;
@@ -311,30 +360,34 @@ function renderSingleConnection(conn) {
             const ny = dy / dist;
             
             const directionFactor = (indexInPair % 2 === 0) ? -1 : 1;
-            const distanceMultiplier = 0.35 + (Math.floor(indexInPair / 2) * 0.15);
-            const offsetMagnitude = dist * distanceMultiplier;
+            const distanceMultiplier = 25 * Math.ceil(indexInPair / 2);
             
-            const px = -ny * directionFactor;
-            const py = nx * directionFactor;
+            const px = -ny * directionFactor * distanceMultiplier;
+            const py = nx * directionFactor * distanceMultiplier;
 
-            lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-            lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-        } else if (isSwapped) {
-            if (lineOptions.path === 'fluid' || lineOptions.path === 'arc') {
-                lineOptions.path = 'fluid';
-                const r1 = finalStartEl.getBoundingClientRect();
-                const r2 = finalEndEl.getBoundingClientRect();
-                const dx = (r2.left + r2.width/2) - (r1.left + r1.width/2);
-                const dy = (r2.top + r2.height/2) - (r1.top + r1.height/2);
-                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                const offsetMagnitude = dist * 0.25; 
-                
-                const px = -(dy/dist) * 1; 
-                const py =  (dx/dist) * 1; 
+            offsetDivStart = document.createElement('div');
+            offsetDivStart.style.position = 'absolute';
+            offsetDivStart.style.width = '100%';
+            offsetDivStart.style.height = '100%';
+            offsetDivStart.style.left = `${px}px`;
+            offsetDivStart.style.top = `${py}px`;
+            offsetDivStart.style.pointerEvents = 'none';
+            offsetDivStart.classList.add('connection-anchor');
+            
+            offsetDivEnd = document.createElement('div');
+            offsetDivEnd.style.position = 'absolute';
+            offsetDivEnd.style.width = '100%';
+            offsetDivEnd.style.height = '100%';
+            offsetDivEnd.style.left = `${px}px`;
+            offsetDivEnd.style.top = `${py}px`;
+            offsetDivEnd.style.pointerEvents = 'none';
+            offsetDivEnd.classList.add('connection-anchor');
 
-                lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-                lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
-            }
+            finalStartEl.appendChild(offsetDivStart);
+            finalEndEl.appendChild(offsetDivEnd);
+
+            finalStartEl = offsetDivStart;
+            finalEndEl = offsetDivEnd;
         }
 
         // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
@@ -367,7 +420,7 @@ function renderSingleConnection(conn) {
             color: hexToRgba(color, opacity),
             endSocket: 'auto'
         });
-        activeLines.push({ line, from: conn.from, to: conn.to });
+        activeLines.push({ line, from: conn.from, to: conn.to, offsetDivStart, offsetDivEnd, indexInPair, totalInPair });
 
         // Mostrar la línea con una animación
         line.show('draw', {
@@ -392,7 +445,11 @@ function renderSingleConnection(conn) {
  */
 export function removeLinesForNote(noteId) {
     const linesToRemove = activeLines.filter(l => l.from === noteId || l.to === noteId);
-    linesToRemove.forEach(l => l.line.remove());
+    linesToRemove.forEach(l => {
+        l.line.remove();
+        if (l.offsetDivStart) l.offsetDivStart.remove();
+        if (l.offsetDivEnd) l.offsetDivEnd.remove();
+    });
     activeLines = activeLines.filter(l => l.from !== noteId && l.to !== noteId);
 }
 
@@ -411,6 +468,13 @@ function deleteSpecificLine(fromId, toId, lineInstance) {
 
     // 1. Quitar del DOM
     lineInstance.remove();
+
+    // Eliminar también los divs de anclaje si existen
+    const lineObj = activeLines.find(l => l.line === lineInstance);
+    if (lineObj) {
+        if (lineObj.offsetDivStart) lineObj.offsetDivStart.remove();
+        if (lineObj.offsetDivEnd) lineObj.offsetDivEnd.remove();
+    }
 
     // 2. Quitar del array interno de activeLines
     activeLines = activeLines.filter(l => l.line !== lineInstance);
