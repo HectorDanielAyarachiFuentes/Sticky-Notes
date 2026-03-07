@@ -1844,7 +1844,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
 /* --- MENÚ CONTEXTUAL --- */
 #context-menu,
-#tab-context-menu {
+#tab-context-menu,
+#line-context-menu {
     position: fixed;
     z-index: 2000;
     background: var(--surface-light);
@@ -1868,7 +1869,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 #context-menu.hidden,
-#tab-context-menu.hidden {
+#tab-context-menu.hidden,
+#line-context-menu.hidden {
     /* Reemplazamos display:none para permitir la animación de salida */
     opacity: 0;
     transform: scale(0.8);
@@ -1877,14 +1879,16 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 #context-menu ul,
-#tab-context-menu ul {
+#tab-context-menu ul,
+#line-context-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
 #context-menu li,
-#tab-context-menu li {
+#tab-context-menu li,
+#line-context-menu li {
     padding: 10px 20px;
     /* --- MEJORA: Transición más pulida para el efecto hover --- */
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1902,7 +1906,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
 /* --- MEJORA: Efecto hover más notorio --- */
 #context-menu li:hover,
-#tab-context-menu li:hover {
+#tab-context-menu li:hover,
+#line-context-menu li:hover {
     background: var(--gradient-primary);
     /* Usamos el gradiente principal */
     color: var(--text-light);
@@ -1914,13 +1919,15 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 }
 
 /* --- NUEVO: Estilo especial para la opción de eliminar --- */
-#context-menu #ctx-delete {
+#context-menu #ctx-delete,
+#line-context-menu #ctx-line-delete {
     color: #c0392b;
     /* Un tono de rojo no tan agresivo */
     font-weight: bold;
 }
 
-#context-menu #ctx-delete:hover {
+#context-menu #ctx-delete:hover,
+#line-context-menu #ctx-line-delete:hover {
     background: #c0392b;
     /* Fondo rojo al pasar el ratón */
     color: var(--text-light);
@@ -3050,4 +3057,10 @@ input:checked+.slider:before {
     #sidebar-resizer {
         display: none;
     }
+
 }
+/* --- LEADERLINE STYLES FOR HOVER AND CLICK --- */
+.leader-line:hover { filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.8)); opacity: 0.8; z-index: 10000 !important; }
+svg.leader-line { pointer-events: none !important; z-index: 5 !important; }
+svg.leader-line * { pointer-events: visiblePainted !important; cursor: pointer !important; }
+svg.leader-line .leader-line-linePath { pointer-events: stroke !important; cursor: pointer !important; stroke-width: 25px !important; stroke: transparent !important; }

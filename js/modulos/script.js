@@ -608,10 +608,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hasConnections = currentBoard.connections.some(conn => conn.from === contextMenuNoteId || conn.to === contextMenuNoteId);
             ctxDeleteLinesBtn.style.display = hasConnections ? 'flex' : 'none';
             // --- FIN NUEVO ---
-
-            contextMenu.style.top = `${e.clientY}px`;
-            contextMenu.style.left = `${e.clientX}px`;
             contextMenu.classList.remove('hidden');
+            const rect = contextMenu.getBoundingClientRect();
+            
+            let topPosition = e.clientY;
+            let leftPosition = e.clientX;
+
+            // Adjust if it goes outside the viewport
+            if (leftPosition + rect.width > window.innerWidth) {
+                leftPosition = window.innerWidth - rect.width - 5;
+            }
+            if (topPosition + rect.height > window.innerHeight) {
+                topPosition = window.innerHeight - rect.height - 5;
+            }
+
+            contextMenu.style.top = `${topPosition}px`;
+            contextMenu.style.left = `${leftPosition}px`;
         } else {
             hideContextMenu();
             hideTabContextMenu();
@@ -620,9 +632,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function showTabContextMenu(x, y) {
         hideContextMenu();
-        tabContextMenu.style.top = `${y}px`;
-        tabContextMenu.style.left = `${x}px`;
         tabContextMenu.classList.remove('hidden');
+        
+        const rect = tabContextMenu.getBoundingClientRect();
+        let topPosition = y;
+        let leftPosition = x;
+
+        // Adjust if it goes outside the viewport
+        if (leftPosition + rect.width > window.innerWidth) {
+            leftPosition = window.innerWidth - rect.width - 5;
+        }
+        if (topPosition + rect.height > window.innerHeight) {
+            topPosition = window.innerHeight - rect.height - 5;
+        }
+
+        tabContextMenu.style.top = `${topPosition}px`;
+        tabContextMenu.style.left = `${leftPosition}px`;
     }
 
     function hideTabContextMenu() {
@@ -933,9 +958,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             swatch.className = `color-swatch ${isActive ? 'active' : ''} ${isActive ? (isColorDark(swatch.dataset.color) ? 'dark-bg' : 'light-bg') : ''}`;
         }
         const menuRect = contextMenu.getBoundingClientRect();
-        colorPopover.style.top = `${menuRect.top}px`;
-        colorPopover.style.left = `${menuRect.right + 10}px`;
         colorPopover.classList.remove('hidden');
+        
+        const popoverRect = colorPopover.getBoundingClientRect();
+        let topPosition = menuRect.top;
+        let leftPosition = menuRect.right + 10;
+        
+        // Adjust if it goes outside the viewport right edge (show on the left side of menu instead)
+        if (leftPosition + popoverRect.width > window.innerWidth) {
+            leftPosition = menuRect.left - popoverRect.width - 10;
+        }
+        // Adjust if it goes outside the viewport bottom edge
+        if (topPosition + popoverRect.height > window.innerHeight) {
+            topPosition = window.innerHeight - popoverRect.height - 5;
+        }
+
+        colorPopover.style.top = `${topPosition}px`;
+        colorPopover.style.left = `${leftPosition}px`;
+        
         hideContextMenu();
     }
 
