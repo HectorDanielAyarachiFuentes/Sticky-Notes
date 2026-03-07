@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="js/librerias/leader-line.min.js"></script>
+    <style>
+        .note { width: 100px; height: 100px; background: yellow; position: absolute; }
+        #note1 { left: 100px; top: 200px; }
+        #note2 { left: 400px; top: 200px; }
+    </style>
+</head>
+<body>
+    <div id="note1" class="note">Node 1</div>
+    <div id="note2" class="note">Node 2</div>
+    <script>
+        const n1 = document.getElementById('note1');
+        const n2 = document.getElementById('note2');
+
+        const rect1 = n1.getBoundingClientRect();
+        const rect2 = n2.getBoundingClientRect();
+        const cx1 = rect1.left + rect1.width/2;
+        const cy1 = rect1.top + rect1.height/2;
+        const cx2 = rect2.left + rect2.width/2;
+        const cy2 = rect2.top + rect2.height/2;
+        
+        const dx = cx2 - cx1;
+        const dy = cy2 - cy1;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const nx = dx/dist;
+        const ny = dy/dist;
+
+        // Perpendicular vector (up/left)
+        const px1 = -ny;
+        const py1 = nx;
+        
+        // Perpendicular vector (down/right)
+        const px2 = ny;
+        const py2 = -nx;
+
+        const mag = dist * 0.4;
+        
+        // Line 1: Curve UP
+        new LeaderLine(n1, n2, {
+            path: 'fluid',
+            color: 'red',
+            startSocketGravity: [px1 * mag, py1 * mag],
+            endSocketGravity: [px1 * mag, py1 * mag],
+            middleLabel: LeaderLine.pathLabel({text: 'Curve UP', lineOffset: 12})
+        });
+
+        // Line 2: Curve DOWN
+        new LeaderLine(n1, n2, {
+            path: 'fluid',
+            color: 'blue',
+            startSocketGravity: [px2 * mag, py2 * mag],
+            endSocketGravity: [px2 * mag, py2 * mag],
+            middleLabel: LeaderLine.pathLabel({text: 'Curve DOWN', lineOffset: 12})
+        });
+    </script>
+</body>
+</html>

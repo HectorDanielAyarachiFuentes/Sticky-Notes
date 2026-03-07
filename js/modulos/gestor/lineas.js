@@ -45,7 +45,20 @@ export function renderConnections() {
     const currentBoard = appState.boards[appState.activeBoardId];
     if (!currentBoard || !currentBoard.connections) return;
 
+    // Conteo y agrupación de conexiones múltiples para separarlas
+    const pairCounters = {};
+    const pairTotals = {};
+    
     currentBoard.connections.forEach(conn => {
+        const pairKey = [conn.from, conn.to].sort().join('-');
+        pairTotals[pairKey] = (pairTotals[pairKey] || 0) + 1;
+    });
+
+    currentBoard.connections.forEach(conn => {
+        const pairKey = [conn.from, conn.to].sort().join('-');
+        const indexInPair = pairCounters[pairKey] || 0;
+        pairCounters[pairKey] = indexInPair + 1;
+        const totalInPair = pairTotals[pairKey];
         const startEl = board.querySelector(`.stickynote[data-note-id="${conn.from}"]`);
         const endEl = board.querySelector(`.stickynote[data-note-id="${conn.to}"]`);
 
@@ -67,6 +80,71 @@ export function renderConnections() {
 
             const lineOptions = { ...restOptions };
             
+            let finalStartEl = startEl;
+            let finalEndEl = endEl;
+
+            let isSwapped = false;
+
+            // Comprobar si va de derecha a izquierda (texto al revés)
+            const startRect = startEl.getBoundingClientRect();
+            const endRect = endEl.getBoundingClientRect();
+
+            if (startRect.left > endRect.left) {
+                finalStartEl = endEl;
+                finalEndEl = startEl;
+                isSwapped = true;
+
+                // Invertir los terminadores (plugs)
+                const tempStartPlug = lineOptions.startPlug || 'behind';
+                lineOptions.startPlug = lineOptions.endPlug || 'behind';
+                lineOptions.endPlug = tempStartPlug;
+            }
+
+            // --- LÓGICA DE SEPARACIÓN (GRAVEDAD BASADA EN ÁNGULOS) ---
+            if (totalInPair > 1) {
+                lineOptions.path = 'fluid'; // Forzar fluid para usar gravedad manual
+                
+                const r1 = finalStartEl.getBoundingClientRect();
+                const r2 = finalEndEl.getBoundingClientRect();
+                const cx1 = r1.left + r1.width / 2;
+                const cy1 = r1.top + r1.height / 2;
+                const cx2 = r2.left + r2.width / 2;
+                const cy2 = r2.top + r2.height / 2;
+                
+                const dx = cx2 - cx1;
+                const dy = cy2 - cy1;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                
+                const nx = dx / dist;
+                const ny = dy / dist;
+                
+                const directionFactor = (indexInPair % 2 === 0) ? -1 : 1;
+                const distanceMultiplier = 0.35 + (Math.floor(indexInPair / 2) * 0.15);
+                const offsetMagnitude = dist * distanceMultiplier;
+                
+                const px = -ny * directionFactor;
+                const py = nx * directionFactor;
+
+                lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+                lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+            } else if (isSwapped) {
+                if (lineOptions.path === 'fluid' || lineOptions.path === 'arc') {
+                    lineOptions.path = 'fluid';
+                    const r1 = finalStartEl.getBoundingClientRect();
+                    const r2 = finalEndEl.getBoundingClientRect();
+                    const dx = (r2.left + r2.width/2) - (r1.left + r1.width/2);
+                    const dy = (r2.top + r2.height/2) - (r1.top + r1.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const offsetMagnitude = dist * 0.25; 
+                    
+                    const px = -(dy/dist) * 1; 
+                    const py =  (dx/dist) * 1; 
+
+                    lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+                    lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+                }
+            }
+
             // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
             if (lineOptions.endPlug === 'crosshair') lineOptions.endPlugSize = 0.35;
             if (lineOptions.startPlug === 'crosshair') lineOptions.startPlugSize = 0.35;
@@ -87,11 +165,11 @@ export function renderConnections() {
                     text: lineOptions.label,
                     color: color,
                     outlineColor: window.getComputedStyle(document.body).getPropertyValue('--bg-dark').trim() || '#1e1e1e',
-                    lineOffset: 25 // Separarlo un poco de la línea para mejor lectura
+                    lineOffset: 12 // Acompaña la curvatura de forma natural
                 });
             }
 
-            const line = new LeaderLine(startEl, endEl, {
+            const line = new LeaderLine(finalStartEl, finalEndEl, {
                 ...lineOptions,
                 hide: true, // Crear la línea oculta
                 color: hexToRgba(color, opacity),
@@ -187,6 +265,78 @@ function renderSingleConnection(conn) {
 
         const lineOptions = { ...restOptions };
 
+        const currentBoard = appState.boards[appState.activeBoardId];
+        const pairKey = [conn.from, conn.to].sort().join('-');
+        
+        // Re-calcular total y qué índice tiene la nueva conexión.
+        const matchingConnections = currentBoard.connections.filter(c => [c.from, c.to].sort().join('-') === pairKey);
+        const totalInPair = matchingConnections.length;
+        const indexInPair = matchingConnections.indexOf(conn) === -1 ? totalInPair - 1 : matchingConnections.indexOf(conn);
+
+        let finalStartEl = startEl;
+        let finalEndEl = endEl;
+        let isSwapped = false;
+
+        // Comprobar si va de derecha a izquierda (texto al revés)
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+
+        if (startRect.left > endRect.left) {
+            finalStartEl = endEl;
+            finalEndEl = startEl;
+            isSwapped = true;
+
+            // Invertir los terminadores (plugs)
+            const tempStartPlug = lineOptions.startPlug || 'behind';
+            lineOptions.startPlug = lineOptions.endPlug || 'behind';
+            lineOptions.endPlug = tempStartPlug;
+        }
+
+        // --- LÓGICA DE SEPARACIÓN ---
+        if (totalInPair > 1) {
+            lineOptions.path = 'fluid'; 
+            
+            const r1 = finalStartEl.getBoundingClientRect();
+            const r2 = finalEndEl.getBoundingClientRect();
+            const cx1 = r1.left + r1.width / 2;
+            const cy1 = r1.top + r1.height / 2;
+            const cx2 = r2.left + r2.width / 2;
+            const cy2 = r2.top + r2.height / 2;
+            
+            const dx = cx2 - cx1;
+            const dy = cy2 - cy1;
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            
+            const nx = dx / dist;
+            const ny = dy / dist;
+            
+            const directionFactor = (indexInPair % 2 === 0) ? -1 : 1;
+            const distanceMultiplier = 0.35 + (Math.floor(indexInPair / 2) * 0.15);
+            const offsetMagnitude = dist * distanceMultiplier;
+            
+            const px = -ny * directionFactor;
+            const py = nx * directionFactor;
+
+            lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+            lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+        } else if (isSwapped) {
+            if (lineOptions.path === 'fluid' || lineOptions.path === 'arc') {
+                lineOptions.path = 'fluid';
+                const r1 = finalStartEl.getBoundingClientRect();
+                const r2 = finalEndEl.getBoundingClientRect();
+                const dx = (r2.left + r2.width/2) - (r1.left + r1.width/2);
+                const dy = (r2.top + r2.height/2) - (r1.top + r1.height/2);
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                const offsetMagnitude = dist * 0.25; 
+                
+                const px = -(dy/dist) * 1; 
+                const py =  (dx/dist) * 1; 
+
+                lineOptions.startSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+                lineOptions.endSocketGravity = [px * offsetMagnitude, py * offsetMagnitude];
+            }
+        }
+
         // El crosshair nativo de LeaderLine es enorme; lo escalamos para que sea compacto
         if (lineOptions.endPlug === 'crosshair') lineOptions.endPlugSize = 0.35;
         if (lineOptions.startPlug === 'crosshair') lineOptions.startPlugSize = 0.35;
@@ -207,11 +357,11 @@ function renderSingleConnection(conn) {
                 text: lineOptions.label,
                 color: color,
                 outlineColor: window.getComputedStyle(document.body).getPropertyValue('--bg-dark').trim() || '#1e1e1e',
-                lineOffset: 25
+                lineOffset: 12 // Acompaña la curvatura de forma natural
             });
         }
 
-        const line = new LeaderLine(startEl, endEl, {
+        const line = new LeaderLine(finalStartEl, finalEndEl, {
             ...lineOptions,
             hide: true,
             color: hexToRgba(color, opacity),
