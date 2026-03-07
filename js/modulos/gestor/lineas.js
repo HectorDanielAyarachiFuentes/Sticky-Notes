@@ -421,11 +421,15 @@ function renderSingleConnection(conn) {
             });
         }
 
+        const currentSize = lineOptions.size || 2;
         const line = new LeaderLine(finalStartEl, finalEndEl, {
             ...lineOptions,
             hide: true,
             color: hexToRgba(color, opacity),
-            endSocket: 'auto'
+            endSocket: 'auto',
+            outline: true,
+            outlineColor: 'rgba(255, 255, 255, 0.01)', // Prácticamente invisible
+            outlineSize: Math.max(2, 300 / currentSize) // Hitbox masivo de ~600px en total
         });
         activeLines.push({ line, from: conn.from, to: conn.to, offsetDivStart, offsetDivEnd, indexInPair, totalInPair });
 

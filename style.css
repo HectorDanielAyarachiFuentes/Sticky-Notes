@@ -1866,6 +1866,16 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 .leader-line {
     z-index: 10;
     /* Asegura que las líneas sean visibles sobre el fondo */
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+.leader-line:hover {
+    opacity: 0.8;
+}
+
+/* Permitir que los trazos invisibles (como el hitbox ampliado) reciban eventos del mouse */
+.leader-line path {
+    pointer-events: stroke !important;
 }
 
 /* --- MENÚ CONTEXTUAL --- */
