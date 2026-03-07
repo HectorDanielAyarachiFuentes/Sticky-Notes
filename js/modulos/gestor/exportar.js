@@ -76,13 +76,17 @@ export function initializeShareAndImport(appState, callbacks) {
      * Revisa la URL al cargar la página en busca de datos para importar.
      */
     function handleImportFromURL() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const boardDataParam = urlParams.get('board');
+        // Usamos directamente window.location.search con decodeURIComponent para evitar
+        // que URLSearchParams convierta los '+' en espacios (rompe el dato de LZ-String).
+        const rawSearch = window.location.search;
+        const boardMatch = rawSearch.match(/[?&]board=([^&]*)/);
+        const boardDataParam = boardMatch ? decodeURIComponent(boardMatch[1]) : null;
 
         if (boardDataParam) {
             try {
-                // Decodificar desde Base64 y parsear el JSON.
-                const jsonString = decodeURIComponent(escape(atob(boardDataParam)));
+                // Descomprimir con LZ-String y parsear el JSON.
+                const jsonString = LZString.decompressFromEncodedURIComponent(boardDataParam);
+                if (!jsonString) throw new Error('No se pudo descomprimir el enlace.');
                 const importedData = JSON.parse(jsonString);
 
                 // Validar datos importados
@@ -100,6 +104,8 @@ export function initializeShareAndImport(appState, callbacks) {
                 const cleanUrl = new URL(window.location.origin + window.location.pathname);
                 window.history.replaceState({}, document.title, cleanUrl);
 
+
+
             } catch (error) {
                 console.error('Error al importar el tablero desde la URL:', error);
                 showToast('❌ El enlace de importación parece estar dañado o es inválido.');
@@ -114,6 +120,12 @@ export function initializeShareAndImport(appState, callbacks) {
         const activeBoardId = getActiveBoardId(); 
         if (!activeBoardId) { showToast('Primero selecciona un tablero para compartir.'); return; }
 
+        // Forzar que el elemento activo pierda el foco para que se dispare el evento 'blur'
+        // y el contenido de cualquier nota en edición se sincronice con appState.
+        if (document.activeElement && document.activeElement !== document.body) {
+            document.activeElement.blur();
+        }
+
         const boardData = getBoardDataForSharing(activeBoardId);
         if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
 
@@ -123,13 +135,15 @@ export function initializeShareAndImport(appState, callbacks) {
 
         try {
             const jsonString = JSON.stringify(boardData);
-            const base64String = btoa(unescape(encodeURIComponent(jsonString)));
-            const url = new URL(window.location.origin + window.location.pathname);
-            url.searchParams.set('board', base64String);
+            const compressed = LZString.compressToEncodedURIComponent(jsonString);
+            // Construimos la URL manualmente con encodeURIComponent para no romper
+            // los caracteres especiales del string comprimido (ej. '+' de LZ-String).
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
             
-            shareLinkOutput.value = url.href;
+            shareLinkOutput.value = shareUrl;
             shareLinkOutput.select();
-            await navigator.clipboard.writeText(url.href);
+            await navigator.clipboard.writeText(shareUrl);
 
             showToast('✅ ¡Enlace generado y copiado al portapapeles!');
         } catch (error) {
