@@ -413,6 +413,9 @@
             <li class="separator" role="separator"></li>
             <li id="ctx-delete" role="menuitem" tabindex="-1"><span class="ctx-icon">🗑️</span>Eliminar Nota</li>
             <li id="ctx-delete-lines" role="menuitem" tabindex="-1"><span class="ctx-icon">✂️</span>Eliminar Líneas</li>
+            <li class="separator" role="separator"></li>
+            <li id="ctx-add-image" role="menuitem" tabindex="-1"><span class="ctx-icon">🖼️</span>Añadir Imagen</li>
+            <li id="ctx-remove-image" role="menuitem" tabindex="-1" class="hidden"><span class="ctx-icon">❌</span>Quitar Imagen</li>
         </ul>
     </nav>
 
@@ -504,6 +507,9 @@
     </div>
 
     <div id="toast-container" role="region" aria-live="polite" aria-label="Notificaciones del sistema"></div>
+
+    <!-- Input oculto para adjuntar imagen a una nota -->
+    <input type="file" id="note-image-input" accept="image/*" aria-label="Seleccionar imagen para nota" style="display:none;">
 
     <!-- 1. Cargar librerías locales como scripts globales -->
     <script src="js/librerias/lz-string.min.js"></script>

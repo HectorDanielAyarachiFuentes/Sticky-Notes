@@ -34,16 +34,30 @@ export function initializeShareAndImport(appState, callbacks) {
 
     /**
      * Recopila todos los datos relevantes del tablero activo para compartir.
-     * @param {string} boardId - El ID del tablero a exportar.
+     * @param {string}  boardId   - El ID del tablero a exportar.
+     * @param {boolean} forUrl    - Si es true, sustituye image por imageMini y omite datos pesados.
      * @returns {object | null}
      */
-    function getBoardDataForSharing(boardId) {
+    function getBoardDataForSharing(boardId, forUrl = false) {
         const board = appState.boards[boardId];
         if (!board) { showToast('Error: No se encontró el tablero.'); return null; }
 
-        // Creamos una copia limpia de los datos para no exportar información interna
+        let notes = board.notes;
+        if (forUrl) {
+            // Para URLs: usar miniatura en lugar de imagen de alta calidad
+            notes = board.notes.map(note => {
+                if (!note.image && !note.imageMini) return note;
+                const noteCopy = { ...note };
+                if (noteCopy.imageMini) {
+                    noteCopy.image = noteCopy.imageMini; // Sustituir por miniatura
+                }
+                delete noteCopy.imageMini; // No incluir la miniatura por separado
+                return noteCopy;
+            });
+        }
+
         const boardData = {
-            notes: board.notes,
+            notes,
             connections: board.connections || [],
             background: board.background || null,
             backgroundApplyTo: board.backgroundApplyTo || { board: true, notes: false }
@@ -115,37 +129,59 @@ export function initializeShareAndImport(appState, callbacks) {
 
     /**
      * Maneja la generación y copia del enlace para compartir.
+     * Pipeline de imágenes:
+     *   1. Intenta con miniaturas (imageMini) en el payload.
+     *   2. Si aún supera 8000 chars, descarta las imágenes del enlace.
      */
     async function handleShareLink() {
         const activeBoardId = getActiveBoardId(); 
         if (!activeBoardId) { showToast('Primero selecciona un tablero para compartir.'); return; }
 
-        // Forzar que el elemento activo pierda el foco para que se dispare el evento 'blur'
-        // y el contenido de cualquier nota en edición se sincronice con appState.
         if (document.activeElement && document.activeElement !== document.body) {
             document.activeElement.blur();
         }
 
-        const boardData = getBoardDataForSharing(activeBoardId);
-        if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
-
-        // Mostramos el textarea y lo enfocamos para que el usuario vea que algo pasó
         shareLinkOutput.style.display = 'block';
         shareLinkOutput.value = 'Generando enlace...';
 
         try {
-            const jsonString = JSON.stringify(boardData);
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
-            // Construimos la URL manualmente con encodeURIComponent para no romper
-            // los caracteres especiales del string comprimido (ej. '+' de LZ-String).
             const baseUrl = window.location.origin + window.location.pathname;
-            const shareUrl = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
-            
+            let boardData;
+            let imagesWereStripped = false;
+
+            // --- Intento 1: Con miniaturas ---
+            boardData = getBoardDataForSharing(activeBoardId, true);
+            if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
+
+            let jsonString = JSON.stringify(boardData);
+            let compressed = LZString.compressToEncodedURIComponent(jsonString);
+            let shareUrl  = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+
+            // --- Intento 2: Demasiado largo → quitar todas las imágenes ---
+            if (shareUrl.length > 8000) {
+                const strippedData = getBoardDataForSharing(activeBoardId, false);
+                // Eliminar imágenes de todas las notas
+                strippedData.notes = strippedData.notes.map(note => {
+                    const n = { ...note };
+                    delete n.image;
+                    delete n.imageMini;
+                    return n;
+                });
+                jsonString = JSON.stringify(strippedData);
+                compressed = LZString.compressToEncodedURIComponent(jsonString);
+                shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+                imagesWereStripped = true;
+            }
+
             shareLinkOutput.value = shareUrl;
             shareLinkOutput.select();
             await navigator.clipboard.writeText(shareUrl);
 
-            showToast('✅ ¡Enlace generado y copiado al portapapeles!');
+            if (imagesWereStripped) {
+                showToast('🔗 Enlace generado. Las imágenes se omitieron por su tamaño — usa «Exportar a JSON» para el tablero completo.');
+            } else {
+                showToast('✅ ¡Enlace generado y copiado al portapapeles!');
+            }
         } catch (error) {
             console.error('Error al generar el enlace para compartir:', error);
             showToast('❌ Error al generar el enlace.');

@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         noteInteractionsModule,
         backgroundManagerModule,
         createTabModule,
-        cursorManagerModule
+        cursorManagerModule,
+        noteImageModule
     ] = await Promise.all([
         import('./moverfondo.js'),
         import('./gestor/exportar.js'),
@@ -20,7 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         import('./gestor/interaccionesNotas.js'),
         import('./gestor/fondo.js'),
         import('./gestor/crear.js'),
-        import('./gestor/cursor.js')
+        import('./gestor/cursor.js'),
+        import('./gestor/imagen.js')
     ]);
 
     const { initializePanning } = panningModule;
@@ -44,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { initializeBackgroundManager, updateBackgroundUI } = backgroundManagerModule;
     const { initializeCreateTab } = createTabModule;
     const { initializeCursorManager } = cursorManagerModule;
+    const { initializeNoteImageFeature, removeNoteImage } = noteImageModule;
 
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");
@@ -79,6 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctxDeleteBtn = document.querySelector("#ctx-delete");
     const ctxDeleteLinesBtn = document.querySelector("#ctx-delete-lines");
     const ctxChangeColorBtn = document.querySelector("#ctx-change-color");
+    const ctxAddImageBtn = document.querySelector("#ctx-add-image");
+    const ctxRemoveImageBtn = document.querySelector("#ctx-remove-image");
     // Menú contextual de pestañas
     const tabContextMenu = document.querySelector("#tab-context-menu");
     const ctxTabDeleteBtn = document.querySelector("#ctx-tab-delete");
@@ -489,6 +494,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentBoard.backgroundApplyTo.notes && currentBoard.background) {
             sticky.style.backgroundImage = currentBoard.background;
         }
+        // --- IMAGEN: Aplicar imagen de fondo de la nota si existe ---
+        if (noteData.image) {
+            sticky.style.setProperty('--note-image', `url('${noteData.image}')`);
+            sticky.classList.add('has-image');
+        }
         const title = document.createElement("div");
         title.contentEditable = !noteData.locked;
         title.className = "stickynote-title";
@@ -608,6 +618,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hasConnections = currentBoard.connections.some(conn => conn.from === contextMenuNoteId || conn.to === contextMenuNoteId);
             ctxDeleteLinesBtn.style.display = hasConnections ? 'flex' : 'none';
             // --- FIN NUEVO ---
+
+            // --- IMAGEN: Mostrar/ocultar opciones de imagen según si la nota tiene imagen ---
+            const hasImage = !!noteData.image;
+            ctxAddImageBtn.style.display = hasImage ? 'none' : 'flex';
+            ctxRemoveImageBtn.classList.toggle('hidden', !hasImage);
+            ctxRemoveImageBtn.style.display = hasImage ? 'flex' : 'none';
+            // --- FIN IMAGEN ---
             contextMenu.classList.remove('hidden');
             const rect = contextMenu.getBoundingClientRect();
             
@@ -1065,6 +1082,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeCursorManager(appState, cursorDOM, { saveState });
 
         initializeShareAndImport(appState, { showToast, switchBoard, saveState, renderBoardList });
+
+        // --- MÓDULO DE IMÁGENES EN NOTAS ---
+        const noteImageInput = document.getElementById('note-image-input');
+        initializeNoteImageFeature(
+            appState,
+            { board, ctxAddImageBtn, noteImageInput },
+            {
+                saveState,
+                showToast,
+                getContextMenuNoteId: () => contextMenuNoteId
+            }
+        );
+        ctxRemoveImageBtn.addEventListener('click', () => {
+            if (contextMenuNoteId) {
+                removeNoteImage(appState, contextMenuNoteId, board, saveState);
+                showToast('🗑️ Imagen eliminada de la nota.');
+            }
+            hideContextMenu();
+        });
+        // Cuando se hace clic en "Añadir Imagen": capturar el ID de la nota ANTES
+        // de que hideContextMenu() lo borre, configurar el input y abrir el file picker.
+        ctxAddImageBtn.addEventListener('click', () => {
+            const noteImageInput = document.getElementById('note-image-input');
+            if (noteImageInput && contextMenuNoteId) {
+                noteImageInput.dataset.targetNoteId = contextMenuNoteId;
+            }
+            hideContextMenu();
+            if (noteImageInput) noteImageInput.click();
+        });
 
         // --- EVENT LISTENERS GLOBALES ---
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");

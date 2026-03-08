@@ -1452,6 +1452,65 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     background-color: transparent !important;
 }
 
+/* --- IMAGEN ADJUNTA EN NOTA (.has-image) --- */
+.stickynote.has-image {
+    background-image: var(--note-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* Mantener el color base como fallback semi-transparente */
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* Texto legible sobre la imagen de fondo */
+.stickynote.has-image .stickynote-title,
+.stickynote.has-image .stickynote-text {
+    background: rgba(0, 0, 0, 0.38);
+    border-radius: 5px;
+    padding: 4px 7px;
+    color: #fff !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Indicador de imagen en esquina superior derecha */
+.stickynote.has-image::after {
+    content: '🖼️';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 13px;
+    opacity: 0.75;
+    z-index: 10;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+}
+
+/* --- ZONA DE DROP ACTIVA (drag-and-drop sobre una nota) --- */
+.stickynote.image-drop-active {
+    outline: 3px dashed var(--color-primary) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.25), 0 6px 20px rgba(0,0,0,0.3) !important;
+    transform: scale(1.02) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+/* Pseudo-element de instrucción mientras se arrastra */
+.stickynote.image-drop-active::before {
+    content: '📸 Suelta aquí';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0, 122, 255, 0.45);
+    backdrop-filter: blur(3px);
+    border-radius: inherit;
+    z-index: 100;
+    pointer-events: none;
+}
+
 /* Animación "rebote" para notas nuevas */
 @keyframes rebote {
     0% {
