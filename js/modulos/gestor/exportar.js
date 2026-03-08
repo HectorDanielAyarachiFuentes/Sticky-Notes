@@ -289,14 +289,19 @@ export function initializeShareAndImport(appState, callbacks) {
                 : '';
             const hasImg    = !!note.image;
 
-            // Mostrar todas las pestañas con su contenido
-            const tabPills = (note.tabs || []).map((t, i) => {
+            // Mostrar todas las pestañas con su contenido (máx 3 pills + contador)
+            const allTabs = note.tabs || [];
+            const maxPills = 3;
+            const tabPills = allTabs.slice(0, maxPills).map((t, i) => {
                 const isActive = i === (note.activeTab ?? 0);
                 const tabTitle  = (t.title || '').replace(/<[^>]*>/g, '').substring(0, 14);
                 const tabBody   = (t.content || '').replace(/<[^>]*>/g, '').substring(0, 60);
                 const lbl = tabTitle || tabBody || `Tab ${i+1}`;
                 return `<span class="nc-tab${isActive ? ' active' : ''}" title="${lbl}">${lbl}</span>`;
             }).join('');
+            const extraTabs = allTabs.length > maxPills
+                ? `<span class="nc-tab" style="opacity:0.5;">+${allTabs.length - maxPills}</span>`
+                : '';
 
             return `
               <div class="note-card${hasImg ? ' has-img' : ''}" style="background-color:${color}">
@@ -304,7 +309,7 @@ export function initializeShareAndImport(appState, callbacks) {
                 <div class="nc-content">
                   ${title ? `<div class="nc-title">${title}</div>` : ''}
                   ${body  ? `<div class="nc-body">${body}</div>`   : ''}
-                  ${(note.tabs || []).length > 1 ? `<div class="nc-tabs">${tabPills}</div>` : ''}
+                  ${allTabs.length > 1 ? `<div class="nc-tabs">${tabPills}${extraTabs}</div>` : ''}
                 </div>
                 ${hasImg ? '<span class="nc-img-badge">\uD83D\uDDBC\uFE0F</span>' : ''}
               </div>`;
@@ -495,17 +500,19 @@ export function initializeShareAndImport(appState, callbacks) {
     }
     .note-card .nc-tabs {
       margin-top: auto;
-      display: flex; gap: 3px; flex-wrap: wrap;
+      display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden;
     }
     .note-card .nc-tab {
-      font-size: 0.65rem; opacity: 0.6;
-      background: rgba(0,0,0,0.18);
-      border-radius: 4px; padding: 1px 6px;
+      font-size: 0.65rem;
+      color: #1a1a2e;
+      background: rgba(0,0,0,0.14);
+      border-radius: 4px; padding: 2px 7px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
     }
     .note-card.has-img .nc-tab {
       background: rgba(0,0,0,0.4); color: #fff;
     }
-    .note-card .nc-tab.active { opacity: 1; background: rgba(0,0,0,0.35); font-weight: 700; }
+    .note-card .nc-tab.active { font-weight: 700; background: rgba(0,0,0,0.28); }
 
 
     /* ── Footer ── */
@@ -623,10 +630,10 @@ export function initializeShareAndImport(appState, callbacks) {
 </div>
 
 <!-- ====== TUTORIAL OVERLAY ====== -->
-<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f0f1a 0%,#1a1a2e 60%,#0d1a3a 100%);flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow-y:auto;">
+<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f0f1a 0%,#1a1a2e 60%,#0d1a3a 100%);flex-direction:column;align-items:center;justify-content:flex-start;padding:3rem 1.5rem 4rem;overflow-y:auto;">
 
   <!-- Estado 1: Redirigiendo... (visible 2s) -->
-  <div id="tut-redirecting" style="text-align:center;">
+  <div id="tut-redirecting" style="text-align:center;margin:auto;width:100%;max-width:480px;padding:2rem 0;">
     <svg width="100" height="100" viewBox="0 0 100 100" fill="none" style="margin-bottom:1.5rem;">
       <circle cx="50" cy="50" r="48" fill="rgba(123,138,255,0.1)" stroke="rgba(123,138,255,0.3)" stroke-width="2"/>
       <!-- Cohete -->
@@ -653,8 +660,8 @@ export function initializeShareAndImport(appState, callbacks) {
   <div id="tut-guide" style="display:none;max-width:680px;width:100%;">
     <!-- Botón volver -->
     <div style="margin-bottom:1.5rem;">
-      <button onclick="closeTutorial()" style="display:inline-flex;align-items:center;gap:6px;padding:0.4rem 1rem;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;font-size:0.83rem;transition:all 0.15s;">
-        \u2190 Volver al tablero exportado
+      <button onclick="closeTutorial()" style="display:inline-flex;align-items:center;gap:8px;padding:0.65rem 1.4rem;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:#e0e0f0;cursor:pointer;font-size:0.92rem;font-weight:600;letter-spacing:0.01em;">
+        ← Volver al tablero exportado
       </button>
     </div>
     <div style="text-align:center;margin-bottom:2.2rem;">
@@ -795,6 +802,9 @@ export function initializeShareAndImport(appState, callbacks) {
     // Abrir la app en nueva pestaña
     if (APP_URL) window.open(APP_URL, '_blank', 'noopener');
 
+    // Bloquear scroll del body mientras el overlay esté visible
+    document.body.style.overflow = 'hidden';
+
     // Mostrar pantalla de "Redirigiendo..." y luego la guía
     const overlay = document.getElementById('tutorial-overlay');
     overlay.style.display = 'flex';
@@ -815,6 +825,8 @@ export function initializeShareAndImport(appState, callbacks) {
   function closeTutorial() {
     // Ocultar el overlay del tutorial
     document.getElementById('tutorial-overlay').style.display = 'none';
+    // Restaurar scroll del body
+    document.body.style.overflow = '';
     // Resetear para la próxima vez
     document.getElementById('tut-redirecting').style.display = 'block';
     document.getElementById('tut-guide').style.display = 'none';
