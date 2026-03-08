@@ -788,11 +788,13 @@ export function initializeShareAndImport(appState, callbacks) {
   }
 
   const APP_URL = ${JSON.stringify(openInAppUrl || '')};
+  const HAS_IMAGES = ${hasImages ? 'true' : 'false'};
 
   function openInAppModal() {
-    const modal = document.getElementById('app-modal');
     if (!APP_URL) return;
-    modal.style.display = 'flex';
+    // Si no hay imágenes, abrir directamente sin advertencia
+    if (!HAS_IMAGES) { window.open(APP_URL, '_blank', 'noopener'); return; }
+    document.getElementById('app-modal').style.display = 'flex';
   }
   function closeModal() {
     document.getElementById('app-modal').style.display = 'none';
