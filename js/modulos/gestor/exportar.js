@@ -146,39 +146,32 @@ export function initializeShareAndImport(appState, callbacks) {
 
         try {
             const baseUrl = window.location.origin + window.location.pathname;
-            let boardData;
-            let imagesWereStripped = false;
-
-            // --- Intento 1: Con miniaturas ---
-            boardData = getBoardDataForSharing(activeBoardId, true);
+            const boardData = getBoardDataForSharing(activeBoardId, false);
             if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
 
-            let jsonString = JSON.stringify(boardData);
-            let compressed = LZString.compressToEncodedURIComponent(jsonString);
-            let shareUrl  = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+            // Siempre quitamos imágenes del enlace: evita "URI Too Long" (HTTP 414)
+            // y protege al navegador del receptor de recibir megabytes sin querer.
+            const hasImages = boardData.notes.some(n => n.image || n.imageMini);
+            const safeData = {
+                ...boardData,
+                notes: boardData.notes.map(n => {
+                    const c = { ...n };
+                    delete c.image;
+                    delete c.imageMini;
+                    return c;
+                })
+            };
 
-            // --- Intento 2: Demasiado largo → quitar todas las imágenes ---
-            if (shareUrl.length > 8000) {
-                const strippedData = getBoardDataForSharing(activeBoardId, false);
-                // Eliminar imágenes de todas las notas
-                strippedData.notes = strippedData.notes.map(note => {
-                    const n = { ...note };
-                    delete n.image;
-                    delete n.imageMini;
-                    return n;
-                });
-                jsonString = JSON.stringify(strippedData);
-                compressed = LZString.compressToEncodedURIComponent(jsonString);
-                shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
-                imagesWereStripped = true;
-            }
+            const jsonString = JSON.stringify(safeData);
+            const compressed = LZString.compressToEncodedURIComponent(jsonString);
+            const shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
 
             shareLinkOutput.value = shareUrl;
             shareLinkOutput.select();
             await navigator.clipboard.writeText(shareUrl);
 
-            if (imagesWereStripped) {
-                showToast('🔗 Enlace generado. Las imágenes se omitieron por su tamaño — usa «Exportar a JSON» para el tablero completo.');
+            if (hasImages) {
+                showToast('🔗 Enlace generado (imágenes excluidas para no explotar el navegador 💣). Usa «Exportar a JSON» para compartir con imágenes.');
             } else {
                 showToast('✅ ¡Enlace generado y copiado al portapapeles!');
             }
@@ -255,20 +248,18 @@ export function initializeShareAndImport(appState, callbacks) {
         const boardName  = currentBoard.name;
 
         // --- URL "Abrir en App" apuntando a la app de GitHub Pages ---
-        // Se genera aquí (en tiempo de exportación) porque LZString está disponible en el contexto de la app.
+        // Siempre sin imágenes para evitar HTTP 414 (URI Too Long).
         const APP_BASE_URL = 'https://hectordanielayarachifuentes.github.io/Sticky-Notes/';
         let openInAppUrl = null;
         try {
-            const urlData = getBoardDataForSharing(appState.activeBoardId, true); // usar miniaturas
+            const urlData = getBoardDataForSharing(appState.activeBoardId, false);
             if (urlData) {
-                const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(urlData));
+                const safeData = {
+                    ...urlData,
+                    notes: urlData.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; })
+                };
+                const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
                 openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressed)}`;
-                // Si supera ~8000 chars, quitar imágenes para que el link funcione
-                if (openInAppUrl.length > 8000) {
-                    const stripped = { ...urlData, notes: urlData.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; }) };
-                    const comp2 = LZString.compressToEncodedURIComponent(JSON.stringify(stripped));
-                    openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(comp2)}`;
-                }
             }
         } catch(e) {
             console.warn('[export] No se pudo generar URL para App:', e);
@@ -282,11 +273,7 @@ export function initializeShareAndImport(appState, callbacks) {
             const bodyRaw   = (activeTab.content || '').replace(/<[^>]*>/g, '');
             const body      = bodyRaw.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
             const color     = note.color || '#fffde7';
-
-            // Imagen: <img src="base64"> con overlay, más confiable que background-image inline
-            const imgTag    = note.image
-                ? `<img class="nc-bg-img" src="${note.image}" alt="Imagen adjunta">`
-                : '';
+            // Las imágenes NO se renderizan en el preview — solo indicador de badge
             const hasImg    = !!note.image;
 
             // Mostrar todas las pestañas con su contenido (máx 3 pills + contador)
@@ -296,24 +283,61 @@ export function initializeShareAndImport(appState, callbacks) {
                 const isActive = i === (note.activeTab ?? 0);
                 const tabTitle  = (t.title || '').replace(/<[^>]*>/g, '').substring(0, 14);
                 const tabBody   = (t.content || '').replace(/<[^>]*>/g, '').substring(0, 60);
-                const lbl = tabTitle || tabBody || `Tab ${i+1}`;
-                return `<span class="nc-tab${isActive ? ' active' : ''}" title="${lbl}">${lbl}</span>`;
+                const lbl = tabTitle || tabBody || ('Tab ' + (i+1));
+                return '<span class="nc-tab' + (isActive ? ' active' : '') + '" title="' + lbl + '">' + lbl + '</span>';
             }).join('');
             const extraTabs = allTabs.length > maxPills
-                ? `<span class="nc-tab" style="opacity:0.5;">+${allTabs.length - maxPills}</span>`
+                ? '<span class="nc-tab" style="opacity:0.5;">+' + (allTabs.length - maxPills) + '</span>'
                 : '';
-
-            return `
-              <div class="note-card${hasImg ? ' has-img' : ''}" style="background-color:${color}">
-                ${imgTag}
-                <div class="nc-content">
-                  ${title ? `<div class="nc-title">${title}</div>` : ''}
-                  ${body  ? `<div class="nc-body">${body}</div>`   : ''}
-                  ${allTabs.length > 1 ? `<div class="nc-tabs">${tabPills}${extraTabs}</div>` : ''}
-                </div>
-                ${hasImg ? '<span class="nc-img-badge">\uD83D\uDDBC\uFE0F</span>' : ''}
-              </div>`;
+            const tabsHtml  = allTabs.length > 1 ? '<div class="nc-tabs">' + tabPills + extraTabs + '</div>' : '';
+            const titleHtml = title ? '<div class="nc-title">' + title + '</div>' : '';
+            const bodyHtml  = body  ? '<div class="nc-body">'  + body  + '</div>' : '';
+            const badgeHtml = hasImg ? '<span class="nc-img-badge">\uD83D\uDDBC\uFE0F</span>' : '';
+            return '<div class="note-card" style="background-color:' + color + '">'
+                 + '<div class="nc-content">'
+                 + titleHtml + bodyHtml + tabsHtml
+                 + '</div>'
+                 + badgeHtml
+                 + '</div>';
         }).join('');
+
+        // Pre-construir bloque "bomb warning" para evitar templates anidados
+        const imgPlural  = imageCount > 1 ? 'es' : '';
+        const imgSufixo  = imageCount > 1 ? 's' : '';
+        const bombWarningHtml = hasImages ? (
+            '<div class="bomb-warning">'
+          + '<div class="bomb-icon">'
+          + '<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
+          + '<defs><radialGradient id="bombgrad" cx="35%" cy="30%" r="70%">'
+          + '<stop offset="0%" stop-color="#ff6b35"/><stop offset="100%" stop-color="#c0392b"/></radialGradient></defs>'
+          + '<circle cx="26" cy="30" r="18" fill="#2a1010"/>'
+          + '<circle cx="26" cy="30" r="18" fill="url(#bombgrad)" opacity="0.9"/>'
+          + '<path d="M26 12 Q30 6 36 4" stroke="#ffcc44" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+          + '<circle cx="36" cy="4" r="3" fill="#ffee44" opacity="0.95">'
+          + '<animate attributeName="opacity" values="1;0.3;1" dur="0.6s" repeatCount="indefinite"/>'
+          + '<animate attributeName="r" values="3;4.5;3" dur="0.6s" repeatCount="indefinite"/>'
+          + '</circle>'
+          + '<circle cx="36" cy="4" r="5" fill="#ffaa22" opacity="0.4">'
+          + '<animate attributeName="opacity" values="0.4;0;0.4" dur="0.6s" repeatCount="indefinite"/>'
+          + '</circle>'
+          + '<circle cx="20" cy="24" r="4" fill="rgba(255,255,255,0.1)"/>'
+          + '<text x="26" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="900" font-family="sans-serif">!</text>'
+          + '</svg></div>'
+          + '<div class="bomb-text">'
+          + '<div class="bomb-title">\uD83D\uDCA3 \u00a1CUIDADO! Im\u00e1genes muy pesadas a bordo</div>'
+          + '<p>Este tablero tiene <strong>' + imageCount + ' imagen' + imgPlural + '</strong>'
+          + ' guardada' + imgSufixo + ' en Base64 dentro de este archivo.'
+          + ' Si intentaras compartirlo por enlace URL, ser\u00edan <strong>megabytes de datos puros</strong>'
+          + ' disparados directamente al navegador \u2014 suficiente para ralentizarlo, congelarlo,'
+          + ' o directamente hacerlo <em>crash</em>. \uD83D\uDC80</p>'
+          + '<p>\u2705 <strong>Modo seguro activado:</strong> las im\u00e1genes se <strong>excluyen del enlace</strong>'
+          + ' autom\u00e1ticamente para no hacerle da\u00f1o a tu navegador (ni al de quien lo reciba).'
+          + ' Tus notas y conexiones s\u00ed viajan sin problema.</p>'
+          + '<p style="opacity:0.6;font-size:0.79rem;">\uD83D\uDCE6 \u00bfQuieres compartir TODO incluyendo im\u00e1genes?'
+          + ' Usa <strong>\u2B07\uFE0F Descargar .json</strong> y env\u00eda ese archivo directamente'
+          + ' \u2014 pesa lo que pesa, pero llega completo.</p>'
+          + '</div></div>'
+        ) : '';
 
         const htmlContent = `<!DOCTYPE html>
 <html lang="es">
@@ -321,6 +345,7 @@ export function initializeShareAndImport(appState, callbacks) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sticky Notes — ${boardName}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='a' cx='40%25' cy='30%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%239ba8ff'/%3E%3Cstop offset='100%25' stop-color='%234a3aaa'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='25%25' r='65%25'%3E%3Cstop offset='0%25' stop-color='%23dde2ff'/%3E%3Cstop offset='100%25' stop-color='%238a98ff'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='32' fill='url(%23a)'/%3E%3Cg fill='url(%23b)'%3E%3Cpath d='M39 13.5l-2-3.5-4 1.4c-.9-.6-1.9-1-3-1.4L29 6h-4l-1 4c-1.1.4-2.1.8-3 1.4l-4-1.4-2 3.5 2.8 2.8C17.6 17.4 17.4 18.7 17.4 20s.2 2.6.4 3.7L15 26.5l2 3.5 4-1.4c.9.6 1.9 1 3 1.4l1 4h4l1-4c1.1-.4 2.1-.8 3-1.4l4 1.4 2-3.5-2.8-2.8c.2-1.1.4-2.4.4-3.7s-.2-2.6-.4-3.7zm-12 11.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3Cpath d='M51 34.5l-1.5-2.5-3 1c-.7-.4-1.4-.8-2.2-1l-.8-3h-3l-.8 3c-.8.2-1.5.6-2.2 1l-3-1-1.5 2.5 2.1 2.1c-.2.8-.3 1.6-.3 2.4s.1 1.6.3 2.4l-2.1 2.1 1.5 2.5 3-1c.7.4 1.4.8 2.2 1l.8 3h3l.8-3c.8-.2 1.5-.6 2.2-1l3 1 1.5-2.5-2.1-2.1c.2-.8.3-1.6.3-2.4s-.1-1.6-.3-2.4zm-8 6a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='31.5' fill='none' stroke='rgba(255,255,255,0.18)' stroke-width='1'/%3E%3C/svg%3E">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -526,6 +551,30 @@ export function initializeShareAndImport(appState, callbacks) {
       0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(255,60,60,0); }
       50%       { opacity: 0.6; box-shadow: 0 0 12px rgba(255,60,60,0.5); }
     }
+
+    /* ── Bomb warning ── */
+    .bomb-warning {
+      display: flex; gap: 1.2rem; align-items: flex-start;
+      background: linear-gradient(135deg, rgba(192,57,43,0.12) 0%, rgba(255,107,53,0.07) 100%);
+      border: 1px solid rgba(255,80,60,0.35);
+      border-left: 4px solid #ff4d3a;
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.6rem;
+      animation: bomb-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes bomb-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,77,58,0); }
+      50%       { box-shadow: 0 0 18px 2px rgba(255,77,58,0.18); }
+    }
+    .bomb-icon { flex-shrink: 0; margin-top: 2px; }
+    .bomb-title {
+      font-size: 1rem; font-weight: 800; color: #ff7060;
+      margin-bottom: 0.5rem; letter-spacing: 0.01em;
+    }
+    .bomb-text p { font-size: 0.83rem; line-height: 1.65; opacity: 0.82; margin-bottom: 0.4rem; }
+    .bomb-text p:last-child { margin-bottom: 0; }
+    .bomb-text strong { color: #ffa090; }
   </style>
 </head>
 <body>
@@ -549,30 +598,36 @@ export function initializeShareAndImport(appState, callbacks) {
     </div>
   </div>
 
-  ${noteCount > 0 ? `<p class="section-title">Vista previa de notas</p>
-  <div class="notes-grid">${notesPreviewHtml}</div>` : ''}
+  ${bombWarningHtml}
 
-  ${hasImages ? `
-  <div class="img-notice">
-    <!-- SVG: nube con flecha de descarga + candado -->
-    <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="28" cy="28" r="28" fill="rgba(255,168,50,0.12)"/>
-      <!-- Nube -->
-      <path d="M14 34a7 7 0 0 1 1.2-13.8A10 10 0 0 1 34 22a6 6 0 0 1 .5 12H14z" fill="#ffb830" opacity=".7"/>
-      <!-- Flecha abajo con tachado (X) -->
-      <line x1="28" y1="26" x2="28" y2="36" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round"/>
-      <polyline points="24,32 28,36 32,32" fill="none" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Candado -->
-      <rect x="34" y="34" width="12" height="10" rx="2" fill="#ffaa32" opacity=".9"/>
-      <path d="M36 34v-2a4 4 0 0 1 8 0v2" stroke="#ffaa32" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <circle cx="40" cy="39" r="1.5" fill="#1a1a2e"/>
-    </svg>
-    <div>
-      <h3>\uD83D\uDDBC\uFE0F Las im\u00e1genes no aparecer\u00e1n en el enlace online</h3>
-      <p>Este tablero contiene <strong>${imageCount} nota${imageCount > 1 ? 's' : ''} con imagen</strong>. Las im\u00e1genes est\u00e1n guardadas en este archivo HTML como datos en Base64, pero los navegadores tienen un l\u00edmite de longitud de URL de <strong>\u223C 2&nbsp;000&ndash;8&nbsp;000 caracteres</strong>. Una imagen comprimida puede superar ese l\u00edmite, haciendo que el bot\u00f3n <span class="badge">\uD83D\uDE80 Abrir en App</span> la omita autom\u00e1ticamente.</p>
-      <p>\u2705 <strong>C\u00f3mo ver las im\u00e1genes en la app:</strong> usa el bot\u00f3n <span class="badge">\u2B07\uFE0F Descargar&nbsp;.json</span>, luego en Sticky Notes → Compartir → <strong>\"Importar desde JSON\"</strong> y selecciona ese archivo. Las im\u00e1genes se restaurar\u00e1n completamente.</p>
-    </div>
-  </div>` : ''}
+  ${noteCount > 0 ? '<p class="section-title">Vista previa de notas</p><div class="notes-grid">' + notesPreviewHtml + '</div>' : ''}
+
+  ${hasImages ? (
+    '<div class="img-notice">'
+  + '<svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">'
+  + '<circle cx="28" cy="28" r="28" fill="rgba(255,168,50,0.12)"/>'
+  + '<path d="M14 34a7 7 0 0 1 1.2-13.8A10 10 0 0 1 34 22a6 6 0 0 1 .5 12H14z" fill="#ffb830" opacity=".7"/>'
+  + '<line x1="28" y1="26" x2="28" y2="36" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round"/>'
+  + '<polyline points="24,32 28,36 32,32" fill="none" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '<rect x="34" y="34" width="12" height="10" rx="2" fill="#ffaa32" opacity=".9"/>'
+  + '<path d="M36 34v-2a4 4 0 0 1 8 0v2" stroke="#ffaa32" stroke-width="2" fill="none" stroke-linecap="round"/>'
+  + '<circle cx="40" cy="39" r="1.5" fill="#1a1a2e"/>'
+  + '</svg>'
+  + '<div>'
+  + '<h3>\uD83D\uDDBC\uFE0F Las im\u00e1genes no aparecer\u00e1n en el enlace online</h3>'
+  + '<p>Este tablero contiene <strong>' + imageCount + ' nota' + imgPlural + ' con imagen</strong>.'
+  + ' Las im\u00e1genes est\u00e1n guardadas en este archivo HTML como datos en Base64,'
+  + ' pero los navegadores tienen un l\u00edmite de longitud de URL de'
+  + ' <strong>\u223C\u00a02\u202F000\u2013-8\u202F000 caracteres</strong>.'
+  + ' Una imagen comprimida puede superar ese l\u00edmite, haciendo que el bot\u00f3n'
+  + ' <span class="badge">\uD83D\uDE80 Abrir en App</span> la omita autom\u00e1ticamente.</p>'
+  + '<p>\u2705 <strong>C\u00f3mo ver las im\u00e1genes en la app:</strong>'
+  + ' usa el bot\u00f3n <span class="badge">\u2B07\uFE0F Descargar\u00a0.json</span>,'
+  + ' luego en Sticky Notes \u2192 Compartir \u2192 <strong>&quot;Importar desde JSON&quot;</strong>'
+  + ' y selecciona ese archivo. Las im\u00e1genes se restaurar\u00e1n completamente.</p>'
+  + '</div>'
+  + '</div>'
+  ) : ''}
 
   <!-- Botón parpadeante que aparece al volver del tutorial -->
   <div id="replay-tutorial-btn-wrap" style="margin-bottom:1rem;">
