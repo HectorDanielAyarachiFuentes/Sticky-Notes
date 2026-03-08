@@ -380,6 +380,27 @@ export function initializeShareAndImport(appState, callbacks) {
     }
     .btn-app:hover { background: rgba(123,138,255,0.38) !important; }
 
+    /* ── Image limitation notice ── */
+    .img-notice {
+      display: flex; gap: 1.2rem; align-items: flex-start;
+      background: linear-gradient(135deg, rgba(255,179,60,0.08) 0%, rgba(255,140,0,0.04) 100%);
+      border: 1px solid rgba(255,168,50,0.3);
+      border-left: 4px solid #ffaa32;
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.8rem;
+    }
+    .img-notice svg { flex-shrink: 0; margin-top: 2px; }
+    .img-notice h3 { font-size: 0.96rem; font-weight: 700; color: #ffcc70; margin-bottom: 0.4rem; }
+    .img-notice p  { font-size: 0.82rem; line-height: 1.6; opacity: 0.78; margin-bottom: 0.35rem; }
+    .img-notice p:last-child { margin-bottom: 0; }
+    .img-notice strong { color: #ffd080; }
+    .img-notice .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(255,168,50,0.18); border-radius: 5px;
+      padding: 1px 7px; font-size: 0.78rem; color: #ffc060; font-weight: 600;
+    }
+
     /* ── Code block ── */
     .code-wrap {
       background: #0d0d1a;
@@ -512,10 +533,32 @@ export function initializeShareAndImport(appState, callbacks) {
   ${noteCount > 0 ? `<p class="section-title">Vista previa de notas</p>
   <div class="notes-grid">${notesPreviewHtml}</div>` : ''}
 
+  ${hasImages ? `
+  <div class="img-notice">
+    <!-- SVG: nube con flecha de descarga + candado -->
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="28" cy="28" r="28" fill="rgba(255,168,50,0.12)"/>
+      <!-- Nube -->
+      <path d="M14 34a7 7 0 0 1 1.2-13.8A10 10 0 0 1 34 22a6 6 0 0 1 .5 12H14z" fill="#ffb830" opacity=".7"/>
+      <!-- Flecha abajo con tachado (X) -->
+      <line x1="28" y1="26" x2="28" y2="36" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round"/>
+      <polyline points="24,32 28,36 32,32" fill="none" stroke="#ff6b6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Candado -->
+      <rect x="34" y="34" width="12" height="10" rx="2" fill="#ffaa32" opacity=".9"/>
+      <path d="M36 34v-2a4 4 0 0 1 8 0v2" stroke="#ffaa32" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="40" cy="39" r="1.5" fill="#1a1a2e"/>
+    </svg>
+    <div>
+      <h3>\uD83D\uDDBC\uFE0F Las im\u00e1genes no aparecer\u00e1n en el enlace online</h3>
+      <p>Este tablero contiene <strong>${imageCount} nota${imageCount > 1 ? 's' : ''} con imagen</strong>. Las im\u00e1genes est\u00e1n guardadas en este archivo HTML como datos en Base64, pero los navegadores tienen un l\u00edmite de longitud de URL de <strong>\u223C 2&nbsp;000&ndash;8&nbsp;000 caracteres</strong>. Una imagen comprimida puede superar ese l\u00edmite, haciendo que el bot\u00f3n <span class="badge">\uD83D\uDE80 Abrir en App</span> la omita autom\u00e1ticamente.</p>
+      <p>\u2705 <strong>C\u00f3mo ver las im\u00e1genes en la app:</strong> usa el bot\u00f3n <span class="badge">\u2B07\uFE0F Descargar&nbsp;.json</span>, luego en Sticky Notes → Compartir → <strong>\"Importar desde JSON\"</strong> y selecciona ese archivo. Las im\u00e1genes se restaurar\u00e1n completamente.</p>
+    </div>
+  </div>` : ''}
+
   <div class="toolbar">
     <button class="btn" id="copyBtn" onclick="copyJson()">📋 Copiar JSON</button>
     <button class="btn" onclick="downloadJson()">⬇️ Descargar .json puro</button>
-    ${openInAppUrl ? `<a class="btn btn-app" href="${openInAppUrl}" target="_blank" rel="noopener">🚀 Abrir en Sticky Notes App</a>` : ''}
+    ${openInAppUrl ? `<button class="btn btn-app" onclick="openInAppModal()">🚀 Abrir en Sticky Notes App</button>` : ''}
   </div>
 
   <div class="code-wrap">
@@ -526,7 +569,37 @@ export function initializeShareAndImport(appState, callbacks) {
     <pre id="jsonBlock"><code>${highlighted}</code></pre>
   </div>
 
-  <footer>Generado por Sticky Notes App · HectorDanielAyarachiFuentes</footer>
+  <footer>Generado por Sticky Notes App &middot; HectorDanielAyarachiFuentes</footer>
+
+  <!-- Modal de advertencia para 'Abrir en App' -->
+  <div id="app-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;">
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,168,50,0.35);border-top:3px solid #ffaa32;border-radius:16px;max-width:440px;width:90%;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+      <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="24" fill="rgba(255,150,40,0.15)"/>
+          <!-- Nube -->
+          <path d="M10 30a6 6 0 0 1 1-11.8A8.5 8.5 0 0 1 29.5 19a5 5 0 0 1 .5 10H10z" fill="#ffb830" opacity=".75"/>
+          <!-- Imagen enmarcada -->
+          <rect x="15" y="16" width="10" height="9" rx="1.5" fill="none" stroke="#fff" stroke-width="1.5" opacity=".5"/>
+          <circle cx="17.5" cy="18.5" r="1" fill="#fff" opacity=".5"/>
+          <path d="M15 23l3-3 2.5 2.5L23 20l2 5" stroke="#fff" stroke-width="1" fill="none" opacity=".4"/>
+          <!-- Tachado rojo -->
+          <line x1="27" y1="27" x2="35" y2="35" stroke="#ff5555" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="35" y1="27" x2="27" y2="35" stroke="#ff5555" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:#ffcc70;margin-bottom:3px;">🛈 Aviso sobre las imágenes</div>
+          <div style="font-size:0.78rem;opacity:0.55;">Antes de abrir la app online&hellip;</div>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;line-height:1.65;margin-bottom:0.9rem;opacity:0.82;">Las <strong style="color:#ffd080;">imágenes adjuntas a tus notas</strong> no podrán incluirse en el enlace online. Los navegadores limitan la longitud de las URLs y una foto en Base64 supera ese límite automáticamente.</p>
+      <p style="font-size:0.85rem;line-height:1.65;margin-bottom:1.4rem;opacity:0.82;">✅ Las imágenes sí están guardadas en este archivo. Para verlas completas, usa <strong style="color:#ffd080;">⋯ Descargar .json</strong> e impórtalo en <em>Compartir &rarr; Importar desde JSON</em>.</p>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+        <button onclick="closeModal()" style="padding:0.5rem 1.1rem;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.6);cursor:pointer;font-size:0.84rem;">Cancelar</button>
+        <button onclick="confirmOpenApp()" style="padding:0.5rem 1.2rem;border-radius:8px;border:none;background:linear-gradient(135deg,#5a6aff,#8a60ff);color:#fff;font-weight:700;cursor:pointer;font-size:0.84rem;">Continuar de todas formas →</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 <script>
@@ -547,6 +620,27 @@ export function initializeShareAndImport(appState, callbacks) {
     a.download = ${JSON.stringify(boardName.replace(/ /g, '_') + '.json')};
     a.click();
   }
+
+  const APP_URL = ${JSON.stringify(openInAppUrl || '')};
+
+  function openInAppModal() {
+    const modal = document.getElementById('app-modal');
+    if (!APP_URL) return;
+    modal.style.display = 'flex';
+  }
+  function closeModal() {
+    document.getElementById('app-modal').style.display = 'none';
+  }
+  function confirmOpenApp() {
+    closeModal();
+    window.open(APP_URL, '_blank', 'noopener');
+  }
+  // Cerrar al hacer click fuera del modal
+  document.getElementById('app-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('app-modal')) closeModal();
+  });
+  // Cerrar con Escape
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 <\/script>
 </body>
 </html>`;
