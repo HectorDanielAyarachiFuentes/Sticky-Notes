@@ -283,16 +283,19 @@ export function initializeShareAndImport(appState, callbacks) {
             const body      = bodyRaw.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
             const color     = note.color || '#fffde7';
 
-            // Imagen: se usa <img src="base64"> con overlay, más confiable que background-image inline
+            // Imagen: <img src="base64"> con overlay, más confiable que background-image inline
             const imgTag    = note.image
                 ? `<img class="nc-bg-img" src="${note.image}" alt="Imagen adjunta">`
                 : '';
             const hasImg    = !!note.image;
 
-            const tabPills  = (note.tabs || []).map((t, i) => {
+            // Mostrar todas las pestañas con su contenido
+            const tabPills = (note.tabs || []).map((t, i) => {
                 const isActive = i === (note.activeTab ?? 0);
-                const lbl = (t.title || t.content || '').replace(/<[^>]*>/g, '').substring(0, 14) || `Tab ${i+1}`;
-                return `<span class="nc-tab${isActive ? ' active' : ''}">${lbl}</span>`;
+                const tabTitle  = (t.title || '').replace(/<[^>]*>/g, '').substring(0, 14);
+                const tabBody   = (t.content || '').replace(/<[^>]*>/g, '').substring(0, 60);
+                const lbl = tabTitle || tabBody || `Tab ${i+1}`;
+                return `<span class="nc-tab${isActive ? ' active' : ''}" title="${lbl}">${lbl}</span>`;
             }).join('');
 
             return `
@@ -301,7 +304,7 @@ export function initializeShareAndImport(appState, callbacks) {
                 <div class="nc-content">
                   ${title ? `<div class="nc-title">${title}</div>` : ''}
                   ${body  ? `<div class="nc-body">${body}</div>`   : ''}
-                  ${note.tabs?.length > 1 ? `<div class="nc-tabs">${tabPills}</div>` : ''}
+                  ${(note.tabs || []).length > 1 ? `<div class="nc-tabs">${tabPills}</div>` : ''}
                 </div>
                 ${hasImg ? '<span class="nc-img-badge">\uD83D\uDDBC\uFE0F</span>' : ''}
               </div>`;
@@ -470,6 +473,7 @@ export function initializeShareAndImport(appState, callbacks) {
     }
     .note-card .nc-title {
       font-weight: 700; font-size: 0.88rem; line-height: 1.3;
+      color: #1a1a2e;
       overflow: hidden; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
@@ -480,7 +484,7 @@ export function initializeShareAndImport(appState, callbacks) {
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
     .note-card .nc-body {
-      font-size: 0.78rem; opacity: 0.8; line-height: 1.5;
+      font-size: 0.78rem; color: #2a2a3a; line-height: 1.5;
       overflow: hidden; display: -webkit-box;
       -webkit-line-clamp: 5; -webkit-box-orient: vertical;
     }
@@ -511,6 +515,10 @@ export function initializeShareAndImport(appState, callbacks) {
       font-size: 0.76rem;
       opacity: 0.3;
     }
+    @keyframes blink-red {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(255,60,60,0); }
+      50%       { opacity: 0.6; box-shadow: 0 0 12px rgba(255,60,60,0.5); }
+    }
   </style>
 </head>
 <body>
@@ -527,7 +535,11 @@ export function initializeShareAndImport(appState, callbacks) {
   <div class="stats">
     <div class="stat-card"><div class="val">${noteCount}</div><div class="lbl">Notas</div></div>
     <div class="stat-card"><div class="val">${connCount}</div><div class="lbl">Conexiones</div></div>
-    <div class="stat-card"><div class="val">${hasImages ? imageCount : '\u2014'}</div><div class="lbl">Con imagen</div></div>
+    <div class="stat-card" style="${hasImages ? 'border-color:rgba(255,168,50,0.3);' : ''}">
+      <div class="val" style="${hasImages ? 'color:#ffaa32;' : ''}">${imageCount > 0 ? imageCount : '0'}</div>
+      <div class="lbl">${hasImages ? 'Im\u00e1genes (en JSON)' : 'Sin im\u00e1genes'}</div>
+      ${hasImages ? '<div style="font-size:0.7rem;color:#ffaa32;margin-top:4px;opacity:0.8;">\u2139\uFE0F Ver con importaci\u00f3n JSON</div>' : ''}
+    </div>
   </div>
 
   ${noteCount > 0 ? `<p class="section-title">Vista previa de notas</p>
@@ -554,6 +566,13 @@ export function initializeShareAndImport(appState, callbacks) {
       <p>\u2705 <strong>C\u00f3mo ver las im\u00e1genes en la app:</strong> usa el bot\u00f3n <span class="badge">\u2B07\uFE0F Descargar&nbsp;.json</span>, luego en Sticky Notes → Compartir → <strong>\"Importar desde JSON\"</strong> y selecciona ese archivo. Las im\u00e1genes se restaurar\u00e1n completamente.</p>
     </div>
   </div>` : ''}
+
+  <!-- Botón parpadeante que aparece al volver del tutorial -->
+  <div id="replay-tutorial-btn-wrap" style="margin-bottom:1rem;">
+    <button id="replay-tutorial-btn" onclick="confirmOpenApp()" style="display:none;animation:blink-red 1.1s ease-in-out infinite;align-items:center;gap:8px;padding:0.5rem 1.2rem;border-radius:9px;border:2px solid #ff4444;background:rgba(255,60,60,0.15);color:#ff7070;cursor:pointer;font-size:0.86rem;font-weight:700;">
+      \uD83D\uDD34 Ver tutorial de nuevo
+    </button>
+  </div>
 
   <div class="toolbar">
     <button class="btn" id="copyBtn" onclick="copyJson()">📋 Copiar JSON</button>
@@ -602,6 +621,146 @@ export function initializeShareAndImport(appState, callbacks) {
   </div>
 
 </div>
+
+<!-- ====== TUTORIAL OVERLAY ====== -->
+<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f0f1a 0%,#1a1a2e 60%,#0d1a3a 100%);flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow-y:auto;">
+
+  <!-- Estado 1: Redirigiendo... (visible 2s) -->
+  <div id="tut-redirecting" style="text-align:center;">
+    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" style="margin-bottom:1.5rem;">
+      <circle cx="50" cy="50" r="48" fill="rgba(123,138,255,0.1)" stroke="rgba(123,138,255,0.3)" stroke-width="2"/>
+      <!-- Cohete -->
+      <ellipse cx="50" cy="45" rx="9" ry="18" fill="#7b8aff"/>
+      <polygon points="50,20 44,38 56,38" fill="#a0b0ff"/>
+      <rect x="43" y="55" width="14" height="8" rx="2" fill="#5a6aff"/>
+      <!-- Llamas -->
+      <ellipse cx="47" cy="67" rx="3" ry="5" fill="#ff9f43" opacity=".9"/>
+      <ellipse cx="53" cy="67" rx="3" ry="5" fill="#ff9f43" opacity=".9"/>
+      <ellipse cx="50" cy="70" rx="4" ry="7" fill="#ffcc44" opacity=".7"/>
+      <!-- Ventana -->
+      <circle cx="50" cy="44" r="4" fill="rgba(200,220,255,0.7)"/>
+      <!-- Anillo girando -->
+      <circle cx="50" cy="50" r="46" stroke="rgba(123,138,255,0.2)" stroke-width="4" stroke-dasharray="30 250" fill="none">
+        <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+    <h2 style="font-size:1.5rem;font-weight:700;color:#a0b0ff;margin-bottom:0.5rem;">Abriendo Sticky Notes App\u2026</h2>
+    <p style="opacity:0.5;font-size:0.88rem;">La app se abri\u00f3 en una nueva pesta\u00f1a. \u00bfNo se abri\u00f3? Puede que el navegador lo bloque\u00f3.</p>
+    <p style="opacity:0.35;font-size:0.78rem;margin-top:0.4rem;">En 2 segundos ver\u00e1s c\u00f3mo recuperar tus im\u00e1genes\u2026</p>
+  </div>
+
+  <!-- Estado 2: Guía paso a paso (oculta hasta los 2s) -->
+  <div id="tut-guide" style="display:none;max-width:680px;width:100%;">
+    <!-- Botón volver -->
+    <div style="margin-bottom:1.5rem;">
+      <button onclick="closeTutorial()" style="display:inline-flex;align-items:center;gap:6px;padding:0.4rem 1rem;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;font-size:0.83rem;transition:all 0.15s;">
+        \u2190 Volver al tablero exportado
+      </button>
+    </div>
+    <div style="text-align:center;margin-bottom:2.2rem;">
+      <!-- Emoji con guasca -->
+      <div style="font-size:2.4rem;margin-bottom:0.3rem;">\uD83D\uDE02</div>
+      <h2 style="font-size:1.5rem;font-weight:900;color:#ffd080;margin-bottom:0.35rem;letter-spacing:-0.01em;">\u00a1Te lo dijimos! jeje...</h2>
+      <p style="opacity:0.6;font-size:0.88rem;margin-bottom:0.25rem;">Pero no pasa nada, \u00a1aqu\u00ed est\u00e1 c\u00f3mo hacerlo bien!</p>
+      <p style="opacity:0.45;font-size:0.8rem;">Las im\u00e1genes est\u00e1n guardadas en el <strong style="color:#ffd080;">.json</strong>. Sigue estos pasos:</p>
+    </div>
+
+    <!-- Paso 1 -->
+    <div style="display:flex;gap:1.2rem;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,179,60,0.12)"/>
+        <rect x="14" y="12" width="24" height="28" rx="3" fill="none" stroke="#ffaa32" stroke-width="2"/>
+        <text x="26" y="22" text-anchor="middle" fill="#ffaa32" font-size="7" font-family="monospace">.json</text>
+        <line x1="26" y1="27" x2="26" y2="36" stroke="#ffcc44" stroke-width="2" stroke-linecap="round"/>
+        <polyline points="21,33 26,38 31,33" fill="none" stroke="#ffcc44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="8" r="7" fill="#ffaa32"/>
+        <text x="8" y="12" text-anchor="middle" fill="#1a1a2e" font-size="9" font-weight="bold">1</text>
+      </svg>
+      <div>
+        <div style="font-weight:700;color:#ffd080;font-size:0.95rem;margin-bottom:0.3rem;">Descarga el archivo .json</div>
+        <p style="font-size:0.82rem;opacity:0.7;line-height:1.6;margin-bottom:0.6rem;">Necesitas el archivo <code style="background:rgba(255,168,50,0.12);padding:1px 5px;border-radius:3px;color:#ffcc70;">.json</code> que tiene <em>las im\u00e1genes completas</em>. Puedes volver al HTML o descargarlo directamente desde aqu\u00ed:</p>
+        <button onclick="downloadJson()" style="display:inline-flex;align-items:center;gap:6px;padding:0.45rem 1rem;border-radius:8px;border:1px solid rgba(255,168,50,0.4);background:rgba(255,168,50,0.12);color:#ffc060;cursor:pointer;font-size:0.82rem;font-weight:600;">
+          \u2B07\uFE0F Descargar .json puro desde aqu\u00ed
+        </button>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div style="display:flex;gap:1.2rem;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;">
+        <circle cx="26" cy="26" r="26" fill="rgba(100,150,255,0.12)"/>
+        <rect x="10" y="16" width="32" height="20" rx="3" fill="none" stroke="#7b8aff" stroke-width="2"/>
+        <rect x="10" y="16" width="32" height="6" rx="2" fill="rgba(123,138,255,0.25)"/>
+        <circle cx="14" cy="19" r="1.5" fill="#ff6b6b"/>
+        <circle cx="19" cy="19" r="1.5" fill="#ffd043"/>
+        <circle cx="24" cy="19" r="1.5" fill="#45e06f"/>
+        <line x1="14" y1="27" x2="38" y2="27" stroke="rgba(123,138,255,0.4)" stroke-width="1.5"/>
+        <line x1="14" y1="30" x2="30" y2="30" stroke="rgba(123,138,255,0.3)" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="7" fill="#7b8aff"/>
+        <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">2</text>
+      </svg>
+      <div>
+        <div style="font-weight:700;color:#a0b0ff;font-size:0.95rem;margin-bottom:0.3rem;">Abre la app (ya se abri\u00f3 en una pesta\u00f1a)</div>
+        <p style="font-size:0.82rem;opacity:0.7;line-height:1.6;">Ve a la pesta\u00f1a que se abri\u00f3 con Sticky Notes App. Si se cerr\u00f3 o fue bloqueada, usa el bot\u00f3n de abajo para abrirla de nuevo.</p>
+      </div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div style="display:flex;gap:1.2rem;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;">
+        <circle cx="26" cy="26" r="26" fill="rgba(80,200,120,0.1)"/>
+        <!-- Sidebar -->
+        <rect x="10" y="14" width="14" height="24" rx="2" fill="rgba(80,200,120,0.15)" stroke="rgba(80,200,120,0.5)" stroke-width="1.5"/>
+        <!-- Tabs en sidebar -->
+        <rect x="12" y="17" width="10" height="3" rx="1" fill="rgba(80,200,120,0.4)"/>
+        <rect x="12" y="22" width="10" height="3" rx="1" fill="rgba(80,200,120,0.25)"/>
+        <rect x="12" y="27" width="10" height="3" rx="1" fill="rgba(80,200,120,0.25)"/>
+        <!-- Tab "Compartir" destacado -->
+        <rect x="28" y="20" width="14" height="6" rx="2" fill="#45c87a"/>
+        <text x="35" y="24.5" text-anchor="middle" fill="#fff" font-size="5" font-weight="bold">Compartir</text>
+        <!-- Flecha apuntando -->
+        <path d="M25 23l3-3 3 3" fill="none" stroke="#45c87a" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="8" cy="8" r="7" fill="#45c87a"/>
+        <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">3</text>
+      </svg>
+      <div>
+        <div style="font-weight:700;color:#6fefaa;font-size:0.95rem;margin-bottom:0.3rem;">Ve a la pesta\u00f1a Compartir</div>
+        <p style="font-size:0.82rem;opacity:0.7;line-height:1.6;">En la barra lateral de la app, haz click en la pesta\u00f1a <strong style="background:rgba(80,200,120,0.15);padding:1px 6px;border-radius:4px;color:#6fefaa;">\uD83D\uDD17 Compartir</strong> (el \u00edcono de cadena). Ver\u00e1s las opciones de compartir y exportar.</p>
+      </div>
+    </div>
+
+    <!-- Paso 4 -->
+    <div style="display:flex;gap:1.2rem;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(123,138,255,0.25);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:2rem;">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;">
+        <circle cx="26" cy="26" r="26" fill="rgba(160,120,255,0.12)"/>
+        <!-- Bot\u00f3n importar -->
+        <rect x="10" y="20" width="32" height="12" rx="4" fill="rgba(140,100,255,0.3)" stroke="#8a60ff" stroke-width="1.5"/>
+        <!-- Flecha arriba -->
+        <line x1="26" y1="29" x2="26" y2="23" stroke="#c0aaff" stroke-width="2" stroke-linecap="round"/>
+        <polyline points="22,26 26,22 30,26" fill="none" stroke="#c0aaff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="26" y="24" text-anchor="middle" fill="transparent" font-size="5">Importar</text>
+        <!-- Check de \u00e9xito -->
+        <circle cx="38" cy="14" r="8" fill="#45c87a"/>
+        <polyline points="34,14 37,17 42,11" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="8" r="7" fill="#8a60ff"/>
+        <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">4</text>
+      </svg>
+      <div>
+        <div style="font-weight:700;color:#c0aaff;font-size:0.95rem;margin-bottom:0.3rem;">Click en \u201cImportar desde JSON\u201d y selecciona el archivo</div>
+        <p style="font-size:0.82rem;opacity:0.7;line-height:1.6;">Dentro de <em>Compartir</em>, busca la tarjeta <strong style="background:rgba(140,100,255,0.15);padding:1px 6px;border-radius:4px;color:#c0aaff;">\uD83D\uDCE5 Importar desde JSON</strong>, haz click y selecciona el archivo <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">.json</code> que descargaste. \u00a1Tus notas e im\u00e1genes se restaurar\u00e1n al 100%!</p>
+      </div>
+    </div>
+
+    <!-- Botón CTA final -->
+    <div style="text-align:center;">
+      <a href="https://hectordanielayarachifuentes.github.io/Sticky-Notes/" target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:10px;padding:0.85rem 2rem;background:linear-gradient(135deg,#5a6aff,#8a60ff);border-radius:12px;color:#fff;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 6px 24px rgba(100,100,255,0.35);">
+        \uD83D\uDE80 Ir a Sticky Notes App y aplicar lo aprendido
+      </a>
+      <p style="margin-top:0.8rem;font-size:0.77rem;opacity:0.35;">Recuerda descargar el .json primero (botón del paso 1).</p>
+    </div>
+  </div>
+</div>
 <script>
   const RAW_JSON = ${JSON.stringify(boardJson)};
 
@@ -633,14 +792,38 @@ export function initializeShareAndImport(appState, callbacks) {
   }
   function confirmOpenApp() {
     closeModal();
-    window.open(APP_URL, '_blank', 'noopener');
+    // Abrir la app en nueva pestaña
+    if (APP_URL) window.open(APP_URL, '_blank', 'noopener');
+
+    // Mostrar pantalla de "Redirigiendo..." y luego la guía
+    const overlay = document.getElementById('tutorial-overlay');
+    overlay.style.display = 'flex';
+    // Después de 2 segundos, transicionar a la guía
+    setTimeout(() => {
+      document.getElementById('tut-redirecting').style.display = 'none';
+      document.getElementById('tut-guide').style.display = 'block';
+    }, 2000);
   }
-  // Cerrar al hacer click fuera del modal
+
+  // Cerrar al hacer click fuera del modal de advertencia
   document.getElementById('app-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('app-modal')) closeModal();
   });
-  // Cerrar con Escape
+  // Cerrar modal de advertencia con Escape
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  function closeTutorial() {
+    // Ocultar el overlay del tutorial
+    document.getElementById('tutorial-overlay').style.display = 'none';
+    // Resetear para la próxima vez
+    document.getElementById('tut-redirecting').style.display = 'block';
+    document.getElementById('tut-guide').style.display = 'none';
+    // Mostrar el botón rojo parpadeante "Ver tutorial de nuevo"
+    const replayBtn = document.getElementById('replay-tutorial-btn');
+    if (replayBtn) replayBtn.style.display = 'inline-flex';
+    // Scroll arriba
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 <\/script>
 </body>
 </html>`;
