@@ -195,6 +195,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
     function saveState() {
         localStorage.setItem('stickyNotesApp', JSON.stringify(appState));
+        updateStorageIndicator();
+    }
+
+    /**
+     * Calcula el uso del localStorage y actualiza la barra de progreso en la sidebar.
+     * Límite estimado: 5 MB (5,120 KB).
+     */
+    function updateStorageIndicator() {
+        const LIMIT_BYTES = 5 * 1024 * 1024; // 5 MB
+        let usedBytes = 0;
+        try {
+            for (const key in localStorage) {
+                if (!localStorage.hasOwnProperty(key)) continue;
+                usedBytes += (localStorage[key].length + key.length) * 2; // UTF-16: 2 bytes por char
+            }
+        } catch (e) { /* seguro */ }
+
+        const pct = Math.min(100, (usedBytes / LIMIT_BYTES) * 100);
+        const usedKB  = (usedBytes / 1024).toFixed(1);
+        const totalMB = (LIMIT_BYTES / 1024 / 1024).toFixed(0);
+
+        const bar  = document.getElementById('storage-bar-fill');
+        const text = document.getElementById('storage-text');
+        const track = bar?.closest('[role="progressbar"]');
+
+        if (!bar || !text) return;
+
+        bar.style.width = `${pct.toFixed(1)}%`;
+        bar.classList.remove('warn', 'danger');
+        if (pct >= 90)      bar.classList.add('danger');
+        else if (pct >= 70) bar.classList.add('warn');
+
+        text.textContent = `${usedKB} KB / ${totalMB} MB`;
+        track?.setAttribute('aria-valuenow', Math.round(pct));
+
+        // Toast de advertencia cuando supera el 90%
+        if (pct >= 90) {
+            showToast('⚠️ ¡Almacenamiento casi lleno! Considera borrar tableros o notas.');
+        }
     }
 
     function loadState() {
@@ -1254,6 +1293,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderBoardList();
         renderActiveBoard();
         updatePaletteState();
+        
+        // Actualizar el indicador de almacenamiento al cargar
+        updateStorageIndicator();
     }
 
     initializeApp();

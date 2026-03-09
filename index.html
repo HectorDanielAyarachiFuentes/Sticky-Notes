@@ -357,6 +357,17 @@
             </section>
         </div>
 
+        <!-- Indicador de uso de localStorage -->
+        <div id="storage-indicator" aria-label="Uso de almacenamiento local">
+            <div class="storage-header">
+                <span class="storage-label">💾 Almacenamiento</span>
+                <span id="storage-text" class="storage-text">0 KB / 5 MB</span>
+            </div>
+            <div class="storage-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Uso de localStorage">
+                <div id="storage-bar-fill" class="storage-bar-fill"></div>
+            </div>
+        </div>
+
         <div id="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel lateral"
             tabindex="0"></div>
     </aside>
