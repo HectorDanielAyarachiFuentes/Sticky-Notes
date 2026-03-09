@@ -16,10 +16,6 @@ Stack de snapshots del estado para revertir acciones recientes.
 - Guardar una copia del estado antes de cada acción destructiva (borrar nota, cambiar color, etc.)
 - Límite sugerido: ~20 pasos hacia atrás
 
-### 3. Limpiar `tableros.js`
-El archivo `js/modulos/gestor/tableros.js` no se importa en ningún lado y contiene lógica duplicada con `script.js`.
-- Verificar si tiene algún uso y eliminarlo si es código muerto
-- Evita confusión al mantener el proyecto
 
 ### 4. Renombrar tabs con doble clic
 Permitir que el usuario asigne nombres personalizados a las pestañas de una nota.
