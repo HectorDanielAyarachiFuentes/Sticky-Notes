@@ -2369,7 +2369,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 /* --- NOTIFICACIONES (TOASTS) --- */
 #toast-container {
     position: fixed;
-    bottom: 20px;
+    bottom: 90px; /* Movido hacia arriba para no tapar los controles de zoom/deshacer */
     left: 50%;
     transform: translateX(-50%);
     z-index: 3000;
