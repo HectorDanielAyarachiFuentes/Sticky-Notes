@@ -37,6 +37,25 @@ export function moveNoteToTrash(noteId) {
 
         if (noteIndex > -1) {
             const [noteToTrash] = notes.splice(noteIndex, 1);
+            
+            // --- SISTEMA DESHACER (UNDO) ---
+            // Guardamos un snapshot completo de la nota y sus conexiones
+            const noteSnapshot = JSON.parse(JSON.stringify(noteToTrash));
+            const boardConnections = appState.boards[boardId].connections;
+            const relatedConnections = boardConnections ? boardConnections.filter(conn => conn.from === noteId || conn.to === noteId) : [];
+            const connectionsSnapshot = JSON.parse(JSON.stringify(relatedConnections));
+            
+            if (typeof window.registrarComando === 'function') {
+                window.registrarComando({
+                    tipo: 'BORRAR_NOTA',
+                    datos: { 
+                        nota: noteSnapshot, 
+                        conexiones: connectionsSnapshot,
+                        boardId: boardId 
+                    }
+                });
+            }
+            
             noteToTrash.originalBoardId = boardId;
             appState.trash.push(noteToTrash);
 

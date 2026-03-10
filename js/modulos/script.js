@@ -543,14 +543,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         title.className = "stickynote-title";
         title.setAttribute("placeholder", "Título...");
         title.innerHTML = noteData.tabs[noteData.activeTab].title || '';
+        
+        // --- INICIO SISTEMA DESHACER LOCAL (TÍTULO) ---
+        let titleDebounceTimer;
+        const guardarHistorialTitulo = (newTitle) => {
+            const activeTab = noteData.activeTab;
+            if (!noteData.tabs[activeTab].historyTitle) {
+                noteData.tabs[activeTab].historyTitle = [noteData.tabs[activeTab].title || ''];
+                noteData.tabs[activeTab].historyTitleIndex = 0;
+            }
+            const historyArr = noteData.tabs[activeTab].historyTitle;
+            let currentIndex = noteData.tabs[activeTab].historyTitleIndex;
+            
+            if (currentIndex < historyArr.length - 1) {
+                historyArr.length = currentIndex + 1;
+            }
+            if (historyArr[historyArr.length - 1] !== newTitle) {
+                historyArr.push(newTitle);
+                if (historyArr.length > 30) historyArr.shift();
+                noteData.tabs[activeTab].historyTitleIndex = historyArr.length - 1;
+            }
+        };
+
+        title.addEventListener('input', () => {
+            clearTimeout(titleDebounceTimer);
+            titleDebounceTimer = setTimeout(() => {
+                guardarHistorialTitulo(title.innerHTML);
+                noteData.tabs[noteData.activeTab].title = title.innerHTML;
+                saveState();
+            }, 800);
+        });
+        // --- FIN SISTEMA DESHACER LOCAL ---
+
         title.addEventListener('blur', () => {
             const newTitle = title.innerHTML;
             if (noteData.tabs[noteData.activeTab].title !== newTitle) {
                 noteData.tabs[noteData.activeTab].title = newTitle;
+                guardarHistorialTitulo(newTitle);
                 saveState();
                 const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${noteData.activeTab}"] .stickynote-tab-part[data-part="title"]`);
-                tabPart.classList.toggle('filled', !!newTitle.trim());
-                tabPart.classList.toggle('empty', !newTitle.trim());
+                if(tabPart) {
+                    tabPart.classList.toggle('filled', !!newTitle.trim());
+                    tabPart.classList.toggle('empty', !newTitle.trim());
+                }
                 handleSearch();
             }
         });
@@ -587,14 +622,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             content.dataset.tabIndex = i;
             content.setAttribute("placeholder", "Escribe algo...");
             content.innerHTML = noteData.tabs[i].content || '';
+            // --- INICIO SISTEMA DESHACER LOCAL ---
+            let debounceTimer;
+            const guardarHistorialTexto = (newContent) => {
+                if (!noteData.tabs[i].history) {
+                    noteData.tabs[i].history = [noteData.tabs[i].content || ''];
+                    noteData.tabs[i].historyIndex = 0;
+                }
+                const historyArr = noteData.tabs[i].history;
+                let currentIndex = noteData.tabs[i].historyIndex;
+                
+                if (currentIndex < historyArr.length - 1) {
+                    historyArr.length = currentIndex + 1;
+                }
+                if (historyArr[historyArr.length - 1] !== newContent) {
+                    historyArr.push(newContent);
+                    if (historyArr.length > 30) historyArr.shift();
+                    noteData.tabs[i].historyIndex = historyArr.length - 1;
+                }
+            };
+            
+            content.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    guardarHistorialTexto(content.innerHTML);
+                    noteData.tabs[i].content = content.innerHTML;
+                    saveState();
+                }, 800);
+            });
+            // --- FIN SISTEMA DESHACER LOCAL ---
+
             content.addEventListener('blur', () => {
                 const newContent = content.innerHTML;
                 if (noteData.tabs[i].content !== newContent) {
                     noteData.tabs[i].content = newContent;
+                    guardarHistorialTexto(newContent);
                     saveState();
                     const tabPart = tab.querySelector('.stickynote-tab-part[data-part="content"]');
-                    tabPart.classList.toggle('filled', !!newContent.trim());
-                    tabPart.classList.toggle('empty', !newContent.trim());
+                    if(tabPart) {
+                        tabPart.classList.toggle('filled', !!newContent.trim());
+                        tabPart.classList.toggle('empty', !newContent.trim());
+                    }
                     handleSearch();
                 }
             });
@@ -1151,6 +1219,189 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (noteImageInput) noteImageInput.click();
         });
 
+        // --- SISTEMA DESHACER (UNDO) ---
+        // Exponer registrarComando globalmente para que lo usen otros módulos (como papelera.js)
+        window.registrarComando = function(comando) {
+            appState.globalHistory.push(comando);
+            // Limitar a los últimos 50 comandos para evitar sobreconsumo de memoria
+            if (appState.globalHistory.length > 50) {
+                appState.globalHistory.shift();
+            }
+            saveState(); // Guardar el historial en localStorage
+        };
+
+        // Escuchar Ctrl+Z
+        document.addEventListener('keydown', (e) => {
+            // Prevenir Ctrl+Z si estamos editando texto (para no interferir con el Undo nativo del navegador)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                const isEditingText = document.activeElement && 
+                                    (document.activeElement.tagName === 'INPUT' || 
+                                     document.activeElement.tagName === 'TEXTAREA' || 
+                                     document.activeElement.isContentEditable);
+                
+                if (!isEditingText) {
+                    e.preventDefault();
+                    if (appState.globalHistory && appState.globalHistory.length > 0) {
+                        const ultimoComando = appState.globalHistory.pop();
+                        
+                        // Lógica para deshacer BORRAR_NOTA
+                        if (ultimoComando.tipo === 'BORRAR_NOTA') {
+                            const noteToRestore = ultimoComando.datos.nota;
+                            const boardId = ultimoComando.datos.boardId;
+                            const connectionsToRestore = ultimoComando.datos.conexiones || [];
+                            
+                            // Buscar en la papelera y removerla (si sigue ahí)
+                            appState.trash = appState.trash.filter(n => n.id !== noteToRestore.id);
+                            
+                            // Insertar de vuelta en el tablero correspondiente
+                            if (appState.boards[boardId]) {
+                                appState.boards[boardId].notes.push(noteToRestore);
+                                
+                                // Restaurar conexiones si las había
+                                if (connectionsToRestore.length > 0) {
+                                    if (!appState.boards[boardId].connections) {
+                                        appState.boards[boardId].connections = [];
+                                    }
+                                    appState.boards[boardId].connections.push(...connectionsToRestore);
+                                }
+                                
+                                saveState();
+                                showToast('Deshacer global: Nota restaurada');
+                                
+                                // Si el tablero activo es donde se restauró, renderizar notas y líneas
+                                if (appState.activeBoardId === boardId) {
+                                    renderActiveBoard(); 
+                                    if (typeof renderConnections === 'function') {
+                                        renderConnections();
+                                    } else {
+                                        updateAllLinesPosition();
+                                    }
+                                }
+                            } else {
+                                showToast('⚠️ No se puede restaurar: Tablero eliminado');
+                            }
+                        }
+                    } else {
+                        showToast('Nada que deshacer', 1500); 
+                    }
+                } else {
+                    // DESHACER LOCAL (MICRO-ACCIONES DE TEXTO) AISLADO
+                    const activeEditor = document.activeElement;
+                    const noteElement = activeEditor.closest('.stickynote');
+                    if (noteElement) {
+                        e.preventDefault(); // Evitamos global undo
+                        const noteId = noteElement.dataset.noteId;
+                        const currentBoard = appState.boards[appState.activeBoardId];
+                        const noteData = currentBoard.notes.find(n => n.id === noteId);
+                        
+                        // Determinar si es título o contenido
+                        let historyArr, historyIndexKey, updateFieldKey;
+                        const isText = activeEditor.classList.contains('stickynote-text');
+                        const isTitle = activeEditor.classList.contains('stickynote-title');
+                        let tabIndex = noteData.activeTab;
+                        
+                        if (isText) {
+                            tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
+                            const tabD = noteData.tabs[tabIndex];
+                            if(!tabD.history) { tabD.history = [tabD.content || '']; tabD.historyIndex = 0; }
+                            historyArr = tabD.history; historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
+                        } else if (isTitle) {
+                            const tabD = noteData.tabs[tabIndex];
+                            if(!tabD.historyTitle) { tabD.historyTitle = [tabD.title || '']; tabD.historyTitleIndex = 0; }
+                            historyArr = tabD.historyTitle; historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
+                        }
+                        
+                        if (historyArr) {
+                            const tabData = noteData.tabs[tabIndex];
+                            const currentText = activeEditor.innerHTML;
+                            let idx = tabData[historyIndexKey];
+                            
+                            // Si hay texto no guardado, lo guardamos antes de retroceder
+                            if (currentText !== historyArr[idx]) {
+                                // Cortamos el futuro si existía (no debería, porque estamos tipeando de nuevo)
+                                if (idx < historyArr.length - 1) historyArr.length = idx + 1;
+                                historyArr.push(currentText);
+                                idx = historyArr.length - 1;
+                                tabData[historyIndexKey] = idx;
+                            }
+                            
+                            if (idx > 0) {
+                                idx--;
+                                tabData[historyIndexKey] = idx;
+                                const restoredText = historyArr[idx];
+                                activeEditor.innerHTML = restoredText;
+                                tabData[updateFieldKey] = restoredText;
+                                
+                                // Cursor al final
+                                const selection = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(activeEditor);
+                                range.collapse(false);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                saveState();
+                                showToast('Deshacer local', 800);
+                            }
+                        }
+                    }
+                }
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                // REHACER LOCAL
+                const isEditingText = document.activeElement && 
+                                    (document.activeElement.tagName === 'INPUT' || 
+                                     document.activeElement.tagName === 'TEXTAREA' || 
+                                     document.activeElement.isContentEditable);
+                if (isEditingText) {
+                    const activeEditor = document.activeElement;
+                    const noteElement = activeEditor.closest('.stickynote');
+                    if (noteElement) {
+                        e.preventDefault();
+                        const noteId = noteElement.dataset.noteId;
+                        const currentBoard = appState.boards[appState.activeBoardId];
+                        const noteData = currentBoard.notes.find(n => n.id === noteId);
+                        
+                        let historyArr, historyIndexKey, updateFieldKey;
+                        const isText = activeEditor.classList.contains('stickynote-text');
+                        const isTitle = activeEditor.classList.contains('stickynote-title');
+                        let tabIndex = noteData.activeTab;
+                        
+                        if (isText) {
+                            tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
+                            historyArr = noteData.tabs[tabIndex].history; 
+                            historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
+                        } else if (isTitle) {
+                            historyArr = noteData.tabs[tabIndex].historyTitle; 
+                            historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
+                        }
+                        
+                        if (historyArr) {
+                            const tabData = noteData.tabs[tabIndex];
+                            let idx = tabData[historyIndexKey];
+                            
+                            if (idx < historyArr.length - 1) {
+                                idx++;
+                                tabData[historyIndexKey] = idx;
+                                const restoredText = historyArr[idx];
+                                activeEditor.innerHTML = restoredText;
+                                tabData[updateFieldKey] = restoredText;
+                                
+                                const selection = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(activeEditor);
+                                range.collapse(false);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                saveState();
+                                showToast('Rehacer local', 800);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
         // --- EVENT LISTENERS GLOBALES ---
         const collapseBtn = document.querySelector("#sidebar-collapse-btn");
         const expander = document.querySelector("#sidebar-expander");
@@ -1201,8 +1452,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // En móvil: la paleta empieza colapsada
         if (window.innerWidth <= 768) setPaletteCollapsed(true);
 
-        // Auto-colapsar en móvil al hacer clic en el tablero
+        // Auto-colapsar en móvil al hacer clic en el tablero y desenfocar inputs
         boardContainer.addEventListener('pointerdown', (e) => {
+            if (e.target === boardContainer || e.target.classList.contains('connection-line') || e.target.id === 'board-container') {
+                if (document.activeElement && document.activeElement !== document.body) {
+                    document.activeElement.blur();
+                }
+            }
             if (window.innerWidth <= 768 && !appState.isSidebarCollapsed) {
                 setSidebarCollapsed(true);
             }
