@@ -403,7 +403,10 @@
             aria-roledescription="Espacio de trabajo para organizar notas adhesivas"></div>
     </main>
 
-    <nav id="zoom-controls" role="navigation" aria-label="Controles de zoom del tablero">
+    <nav id="zoom-controls" role="navigation" aria-label="Controles de zoom y deshacer">
+        <button id="global-undo-btn" aria-label="Deshacer" title="Deshacer (Ctrl+Z)">↩️</button>
+        <button id="global-redo-btn" aria-label="Rehacer" title="Rehacer (Ctrl+Y)">↪️</button>
+        <div class="zoom-separator" style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div>
         <button id="zoom-in-btn" aria-label="Acercar zoom">+</button>
         <span id="zoom-level-display" aria-live="polite" aria-atomic="true">100%</span>
         <button id="zoom-out-btn" aria-label="Alejar zoom">-</button>

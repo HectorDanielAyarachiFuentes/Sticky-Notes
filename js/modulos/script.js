@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const zoomOutBtn = document.querySelector("#zoom-out-btn");
     const zoomResetBtn = document.querySelector("#zoom-reset-btn");
     const zoomLevelDisplay = document.querySelector("#zoom-level-display");
+    const globalUndoBtn = document.querySelector("#global-undo-btn");
+    const globalRedoBtn = document.querySelector("#global-redo-btn");
     // Controles de estilo de línea
     const lineColorInput = document.querySelector("#line-color-input");
     const lineOpacityInput = document.querySelector("#line-opacity-input");
@@ -1219,10 +1221,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (noteImageInput) noteImageInput.click();
         });
 
-        // --- SISTEMA DESHACER (UNDO) ---
+        // --- SISTEMA DESHACER (UNDO) / REHACER (REDO) GLOBAL ---
         // Exponer registrarComando globalmente para que lo usen otros módulos (como papelera.js)
         window.registrarComando = function(comando) {
             appState.globalHistory.push(comando);
+            appState.globalRedoHistory = []; // Si se hace una nueva acción, se pierde el futuro
             // Limitar a los últimos 50 comandos para evitar sobreconsumo de memoria
             if (appState.globalHistory.length > 50) {
                 appState.globalHistory.shift();
@@ -1230,175 +1233,243 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveState(); // Guardar el historial en localStorage
         };
 
-        // Escuchar Ctrl+Z
-        document.addEventListener('keydown', (e) => {
-            // Prevenir Ctrl+Z si estamos editando texto (para no interferir con el Undo nativo del navegador)
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                const isEditingText = document.activeElement && 
-                                    (document.activeElement.tagName === 'INPUT' || 
-                                     document.activeElement.tagName === 'TEXTAREA' || 
-                                     document.activeElement.isContentEditable);
+        const deshacerGlobal = () => {
+            if (appState.globalHistory && appState.globalHistory.length > 0) {
+                const ultimoComando = appState.globalHistory.pop();
                 
-                if (!isEditingText) {
-                    e.preventDefault();
-                    if (appState.globalHistory && appState.globalHistory.length > 0) {
-                        const ultimoComando = appState.globalHistory.pop();
+                // Lógica para deshacer BORRAR_NOTA
+                if (ultimoComando.tipo === 'BORRAR_NOTA') {
+                    const noteToRestore = ultimoComando.datos.nota;
+                    const boardId = ultimoComando.datos.boardId;
+                    const connectionsToRestore = ultimoComando.datos.conexiones || [];
+                    
+                    // Buscar en la papelera y removerla (si sigue ahí)
+                    appState.trash = appState.trash.filter(n => n.id !== noteToRestore.id);
+                    
+                    // Insertar de vuelta en el tablero correspondiente
+                    if (appState.boards[boardId]) {
+                        appState.boards[boardId].notes.push(noteToRestore);
                         
-                        // Lógica para deshacer BORRAR_NOTA
-                        if (ultimoComando.tipo === 'BORRAR_NOTA') {
-                            const noteToRestore = ultimoComando.datos.nota;
-                            const boardId = ultimoComando.datos.boardId;
-                            const connectionsToRestore = ultimoComando.datos.conexiones || [];
-                            
-                            // Buscar en la papelera y removerla (si sigue ahí)
-                            appState.trash = appState.trash.filter(n => n.id !== noteToRestore.id);
-                            
-                            // Insertar de vuelta en el tablero correspondiente
-                            if (appState.boards[boardId]) {
-                                appState.boards[boardId].notes.push(noteToRestore);
-                                
-                                // Restaurar conexiones si las había
-                                if (connectionsToRestore.length > 0) {
-                                    if (!appState.boards[boardId].connections) {
-                                        appState.boards[boardId].connections = [];
-                                    }
-                                    appState.boards[boardId].connections.push(...connectionsToRestore);
-                                }
-                                
-                                saveState();
-                                showToast('Deshacer global: Nota restaurada');
-                                
-                                // Si el tablero activo es donde se restauró, renderizar notas y líneas
-                                if (appState.activeBoardId === boardId) {
-                                    renderActiveBoard(); 
-                                    if (typeof renderConnections === 'function') {
-                                        renderConnections();
-                                    } else {
-                                        updateAllLinesPosition();
-                                    }
-                                }
+                        // Restaurar conexiones si las había
+                        if (connectionsToRestore.length > 0) {
+                            if (!appState.boards[boardId].connections) {
+                                appState.boards[boardId].connections = [];
+                            }
+                            appState.boards[boardId].connections.push(...connectionsToRestore);
+                        }
+                        
+                        // Guardar para rehacer
+                        if (!appState.globalRedoHistory) appState.globalRedoHistory = [];
+                        appState.globalRedoHistory.push(ultimoComando);
+
+                        saveState();
+                        showToast('Deshacer global: Nota restaurada', 1500);
+                        
+                        // Si el tablero activo es donde se restauró, renderizar notas y líneas
+                        if (appState.activeBoardId === boardId) {
+                            renderActiveBoard(); 
+                            if (typeof renderConnections === 'function') {
+                                renderConnections();
                             } else {
-                                showToast('⚠️ No se puede restaurar: Tablero eliminado');
+                                updateAllLinesPosition();
                             }
                         }
                     } else {
-                        showToast('Nada que deshacer', 1500); 
-                    }
-                } else {
-                    // DESHACER LOCAL (MICRO-ACCIONES DE TEXTO) AISLADO
-                    const activeEditor = document.activeElement;
-                    const noteElement = activeEditor.closest('.stickynote');
-                    if (noteElement) {
-                        e.preventDefault(); // Evitamos global undo
-                        const noteId = noteElement.dataset.noteId;
-                        const currentBoard = appState.boards[appState.activeBoardId];
-                        const noteData = currentBoard.notes.find(n => n.id === noteId);
-                        
-                        // Determinar si es título o contenido
-                        let historyArr, historyIndexKey, updateFieldKey;
-                        const isText = activeEditor.classList.contains('stickynote-text');
-                        const isTitle = activeEditor.classList.contains('stickynote-title');
-                        let tabIndex = noteData.activeTab;
-                        
-                        if (isText) {
-                            tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
-                            const tabD = noteData.tabs[tabIndex];
-                            if(!tabD.history) { tabD.history = [tabD.content || '']; tabD.historyIndex = 0; }
-                            historyArr = tabD.history; historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
-                        } else if (isTitle) {
-                            const tabD = noteData.tabs[tabIndex];
-                            if(!tabD.historyTitle) { tabD.historyTitle = [tabD.title || '']; tabD.historyTitleIndex = 0; }
-                            historyArr = tabD.historyTitle; historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
-                        }
-                        
-                        if (historyArr) {
-                            const tabData = noteData.tabs[tabIndex];
-                            const currentText = activeEditor.innerHTML;
-                            let idx = tabData[historyIndexKey];
-                            
-                            // Si hay texto no guardado, lo guardamos antes de retroceder
-                            if (currentText !== historyArr[idx]) {
-                                // Cortamos el futuro si existía (no debería, porque estamos tipeando de nuevo)
-                                if (idx < historyArr.length - 1) historyArr.length = idx + 1;
-                                historyArr.push(currentText);
-                                idx = historyArr.length - 1;
-                                tabData[historyIndexKey] = idx;
-                            }
-                            
-                            if (idx > 0) {
-                                idx--;
-                                tabData[historyIndexKey] = idx;
-                                const restoredText = historyArr[idx];
-                                activeEditor.innerHTML = restoredText;
-                                tabData[updateFieldKey] = restoredText;
-                                
-                                // Cursor al final
-                                const selection = window.getSelection();
-                                const range = document.createRange();
-                                range.selectNodeContents(activeEditor);
-                                range.collapse(false);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                                
-                                saveState();
-                                showToast('Deshacer local', 800);
-                            }
-                        }
+                        showToast('⚠️ No se puede restaurar: Tablero eliminado', 2000);
+                        appState.globalHistory.push(ultimoComando); // Devolverlo si falla
                     }
                 }
+            } else {
+                showToast('Nada que deshacer', 1500); 
+            }
+        };
+
+        const rehacerGlobal = () => {
+            if (appState.globalRedoHistory && appState.globalRedoHistory.length > 0) {
+                const ultimoDeshacer = appState.globalRedoHistory.pop();
+                
+                if (ultimoDeshacer.tipo === 'BORRAR_NOTA') {
+                    const noteId = ultimoDeshacer.datos.nota.id;
+                    const boardId = ultimoDeshacer.datos.boardId;
+                    
+                    if (appState.boards[boardId]) {
+                        // Volver a borrar la nota
+                        const index = appState.boards[boardId].notes.findIndex(n => n.id === noteId);
+                        if (index !== -1) {
+                            const noteParaBorrar = appState.boards[boardId].notes.splice(index, 1)[0];
+                            
+                            // Remover conexiones nuevamente
+                            if (appState.boards[boardId].connections) {
+                                appState.boards[boardId].connections = appState.boards[boardId].connections.filter(c => c.from !== noteId && c.to !== noteId);
+                            }
+                            
+                            appState.trash.push(noteParaBorrar);
+                            
+                            // Devolver a globalHistory
+                            appState.globalHistory.push(ultimoDeshacer);
+                            
+                            saveState();
+                            showToast('Rehacer global: Nota eliminada', 1500);
+                            
+                            if (appState.activeBoardId === boardId) {
+                                renderActiveBoard();
+                                if (typeof renderConnections === 'function') {
+                                    renderConnections();
+                                } else {
+                                    updateAllLinesPosition();
+                                }
+                            }
+                        }
+                    } else {
+                        showToast('⚠️ No se puede rehacer: Tablero eliminado', 2000);
+                        appState.globalRedoHistory.push(ultimoDeshacer); // Devolverlo si falla
+                    }
+                }
+            } else {
+                showToast('Nada que rehacer', 1500);
+            }
+        };
+
+        const deshacerLocal = (activeEditor) => {
+            const noteElement = activeEditor.closest('.stickynote');
+            if (noteElement) {
+                const noteId = noteElement.dataset.noteId;
+                const currentBoard = appState.boards[appState.activeBoardId];
+                const noteData = currentBoard.notes.find(n => n.id === noteId);
+                
+                // Determinar si es título o contenido
+                let historyArr, historyIndexKey, updateFieldKey;
+                const isText = activeEditor.classList.contains('stickynote-text');
+                const isTitle = activeEditor.classList.contains('stickynote-title');
+                let tabIndex = noteData.activeTab;
+                
+                if (isText) {
+                    tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
+                    const tabD = noteData.tabs[tabIndex];
+                    if(!tabD.history) { tabD.history = [tabD.content || '']; tabD.historyIndex = 0; }
+                    historyArr = tabD.history; historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
+                } else if (isTitle) {
+                    const tabD = noteData.tabs[tabIndex];
+                    if(!tabD.historyTitle) { tabD.historyTitle = [tabD.title || '']; tabD.historyTitleIndex = 0; }
+                    historyArr = tabD.historyTitle; historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
+                }
+                
+                if (historyArr) {
+                    const tabData = noteData.tabs[tabIndex];
+                    const currentText = activeEditor.innerHTML;
+                    let idx = tabData[historyIndexKey];
+                    
+                    // Si hay texto no guardado, lo guardamos antes de retroceder
+                    if (currentText !== historyArr[idx]) {
+                        // Cortamos el futuro si existía (no debería, porque estamos tipeando de nuevo)
+                        if (idx < historyArr.length - 1) historyArr.length = idx + 1;
+                        historyArr.push(currentText);
+                        idx = historyArr.length - 1;
+                        tabData[historyIndexKey] = idx;
+                    }
+                    
+                    if (idx > 0) {
+                        idx--;
+                        tabData[historyIndexKey] = idx;
+                        const restoredText = historyArr[idx];
+                        activeEditor.innerHTML = restoredText;
+                        tabData[updateFieldKey] = restoredText;
+                        
+                        // Cursor al final
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(activeEditor);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        saveState();
+                        showToast('Deshacer local', 800);
+                    }
+                }
+            }
+        };
+
+        const rehacerLocal = (activeEditor) => {
+            const noteElement = activeEditor.closest('.stickynote');
+            if (noteElement) {
+                const noteId = noteElement.dataset.noteId;
+                const currentBoard = appState.boards[appState.activeBoardId];
+                const noteData = currentBoard.notes.find(n => n.id === noteId);
+                
+                let historyArr, historyIndexKey, updateFieldKey;
+                const isText = activeEditor.classList.contains('stickynote-text');
+                const isTitle = activeEditor.classList.contains('stickynote-title');
+                let tabIndex = noteData.activeTab;
+                
+                if (isText) {
+                    tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
+                    historyArr = noteData.tabs[tabIndex].history; 
+                    historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
+                } else if (isTitle) {
+                    historyArr = noteData.tabs[tabIndex].historyTitle; 
+                    historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
+                }
+                
+                if (historyArr) {
+                    const tabData = noteData.tabs[tabIndex];
+                    let idx = tabData[historyIndexKey];
+                    
+                    if (idx < historyArr.length - 1) {
+                        idx++;
+                        tabData[historyIndexKey] = idx;
+                        const restoredText = historyArr[idx];
+                        activeEditor.innerHTML = restoredText;
+                        tabData[updateFieldKey] = restoredText;
+                        
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(activeEditor);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        saveState();
+                        showToast('Rehacer local', 800);
+                    }
+                }
+            }
+        };
+
+        const ejecutarDeshacer = () => {
+            const isEditingText = document.activeElement && 
+                                (document.activeElement.tagName === 'INPUT' || 
+                                 document.activeElement.tagName === 'TEXTAREA' || 
+                                 document.activeElement.isContentEditable);
+            
+            if (!isEditingText) {
+                deshacerGlobal();
+            } else {
+                deshacerLocal(document.activeElement);
+            }
+        };
+
+        const ejecutarRehacer = () => {
+            const isEditingText = document.activeElement && 
+                                (document.activeElement.tagName === 'INPUT' || 
+                                 document.activeElement.tagName === 'TEXTAREA' || 
+                                 document.activeElement.isContentEditable);
+            if (isEditingText) {
+                rehacerLocal(document.activeElement);
+            } else {
+                rehacerGlobal();
+            }
+        };
+
+        // Escuchar Ctrl+Z y Ctrl+Y
+        document.addEventListener('keydown', (e) => {
+            // Prevenir Ctrl+Z si estamos editando texto (para no interferir con el Undo nativo del navegador)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                ejecutarDeshacer();
             } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-                // REHACER LOCAL
-                const isEditingText = document.activeElement && 
-                                    (document.activeElement.tagName === 'INPUT' || 
-                                     document.activeElement.tagName === 'TEXTAREA' || 
-                                     document.activeElement.isContentEditable);
-                if (isEditingText) {
-                    const activeEditor = document.activeElement;
-                    const noteElement = activeEditor.closest('.stickynote');
-                    if (noteElement) {
-                        e.preventDefault();
-                        const noteId = noteElement.dataset.noteId;
-                        const currentBoard = appState.boards[appState.activeBoardId];
-                        const noteData = currentBoard.notes.find(n => n.id === noteId);
-                        
-                        let historyArr, historyIndexKey, updateFieldKey;
-                        const isText = activeEditor.classList.contains('stickynote-text');
-                        const isTitle = activeEditor.classList.contains('stickynote-title');
-                        let tabIndex = noteData.activeTab;
-                        
-                        if (isText) {
-                            tabIndex = parseInt(activeEditor.dataset.tabIndex, 10);
-                            historyArr = noteData.tabs[tabIndex].history; 
-                            historyIndexKey = 'historyIndex'; updateFieldKey = 'content';
-                        } else if (isTitle) {
-                            historyArr = noteData.tabs[tabIndex].historyTitle; 
-                            historyIndexKey = 'historyTitleIndex'; updateFieldKey = 'title';
-                        }
-                        
-                        if (historyArr) {
-                            const tabData = noteData.tabs[tabIndex];
-                            let idx = tabData[historyIndexKey];
-                            
-                            if (idx < historyArr.length - 1) {
-                                idx++;
-                                tabData[historyIndexKey] = idx;
-                                const restoredText = historyArr[idx];
-                                activeEditor.innerHTML = restoredText;
-                                tabData[updateFieldKey] = restoredText;
-                                
-                                const selection = window.getSelection();
-                                const range = document.createRange();
-                                range.selectNodeContents(activeEditor);
-                                range.collapse(false);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                                
-                                saveState();
-                                showToast('Rehacer local', 800);
-                            }
-                        }
-                    }
-                }
+                e.preventDefault();
+                ejecutarRehacer();
             }
         });
 
@@ -1543,6 +1614,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         zoomInBtn.addEventListener('click', () => updateZoom(appState.zoomLevel + 0.1));
         zoomOutBtn.addEventListener('click', () => updateZoom(appState.zoomLevel - 0.1));
         zoomResetBtn.addEventListener('click', () => updateZoom(1.0));
+        
+        // Evitamos que los botones roben el foco del texto para que el activeElement siga siendo el editor
+        globalUndoBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        globalRedoBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        
+        globalUndoBtn.addEventListener('click', () => { ejecutarDeshacer(); });
+        globalRedoBtn.addEventListener('click', () => { ejecutarRehacer(); });
         // Ya no se necesita el listener de scroll en boardContainer
 
         // --- RENDERIZADO INICIAL ---
