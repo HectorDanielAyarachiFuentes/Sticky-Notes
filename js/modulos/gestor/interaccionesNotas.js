@@ -39,6 +39,9 @@ export function initializeNoteInteractions(appStateRef, domRefs, callbackFuncs) 
 
 // --- LÓGICA DE INTERACCIÓN (FUNCIONES INTERNAS) ---
 
+let originalNoteX = 0; // Guardamos posicion original antes de arrastrar
+let originalNoteY = 0;
+
 function handlePointerDown(e) {
     const isResizer = e.target.classList.contains('resizer');
     const isPaletteNote = e.target.closest('.palette-note');
@@ -100,6 +103,10 @@ function handlePointerDown(e) {
         offsetX = mouseXInBoard - activeNote.offsetLeft;
         offsetY = mouseYInBoard - activeNote.offsetTop;
 
+        // Guardamos original por si el usuario cancela en la papelera
+        originalNoteX = activeNoteData.x;
+        originalNoteY = activeNoteData.y;
+        
         Callbacks.bringToFront(activeNote, activeNoteData);
         if (!e.target.isContentEditable) {
             activeNote.classList.add('dragging');
@@ -202,7 +209,22 @@ function handlePointerUp(e) {
     if (!activeNote) return;
 
     if (DOM.trashCan.classList.contains('active')) {
-        Callbacks.moveNoteToTrash(activeNoteData.id); 
+        const confirmar = confirm("¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
+        if (confirmar) {
+            Callbacks.moveNoteToTrash(activeNoteData.id); 
+            activeNote = null; activeNoteData = null; isResizing = false;
+            offsetX = 0; offsetY = 0;
+            DOM.trashCan.classList.remove('visible', 'active');
+            return; // Salimos temprano y no llamamos a saveState con la posición "basura"
+        } else {
+            // Devolver la nota a su posición original fuerte usando variables
+            activeNoteData.x = originalNoteX; 
+            activeNoteData.y = originalNoteY;
+            activeNote.style.left = `${activeNoteData.x}px`;
+            activeNote.style.top = `${activeNoteData.y}px`;
+            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
+            if (!isResizing) Callbacks.updateAllLinesPosition();
+        }
     } else {
         if (!isResizing) Callbacks.updateAllLinesPosition();
         activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;

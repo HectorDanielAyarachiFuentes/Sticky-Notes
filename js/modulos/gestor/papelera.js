@@ -31,44 +31,48 @@ export function moveNoteToTrash(noteId) {
 
     noteElement.classList.add('deleting');
 
-    noteElement.addEventListener('animationend', () => {
-        const notes = appState.boards[boardId].notes;
-        const noteIndex = notes.findIndex(n => n.id === noteId);
+    // --- ELIMINACIÓN LÓGICA (Sincrónica para evitar que un saveState paralelo la guarde de nuevo) ---
+    const notes = appState.boards[boardId].notes;
+    const noteIndex = notes.findIndex(n => n.id === noteId);
 
-        if (noteIndex > -1) {
-            const [noteToTrash] = notes.splice(noteIndex, 1);
-            
-            // --- SISTEMA DESHACER (UNDO) ---
-            // Guardamos un snapshot completo de la nota y sus conexiones
-            const noteSnapshot = JSON.parse(JSON.stringify(noteToTrash));
-            const boardConnections = appState.boards[boardId].connections;
-            const relatedConnections = boardConnections ? boardConnections.filter(conn => conn.from === noteId || conn.to === noteId) : [];
-            const connectionsSnapshot = JSON.parse(JSON.stringify(relatedConnections));
-            
-            if (typeof window.registrarComando === 'function') {
-                window.registrarComando({
-                    tipo: 'BORRAR_NOTA',
-                    datos: { 
-                        nota: noteSnapshot, 
-                        conexiones: connectionsSnapshot,
-                        boardId: boardId 
-                    }
-                });
-            }
-            
-            noteToTrash.originalBoardId = boardId;
-            appState.trash.push(noteToTrash);
+    if (noteIndex > -1) {
+        const [noteToTrash] = notes.splice(noteIndex, 1);
+        
+        // --- SISTEMA DESHACER (UNDO) ---
+        // Guardamos un snapshot completo de la nota y sus conexiones
+        const noteSnapshot = JSON.parse(JSON.stringify(noteToTrash));
+        const boardConnections = appState.boards[boardId].connections;
+        const relatedConnections = boardConnections ? boardConnections.filter(conn => conn.from === noteId || conn.to === noteId) : [];
+        const connectionsSnapshot = JSON.parse(JSON.stringify(relatedConnections));
+        
+        if (typeof window.registrarComando === 'function') {
+            window.registrarComando({
+                tipo: 'BORRAR_NOTA',
+                datos: { 
+                    nota: noteSnapshot, 
+                    conexiones: connectionsSnapshot,
+                    boardId: boardId 
+                }
+            });
+        }
+        
+        noteToTrash.originalBoardId = boardId;
+        appState.trash.push(noteToTrash);
 
-            // Eliminar conexiones asociadas en el estado
-            appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
-                conn => conn.from !== noteId && conn.to !== noteId
-            );
+        // Eliminar conexiones asociadas en el estado
+        appState.boards[boardId].connections = appState.boards[boardId].connections.filter(
+            conn => conn.from !== noteId && conn.to !== noteId
+        );
+        
+        // Guardamos el estado sin la nota, antes de la animación para que quede persistente
+        Callbacks.saveState();
 
+        // --- ELIMINACIÓN VISUAL (Asincrónica al terminar la animación) ---
+        noteElement.addEventListener('animationend', () => {
             // Eliminar visualmente las líneas usando el callback
             Callbacks.removeLinesForNote(noteId);
             noteElement.remove();
 
-            Callbacks.saveState();
             Callbacks.updateBoardSize();
             Callbacks.showToast('Nota movida a la papelera.');
 
@@ -77,8 +81,8 @@ export function moveNoteToTrash(noteId) {
             if (trashTabContent && trashTabContent.classList.contains('active')) {
                 renderTrash();
             }
-        }
-    }, { once: true });
+        }, { once: true });
+    }
 
     Callbacks.hideContextMenu();
 }

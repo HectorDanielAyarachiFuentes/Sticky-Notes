@@ -275,6 +275,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loadedState.isSidebarCollapsed = false;
                 loadedState.isPalettePinned = true;
             }
+            if (!loadedState.globalHistory) loadedState.globalHistory = [];
+            if (!loadedState.globalRedoHistory) loadedState.globalRedoHistory = [];
             appState = loadedState;
         } else {
             const initialBoardId = `board-${Date.now()}`;
@@ -288,6 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
                 isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
+                globalHistory: [], globalRedoHistory: [],
                 lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', startPlug: 'behind', endPlug: 'arrow1', dash: false, dropShadow: false, label: '' }
             };
         }
@@ -840,7 +843,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function deleteNoteFromContext() {
-        if (contextMenuNoteId) moveNoteToTrash(contextMenuNoteId);
+        if (contextMenuNoteId) {
+            const confirmar = confirm("¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
+            if (confirmar) {
+                moveNoteToTrash(contextMenuNoteId);
+            }
+        }
+        hideContextMenu();
     }
 
     /**
