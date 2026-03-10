@@ -65,7 +65,7 @@ function handlePointerDown(e) {
         isResizing = true;
         Callbacks.bringToFront(activeNote, activeNoteData);
         activeNote.classList.add('dragging');
-        DOM.trashCan.classList.add('visible');
+        // No mostramos la papelera al redimensionar
     } 
     // CASO 2: Iniciar arrastre para CREAR una nota nueva
     else if (isPaletteNote) {
@@ -103,7 +103,8 @@ function handlePointerDown(e) {
         Callbacks.bringToFront(activeNote, activeNoteData);
         if (!e.target.isContentEditable) {
             activeNote.classList.add('dragging');
-            DOM.trashCan.classList.add('visible');
+            // La visibilidad de la papelera se activa en handlePointerMove, no en handlePointerDown
+            // para evitar que parpadee si solo se hace clic en la nota sin moverla (ej. al prepararse para arrastrar o hacer zoom con mouse).
         }
     }
 }
@@ -133,7 +134,12 @@ function handlePointerMove(e) {
         activeNoteData.height = Math.max(150, newHeight);
         activeNote.style.width = `${activeNoteData.width}px`;
         activeNote.style.height = `${activeNoteData.height}px`;
+        // Aseguramos que la papelera no esté visible ni activa al redimensionar
+        DOM.trashCan.classList.remove('visible', 'active');
     } else {
+        // Hacemos visible la papelera solo cuando se empieza a mover la nota de verdad (no al redimensionar)
+        DOM.trashCan.classList.add('visible');
+        
         const currentBoard = appState.boards[appState.activeBoardId];
         const mouseXInBoard = (e.clientX - boardRect.left - (currentBoard.panX || 0)) / appState.zoomLevel;
         const mouseYInBoard = (e.clientY - boardRect.top - (currentBoard.panY || 0)) / appState.zoomLevel;
@@ -143,10 +149,11 @@ function handlePointerMove(e) {
         activeNote.style.top = `${activeNoteData.y}px`;
         Callbacks.updateAllLinesPosition();
         activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
+        
+        // Solo comprobamos la papelera si estamos arrastrando para mover, no al redimensionar
+        const trashRect = DOM.trashCan.getBoundingClientRect();
+        DOM.trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
     }
-    
-    const trashRect = DOM.trashCan.getBoundingClientRect();
-    DOM.trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
 }
 
 function handlePointerUp(e) {
