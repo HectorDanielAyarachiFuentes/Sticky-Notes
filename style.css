@@ -3474,6 +3474,13 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
        Paleta fija como overlay. margin:0 !important anula cualquier
        margin inline del JS de collapse (author !important > normal inline). */
 
+    /* El body toma el fondo oscuro del tablero para evitar franja blanca */
+    body.palette-top,
+    body.palette-bottom {
+        background: hsl(226, 47%, 26%);
+        overflow: hidden;
+    }
+
     body.palette-top #note-palette,
     body.palette-bottom #note-palette {
         position: fixed !important;
@@ -3532,7 +3539,7 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
         width: 100% !important;
         height: auto !important;
         padding: 0 16px !important;
-        gap: 4px !important;
+        gap: 0 !important;            /* Sin gap: el overlap lo manejan los margins */
         align-items: center !important;
         justify-content: center !important;  /* Centra notas en la barra */
         -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
@@ -3545,27 +3552,34 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
         display: none;
     }
 
-    /* Notas: minimalistas, compactas, perfectamente centradas */
+    /* Notas: superpuestas como en modo vertical, efecto mazo de cartas */
     body.palette-top .palette-note,
     body.palette-bottom .palette-note {
         position: relative !important;
         top: auto !important;
         left: auto !important;
-        margin-left: 0 !important;
-        width: 22px !important;
-        height: 36px !important;
+        margin-left: -9px !important;  /* Overlap: cada nota tapa parcialmente la anterior */
+        width: 26px !important;
+        height: 42px !important;
         flex-shrink: 0 !important;
-        border-radius: 5px !important;
+        border-radius: 6px !important;
         transform: none !important;
         transform-origin: center bottom !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, z-index 0s !important;
+    }
+
+    /* La primera nota no tiene margen negativo */
+    body.palette-top #palette-scroll-container .palette-note:first-child,
+    body.palette-bottom #palette-scroll-container .palette-note:first-child {
+        margin-left: 0 !important;
     }
 
     body.palette-top .palette-note:hover,
     body.palette-bottom .palette-note:hover {
-        transform: translateY(-5px) scale(1.2) !important;
+        transform: translateY(-6px) scale(1.18) !important;
         z-index: 999 !important;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.45) !important;
+        margin-left: 0 !important;        /* Al hacer hover, deja un pequeño espacio */
+        box-shadow: 0 8px 18px rgba(0,0,0,0.5) !important;
     }
 
     /* Zoom controls en modo abajo: subirlos por encima de la paleta */

@@ -74,16 +74,34 @@ function handlePointerDown(e) {
     else if (isPaletteNote) {
         e.preventDefault();
         ghostNote = isPaletteNote.cloneNode(true);
-        ghostNote.style.position = 'fixed';
-        ghostNote.style.zIndex = '9999';
+
+        // ¡CRÍTICO! Quitar la clase 'palette-note' del ghost ANTES de añadirlo al body.
+        // Si el body tiene clase 'palette-top' o 'palette-bottom', el CSS de esos modos
+        // aplica `position: relative !important` a todos los .palette-note descendientes del body,
+        // lo cual anularía nuestro `ghostNote.style.position = 'fixed'`.
+        const noteColor = isPaletteNote.dataset.color;
+        ghostNote.className = 'palette-ghost';          // Clase neutra sin reglas CSS conflictivas
+        ghostNote.dataset.color = noteColor;             // Preservar para handlePointerUp
+
+        ghostNote.style.position    = 'fixed';
+        ghostNote.style.zIndex      = '9999';
         ghostNote.style.pointerEvents = 'none';
-        ghostNote.style.transform = 'scale(1.1)';
+        ghostNote.style.transform   = 'scale(1.08)';
+        ghostNote.style.width       = '50px';
+        ghostNote.style.height      = '65px';
+        ghostNote.style.borderRadius = '8px';
+        ghostNote.style.backgroundColor = noteColor || '#FFF9C4';
+        ghostNote.style.boxShadow   = '0 8px 24px rgba(0,0,0,0.4)';
+        ghostNote.style.opacity     = '0.92';
         document.body.appendChild(ghostNote);
 
-        offsetX = e.clientX - isPaletteNote.getBoundingClientRect().left;
-        offsetY = e.clientY - isPaletteNote.getBoundingClientRect().top;
+        // Centrar el ghost en el cursor
+        const GHOST_W = 50;
+        const GHOST_H = 65;
+        offsetX = GHOST_W / 2;
+        offsetY = GHOST_H / 2;
         ghostNote.style.left = `${e.clientX - offsetX}px`;
-        ghostNote.style.top = `${e.clientY - offsetY}px`;
+        ghostNote.style.top  = `${e.clientY - offsetY}px`;
         DOM.trashCan.classList.add('visible');
     } 
     // CASO 3: Iniciar arrastre para MOVER una nota existente
@@ -166,7 +184,28 @@ function handlePointerMove(e) {
 function handlePointerUp(e) {
     if (ghostNote) {
         const boardRect = DOM.boardContainer.getBoundingClientRect();
-        const isOverBoard = e.clientX >= boardRect.left && e.clientX <= boardRect.right && e.clientY >= boardRect.top && e.clientY <= boardRect.bottom;
+
+        // Detectar si la paleta está en modo horizontal y ajustar la zona válida del board.
+        // En esos modos la paleta ocupa 58px del viewport (top o bottom) con position:fixed,
+        // pero el boardRect del #board-container ya NO incluye esa franja (position:fixed no afecta al flow).
+        // Solo necesitamos verificar que el cursor esté dentro del boardRect.
+        const palettePos = document.body.classList.contains('palette-top')    ? 'top'
+                         : document.body.classList.contains('palette-bottom') ? 'bottom'
+                         : null;
+        const PALETTE_H = 58;
+        let isOverBoard;
+        if (palettePos === 'top') {
+            // Board ocupa de 58px a 100vh; el boardRect.top ya es ~58, solo verificar Y > 58
+            isOverBoard = e.clientX >= boardRect.left && e.clientX <= boardRect.right
+                       && e.clientY >= PALETTE_H      && e.clientY <= window.innerHeight;
+        } else if (palettePos === 'bottom') {
+            // Board ocupa de 0 a (100vh - 58px)
+            isOverBoard = e.clientX >= boardRect.left && e.clientX <= boardRect.right
+                       && e.clientY >= 0              && e.clientY <= (window.innerHeight - PALETTE_H);
+        } else {
+            isOverBoard = e.clientX >= boardRect.left  && e.clientX <= boardRect.right
+                       && e.clientY >= boardRect.top   && e.clientY <= boardRect.bottom;
+        }
 
         if (isOverBoard && !DOM.trashCan.classList.contains('active')) {            
             DOM.board.querySelector('.welcome-message')?.remove();
