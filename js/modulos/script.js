@@ -1598,8 +1598,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             paletteNote.className = `palette-note ${isColorDark(color) ? 'dark-theme' : ''}`;
             paletteNote.style.backgroundColor = color;
             paletteNote.dataset.color = color;
-            paletteNote.style.top = `${index * 25}px`;
-            paletteNote.style.transform = `rotate(${(Math.random() - 0.5) * 6}deg)`;
+            paletteNote.style.top = `${index * 22}px`;
+            paletteNote.style.zIndex = extendedColors.length - index;
+            paletteNote.style.transform = `perspective(600px) rotateX(25deg) rotateZ(${(Math.random() - 0.5) * 4}deg)`;
             paletteScrollContainer.appendChild(paletteNote);
         });
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
