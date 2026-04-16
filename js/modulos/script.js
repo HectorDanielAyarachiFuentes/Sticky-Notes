@@ -297,6 +297,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (appState.lineOptions.promptBeforeDelete === undefined) {
             appState.lineOptions.promptBeforeDelete = true;
         }
+        // Inicializar posición de paleta si no existe
+        if (!appState.palettePosition) {
+            appState.palettePosition = 'left';
+        }
     }
 
     // --- FUNCIONES DE LA PALETA DE NOTAS ---
@@ -310,6 +314,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.classList.toggle('palette-pinned', appState.isPalettePinned);
         pinPaletteBtn.classList.toggle('active', appState.isPalettePinned);
         pinPaletteBtn.title = appState.isPalettePinned ? 'Desfijar paleta' : 'Fijar paleta';
+    }
+
+    // --- POSICIÓN DE LA PALETA (solo escritorio) ---
+    function setPalettePosition(position) {
+        appState.palettePosition = position;
+        updatePalettePositionUI();
+        saveState();
+    }
+
+    function updatePalettePositionUI() {
+        const isRight = appState.palettePosition === 'right';
+        document.body.classList.toggle('palette-right', isRight);
+
+        const btnLeft  = document.getElementById('palette-pos-left');
+        const btnRight = document.getElementById('palette-pos-right');
+        if (!btnLeft || !btnRight) return;
+
+        btnLeft.classList.toggle('active', !isRight);
+        btnLeft.setAttribute('aria-pressed', String(!isRight));
+        btnRight.classList.toggle('active', isRight);
+        btnRight.setAttribute('aria-pressed', String(isRight));
     }
 
     // --- CONSTANTES GLOBALES ---
@@ -1633,11 +1658,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         globalRedoBtn.addEventListener('click', () => { ejecutarRehacer(); });
         // Ya no se necesita el listener de scroll en boardContainer
 
+        // --- BOTONES DE POSICIÓN DE PALETA ---
+        const palettePosLeftBtn  = document.getElementById('palette-pos-left');
+        const palettePosRightBtn = document.getElementById('palette-pos-right');
+        if (palettePosLeftBtn)  palettePosLeftBtn.addEventListener('click',  () => setPalettePosition('left'));
+        if (palettePosRightBtn) palettePosRightBtn.addEventListener('click', () => setPalettePosition('right'));
+
         // --- RENDERIZADO INICIAL ---
         renderBoardList();
         renderActiveBoard();
         updatePaletteState();
-        
+        updatePalettePositionUI();
+
         // Actualizar el indicador de almacenamiento al cargar
         updateStorageIndicator();
     }

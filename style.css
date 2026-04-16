@@ -3359,3 +3359,129 @@ input:checked+.slider:before {
 svg.leader-line { pointer-events: none !important; z-index: 5 !important; }
 svg.leader-line * { pointer-events: visiblePainted !important; cursor: pointer !important; }
 svg.leader-line .leader-line-linePath { pointer-events: stroke !important; cursor: pointer !important; stroke-width: 25px !important; stroke: transparent !important; }
+
+/* --- POSICIÓN DE PALETA: WIDGET DE CONTROL --- */
+
+/* Ocultar en móvil (<=768px) */
+.desktop-only {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* Widget de posición de paleta */
+#palette-position-widget {
+    margin: 12px 0 4px 0;
+    padding: 12px;
+    background: var(--surface-dark);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.palette-position-label {
+    margin: 0 0 10px 0;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.65;
+    color: var(--text-light);
+}
+
+.palette-position-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.palette-pos-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 8px;
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 0.75em;
+    font-weight: 600;
+    opacity: 0.55;
+    transition: all 0.22s ease;
+    cursor: pointer;
+    font-family: 'Roboto Slab', serif;
+    /* Reset heredado de .tab-content button */
+    margin-top: 0 !important;
+    width: auto !important;
+}
+
+.palette-pos-btn svg {
+    width: 28px;
+    height: 20px;
+}
+
+.palette-pos-btn:hover {
+    background: rgba(255,255,255,0.07);
+    opacity: 0.85;
+    border-color: rgba(255,255,255,0.2);
+    transform: none;
+}
+
+.palette-pos-btn.active {
+    background: var(--gradient-primary);
+    border-color: var(--color-primary);
+    opacity: 1;
+    box-shadow: 0 2px 12px rgba(0,122,255,0.35);
+    transform: none;
+}
+
+/* --- POSICIÓN DE PALETA: MODO DERECHA (solo desktop) --- */
+@media (min-width: 769px) {
+
+    /* Cuando la paleta está a la derecha, se coloca al final del flex del body */
+    body.palette-right #note-palette {
+        order: 10;               /* Va al final del flex row del body */
+        border-right: none;
+        border-left: 1px solid rgba(60, 60, 67, 0.2);
+        /* Ajuste de transición: margin-right en vez de margin-left */
+        transition: margin-right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        margin-left: 0;
+    }
+
+    /* El expander de paleta también se reposiciona a la derecha */
+    body.palette-right #palette-expander {
+        left: auto;
+        right: 0;
+        border-radius: 8px 0 0 8px;
+        transform: translateY(-50%) translateX(100%);
+    }
+
+    body.palette-right #palette-expander.palette-visible {
+        transform: translateY(-50%) translateX(-200%);
+    }
+
+    /* En modo derecha, el colapso del sidebar (board-manager) NO arrastra la paleta */
+    body.palette-right #board-manager.collapsed ~ #note-palette {
+        margin-left: 0;
+    }
+
+    /* El indicador de scroll UP queda arriba (sin cambio) */
+    /* El scroll indicator DOWN queda abajo (sin cambio) */
+
+    /* En modo derecha, ajustar animación de entrada de la paleta colapsada (mobile no aplica) */
+    body.palette-right #note-palette.palette-collapsed {
+        margin-right: -120px;
+    }
+}
+
+/* Suprime transiciones de la paleta solo durante la carga inicial */
+body.no-palette-transition #note-palette,
+body.no-palette-transition #palette-expander {
+    transition: none !important;
+}
+
+

@@ -39,6 +39,23 @@
 </head>
 
 <body>
+    <!-- Script síncrono mínimo: aplica la posición de la paleta ANTES del primer render para evitar flash -->
+    <script>
+        (function () {
+            try {
+                var s = JSON.parse(localStorage.getItem('stickyNotesApp') || '{}');
+                // Suprimir transiciones durante la carga para evitar el flash de movimiento
+                document.body.classList.add('no-palette-transition');
+                if (s.palettePosition === 'right') document.body.classList.add('palette-right');
+                // Restaurar transiciones tras el primer frame pintado
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        document.body.classList.remove('no-palette-transition');
+                    });
+                });
+            } catch (e) { }
+        })();
+    </script>
 
     <aside id="board-manager" role="complementary" aria-label="Panel de gestión de tableros">
         <h3>
@@ -73,6 +90,20 @@
                 <input type="search" id="search-input" aria-label="Buscar tableros y notas"
                     placeholder="🔎 Buscar en tableros...">
                 <div id="global-search-results" role="region" aria-live="polite" aria-label="Resultados de búsqueda">
+                </div>
+                <!-- Control de posición de la paleta: solo escritorio -->
+                <div id="palette-position-widget" class="desktop-only" role="group" aria-label="Posición de la paleta de notas">
+                    <p class="palette-position-label">📍 Posición de la paleta</p>
+                    <div class="palette-position-btns">
+                        <button id="palette-pos-left" class="palette-pos-btn active" aria-pressed="true" title="Paleta a la izquierda">
+                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="6" height="20" rx="2" fill="currentColor"/><rect x="9" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                            Izquierda
+                        </button>
+                        <button id="palette-pos-right" class="palette-pos-btn" aria-pressed="false" title="Paleta a la derecha">
+                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="22" y="0" width="6" height="20" rx="2" fill="currentColor"/><rect x="0" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                            Derecha
+                        </button>
+                    </div>
                 </div>
                 <ul id="board-list" role="list" aria-label="Lista de tableros disponibles"></ul>
             </section>
