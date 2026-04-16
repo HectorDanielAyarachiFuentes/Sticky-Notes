@@ -3470,6 +3470,12 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
         margin-right: -120px;
     }
 
+    /* Keyframe: fade-in suave de la paleta para ocultar el flash de carga */
+    @keyframes aero-palette-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
     /* ======= MODO ARRIBA / ABAJO =======
        Paleta fija como overlay. margin:0 !important anula cualquier
        margin inline del JS de collapse (author !important > normal inline). */
@@ -3498,22 +3504,37 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
         padding: 0 !important;
         gap: 0 !important;
         overflow: hidden !important;
-        background: var(--surface-dark) !important;
+        /* Cristal Aero: muy transparente, el tablero se ve a través */
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.055) 0%,
+            rgba(180, 210, 255, 0.025) 50%,
+            rgba(255, 255, 255, 0.015) 100%
+        ) !important;
+        -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
+        backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
         border-right: none !important;
         border-left: none !important;
+        /* Fade-in: espera 0.15s para que el JS cargue las notas antes de mostrar la barra */
+        animation: aero-palette-in 0.3s ease 0.15s both !important;
         z-index: 149;
     }
 
     body.palette-top #note-palette {
         top: 0 !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+        box-shadow:
+            0 2px 16px rgba(0,0,0,0.25),
+            inset 0 1px 0 rgba(255,255,255,0.18);
     }
 
     body.palette-bottom #note-palette {
         bottom: 0 !important;
-        border-top: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: 0 -2px 12px rgba(0,0,0,0.4);
+        border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
+        box-shadow:
+            0 -2px 20px rgba(0,0,0,0.35),
+            inset 0 1px 0 rgba(255,255,255,0.22),
+            inset 0 -1px 0 rgba(0,0,0,0.10);
     }
 
     /* Ocultar header y controles de scroll vertical */
