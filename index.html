@@ -44,10 +44,11 @@
         (function () {
             try {
                 var s = JSON.parse(localStorage.getItem('stickyNotesApp') || '{}');
-                // Suprimir transiciones durante la carga para evitar el flash de movimiento
+                var p = s.palettePosition;
                 document.body.classList.add('no-palette-transition');
-                if (s.palettePosition === 'right') document.body.classList.add('palette-right');
-                // Restaurar transiciones tras el primer frame pintado
+                if (p === 'right')  document.body.classList.add('palette-right');
+                if (p === 'top')    document.body.classList.add('palette-top');
+                if (p === 'bottom') document.body.classList.add('palette-bottom');
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
                         document.body.classList.remove('no-palette-transition');
@@ -102,6 +103,14 @@
                         <button id="palette-pos-right" class="palette-pos-btn" aria-pressed="false" title="Paleta a la derecha">
                             <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="22" y="0" width="6" height="20" rx="2" fill="currentColor"/><rect x="0" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3"/></svg>
                             Derecha
+                        </button>
+                        <button id="palette-pos-top" class="palette-pos-btn" aria-pressed="false" title="Paleta arriba">
+                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="28" height="5" rx="2" fill="currentColor"/><rect x="3" y="8" width="22" height="12" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                            Arriba
+                        </button>
+                        <button id="palette-pos-bottom" class="palette-pos-btn" aria-pressed="false" title="Paleta abajo">
+                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="15" width="28" height="5" rx="2" fill="currentColor"/><rect x="3" y="0" width="22" height="12" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                            Abajo
                         </button>
                     </div>
                 </div>

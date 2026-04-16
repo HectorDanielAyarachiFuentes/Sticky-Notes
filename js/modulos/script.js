@@ -318,23 +318,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- POSICIÓN DE LA PALETA (solo escritorio) ---
     function setPalettePosition(position) {
+        // Suprimir transiciones → cambio instantáneo sin animación lenta
+        document.body.classList.add('no-palette-transition');
         appState.palettePosition = position;
         updatePalettePositionUI();
         saveState();
+        // Re-habilitar después de 2 frames (DOM ya pintado)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            document.body.classList.remove('no-palette-transition');
+        }));
     }
 
     function updatePalettePositionUI() {
-        const isRight = appState.palettePosition === 'right';
-        document.body.classList.toggle('palette-right', isRight);
+        const pos = appState.palettePosition || 'left';
+        document.body.classList.toggle('palette-right',  pos === 'right');
+        document.body.classList.toggle('palette-top',    pos === 'top');
+        document.body.classList.toggle('palette-bottom', pos === 'bottom');
 
-        const btnLeft  = document.getElementById('palette-pos-left');
-        const btnRight = document.getElementById('palette-pos-right');
-        if (!btnLeft || !btnRight) return;
+        // En modos horizontales: limpiar estilos inline que el modo lateral
+        // pudo haber dejado (margin-left del collapse animation, etc.)
+        const palette = document.getElementById('note-palette');
+        if (palette && (pos === 'top' || pos === 'bottom')) {
+            palette.style.marginLeft   = '';
+            palette.style.marginRight  = '';
+            palette.style.marginTop    = '';
+            palette.style.marginBottom = '';
+            palette.style.width        = '';
+            // Forzar visible (no colapsado) para que no se oculte lateralmente
+            palette.classList.remove('palette-collapsed');
+            palette.classList.add('palette-visible');
+        }
 
-        btnLeft.classList.toggle('active', !isRight);
-        btnLeft.setAttribute('aria-pressed', String(!isRight));
-        btnRight.classList.toggle('active', isRight);
-        btnRight.setAttribute('aria-pressed', String(isRight));
+        ['left', 'right', 'top', 'bottom'].forEach(p => {
+            const btn = document.getElementById(`palette-pos-${p}`);
+            if (!btn) return;
+            btn.classList.toggle('active', pos === p);
+            btn.setAttribute('aria-pressed', String(pos === p));
+        });
     }
 
     // --- CONSTANTES GLOBALES ---
@@ -1659,10 +1679,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Ya no se necesita el listener de scroll en boardContainer
 
         // --- BOTONES DE POSICIÓN DE PALETA ---
-        const palettePosLeftBtn  = document.getElementById('palette-pos-left');
-        const palettePosRightBtn = document.getElementById('palette-pos-right');
-        if (palettePosLeftBtn)  palettePosLeftBtn.addEventListener('click',  () => setPalettePosition('left'));
-        if (palettePosRightBtn) palettePosRightBtn.addEventListener('click', () => setPalettePosition('right'));
+        const palettePosLeftBtn   = document.getElementById('palette-pos-left');
+        const palettePosRightBtn  = document.getElementById('palette-pos-right');
+        const palettePosTopBtn    = document.getElementById('palette-pos-top');
+        const palettePosBottomBtn = document.getElementById('palette-pos-bottom');
+        if (palettePosLeftBtn)   palettePosLeftBtn.addEventListener('click',   () => setPalettePosition('left'));
+        if (palettePosRightBtn)  palettePosRightBtn.addEventListener('click',  () => setPalettePosition('right'));
+        if (palettePosTopBtn)    palettePosTopBtn.addEventListener('click',    () => setPalettePosition('top'));
+        if (palettePosBottomBtn) palettePosBottomBtn.addEventListener('click', () => setPalettePosition('bottom'));
+
+        // Scroll horizontal con rueda del ratón cuando la paleta está arriba/abajo
+        const notePaletteEl = document.querySelector('#note-palette');
+        const scrollContainer = document.querySelector('#palette-scroll-container');
+        if (notePaletteEl && scrollContainer) {
+            notePaletteEl.addEventListener('wheel', (e) => {
+                const pos = appState.palettePosition;
+                if (pos === 'top' || pos === 'bottom') {
+                    e.preventDefault();
+                    scrollContainer.scrollLeft += e.deltaY || e.deltaX;
+                }
+            }, { passive: false });
+        }
 
         // --- RENDERIZADO INICIAL ---
         renderBoardList();

@@ -3360,7 +3360,6 @@ svg.leader-line { pointer-events: none !important; z-index: 5 !important; }
 svg.leader-line * { pointer-events: visiblePainted !important; cursor: pointer !important; }
 svg.leader-line .leader-line-linePath { pointer-events: stroke !important; cursor: pointer !important; stroke-width: 25px !important; stroke: transparent !important; }
 
-/* --- POSICIÓN DE PALETA: WIDGET DE CONTROL --- */
 
 /* Ocultar en móvil (<=768px) */
 .desktop-only {
@@ -3393,7 +3392,8 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
 }
 
 .palette-position-btns {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
@@ -3439,20 +3439,18 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
     transform: none;
 }
 
-/* --- POSICIÓN DE PALETA: MODO DERECHA (solo desktop) --- */
+/* --- POSICIÓN DE PALETA: MODOS (solo desktop) --- */
 @media (min-width: 769px) {
 
-    /* Cuando la paleta está a la derecha, se coloca al final del flex del body */
+    /* ======= MODO DERECHA ======= */
     body.palette-right #note-palette {
-        order: 10;               /* Va al final del flex row del body */
+        order: 10;
         border-right: none;
         border-left: 1px solid rgba(60, 60, 67, 0.2);
-        /* Ajuste de transición: margin-right en vez de margin-left */
         transition: margin-right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
         margin-left: 0;
     }
 
-    /* El expander de paleta también se reposiciona a la derecha */
     body.palette-right #palette-expander {
         left: auto;
         right: 0;
@@ -3464,24 +3462,125 @@ svg.leader-line .leader-line-linePath { pointer-events: stroke !important; curso
         transform: translateY(-50%) translateX(-200%);
     }
 
-    /* En modo derecha, el colapso del sidebar (board-manager) NO arrastra la paleta */
     body.palette-right #board-manager.collapsed ~ #note-palette {
         margin-left: 0;
     }
 
-    /* El indicador de scroll UP queda arriba (sin cambio) */
-    /* El scroll indicator DOWN queda abajo (sin cambio) */
-
-    /* En modo derecha, ajustar animación de entrada de la paleta colapsada (mobile no aplica) */
     body.palette-right #note-palette.palette-collapsed {
         margin-right: -120px;
     }
-}
+
+    /* ======= MODO ARRIBA / ABAJO =======
+       Paleta fija como overlay. margin:0 !important anula cualquier
+       margin inline del JS de collapse (author !important > normal inline). */
+
+    body.palette-top #note-palette,
+    body.palette-bottom #note-palette {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        margin: 0 !important;       /* Anula inline margin del collapse JS */
+        top: auto !important;
+        bottom: auto !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        overflow: hidden !important;
+        background: var(--surface-dark) !important;
+        border-right: none !important;
+        border-left: none !important;
+        z-index: 149;
+    }
+
+    body.palette-top #note-palette {
+        top: 0 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    body.palette-bottom #note-palette {
+        bottom: 0 !important;
+        border-top: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.4);
+    }
+
+    /* Ocultar header y controles de scroll vertical */
+    body.palette-top .palette-header,
+    body.palette-bottom .palette-header,
+    body.palette-top .scroll-indicator,
+    body.palette-top .scroll-indicator-up,
+    body.palette-bottom .scroll-indicator,
+    body.palette-bottom .scroll-indicator-up,
+    body.palette-top #palette-expander,
+    body.palette-bottom #palette-expander {
+        display: none !important;
+    }
+
+    /* Scroll container: horizontal y centrado */
+    body.palette-top #palette-scroll-container,
+    body.palette-bottom #palette-scroll-container {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        align-self: stretch !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 16px !important;
+        gap: 4px !important;
+        align-items: center !important;
+        justify-content: center !important;  /* Centra notas en la barra */
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+        mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+        scroll-behavior: auto !important;
+    }
+
+    body.palette-top #palette-scroll-container::-webkit-scrollbar,
+    body.palette-bottom #palette-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Notas: minimalistas, compactas, perfectamente centradas */
+    body.palette-top .palette-note,
+    body.palette-bottom .palette-note {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        margin-left: 0 !important;
+        width: 22px !important;
+        height: 36px !important;
+        flex-shrink: 0 !important;
+        border-radius: 5px !important;
+        transform: none !important;
+        transform-origin: center bottom !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+
+    body.palette-top .palette-note:hover,
+    body.palette-bottom .palette-note:hover {
+        transform: translateY(-5px) scale(1.2) !important;
+        z-index: 999 !important;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.45) !important;
+    }
+
+    /* Zoom controls en modo abajo: subirlos por encima de la paleta */
+    body.palette-bottom #zoom-controls {
+        bottom: 68px;
+    }
+    body.palette-bottom #trash-can {
+        bottom: 126px;
+    }
+
+} /* fin @media (min-width: 769px) */
 
 /* Suprime transiciones de la paleta solo durante la carga inicial */
 body.no-palette-transition #note-palette,
-body.no-palette-transition #palette-expander {
+body.no-palette-transition #palette-expander,
+body.no-palette-transition #board-container {
     transition: none !important;
 }
-
-
