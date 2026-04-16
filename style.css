@@ -1473,16 +1473,24 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     position: absolute;
     width: 200px;
     min-height: 200px;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
+    
+    /* Efecto 3D realista: Sombra difusa amplia + sombra corta fuerte + reflejo interno */
+    box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.2), 
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 2px 3px rgba(255, 255, 255, 0.5),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.05);
+    
+    /* Borde punteado original (negro) para enmarcar el contenido, con el efecto 3D en las sombras */
+    border: 2px dashed var(--text-primary);
+    
+    border-radius: 2px 15px 2px 15px; /* Curvatura que imita papel suave */
+    
     padding: 15px;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease-in-out;
     user-select: none;
     box-sizing: border-box;
-    border: 2px dashed var(--text-primary);
-    border-radius: 15px 5px 20px 5px;
-    /* ¡Esquinas asimétricas! */
     display: flex;
-    /* Para controlar el hijo de texto */
     flex-direction: column;
 }
 
@@ -1619,9 +1627,12 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
 /* Estilo cuando la nota está siendo arrastrada */
 .stickynote.dragging {
-    box-shadow: var(--shadow-lg);
+    box-shadow: 
+        0 25px 35px rgba(0, 0, 0, 0.35), 
+        0 15px 15px rgba(0, 0, 0, 0.25),
+        inset 0 1px 2px rgba(255, 255, 255, 0.6);
+    transform: scale(1.05) rotate(-2deg) !important;
     z-index: 1000;
-    /* La pone por encima de las demás */
 }
 
 .stickynote-content-wrapper {
@@ -1681,7 +1692,14 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 .stickynote.dark-theme {
     color: #f0f0f0;
     /* Color de texto principal claro */
-    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 
+        0 8px 16px rgba(0,0,0,0.4), 
+        0 3px 6px rgba(0,0,0,0.3),
+        inset 0 1px 2px rgba(255,255,255,0.25),
+        inset 0 -1px 2px rgba(0,0,0,0.2);
+    
+    /* Borde punteado 3D adaptado para modo oscuro */
+    border: 2px dashed rgba(255, 255, 255, 0.4);
 }
 
 .stickynote.dark-theme .stickynote-title {
