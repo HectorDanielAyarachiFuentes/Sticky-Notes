@@ -211,6 +211,7 @@ body.panning * {
 .tab-content {
     display: flex;
     flex-direction: column;
+    box-sizing: border-box; /* Permite que el padding se incluya en el 100% de alto */
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 20px; /* Respiro al final del scroll */
@@ -224,6 +225,11 @@ body.panning * {
     transform: translateY(10px);
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Evita que los elementos se encojan, forzando el scroll vertical cuando rebalsan */
+.tab-content > * {
+    flex-shrink: 0;
 }
 
 /* --- Scroll Estilizado para Pestañas y Contenidos Internos --- */
@@ -343,9 +349,6 @@ body.panning * {
     padding: 0;
     margin: 15px 0 0 0;
     flex-grow: 1;
-    overflow-y: auto;
-    max-height: 40vh;
-    /* Controla la altura máxima de la lista */
 }
 
 #board-manager li {
@@ -677,7 +680,6 @@ body.sidebar-resizing * {
     flex-direction: column;
     gap: 12px;
     margin-top: 10px;
-    overflow-y: auto;
     flex-grow: 1;
 }
 
@@ -961,7 +963,6 @@ body.sidebar-resizing * {
 #background-options-container {
     margin-top: 15px;
     flex-grow: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 15px;
