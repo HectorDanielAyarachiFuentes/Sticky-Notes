@@ -1,0 +1,94 @@
+/* --- BOTONES PARA OCULTAR/MOSTRAR PANEL --- */
+#sidebar-collapse-btn {
+    padding: 0 5px;
+    /* Ajustado para el nuevo tamaño del icono */
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    /* Para centrar el icono */
+    align-items: center;
+}
+
+#sidebar-collapse-btn:hover {
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+}
+
+#sidebar-collapse-btn img {
+    width: 32px;
+    height: 32px;
+    filter: invert(1);
+    /* Para que el SVG negro se vea blanco */
+    opacity: 0.8;
+}
+
+/* --- NUEVO: Estilos para el botón "Sobre mí" --- */
+#about-btn {
+    background: none;
+    border: none;
+    padding: 0 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    /* Empuja el botón a la derecha */
+}
+
+#about-btn:hover {
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+}
+
+#about-btn img {
+    width: 24px;
+    /* Un poco más pequeño para diferenciarlo */
+    height: 24px;
+    opacity: 0.8;
+}
+
+#sidebar-expander {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    /* Oculto por defecto fuera de la pantalla */
+    transform: translateY(-50%) translateX(-100%);
+    width: 25px;
+    height: 60px;
+    /* Ajustado para el nuevo tamaño del icono */
+    background: var(--bg-dark);
+    /* Usamos el gradiente */
+    color: var(--text-light);
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 0px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+    z-index: 199;
+}
+
+#sidebar-expander:hover {
+    background: var(--gradient-primary);
+}
+
+/* Estilos para el SVG dentro del expansor */
+#sidebar-expander img {
+    width: 20px;
+    height: 20px;
+    filter: invert(1);
+    /* Para que el SVG negro se vea blanco */
+    opacity: 0.8;
+    transition: transform 0.2s ease;
+}
+
+/* Cuando el panel está colapsado, la manija de expansión se muestra */
+#board-manager.collapsed~#sidebar-expander {
+    transform: translateY(-50%) translateX(0);
+}
+
+/* El expander de la paleta NO se muestra en desktop, solo en móvil mediante media query */
+#palette-expander {
+    display: none;
+}
+

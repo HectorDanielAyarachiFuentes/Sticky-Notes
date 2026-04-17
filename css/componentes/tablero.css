@@ -1,0 +1,81 @@
+/* --- TABLERO PRINCIPAL --- */
+/* El contenedor del tablero se encarga del fondo y el scroll */
+#board-container {
+    position: relative;
+    flex-grow: 1;
+    /* Ocupa el espacio restante */
+    height: 100%;
+    background-image: repeating-linear-gradient(90deg, hsla(280, 0%, 67%, 0.06) 0px, hsla(280, 0%, 67%, 0.06) 1px, transparent 1px, transparent 96px), repeating-linear-gradient(0deg, hsla(280, 0%, 67%, 0.06) 0px, hsla(280, 0%, 67%, 0.06) 1px, transparent 1px, transparent 96px), repeating-linear-gradient(0deg, hsla(280, 0%, 67%, 0.09) 0px, hsla(280, 0%, 67%, 0.09) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(90deg, hsla(280, 0%, 67%, 0.09) 0px, hsla(280, 0%, 67%, 0.09) 1px, transparent 1px, transparent 12px), linear-gradient(90deg, hsl(226, 47%, 26%), hsl(226, 47%, 26%));
+    overflow: hidden;
+    /* Oculta las barras de scroll para un lienzo infinito */
+}
+
+/* El tablero en sí solo contiene las notas y es lo que se escala */
+#board {
+    position: relative;
+    /* Mantenemos la posición para las notas */
+    /* El tamaño ya no es necesario para el scroll, se ajustará con JS si es necesario,
+       pero para el paneo por transformación, un tamaño grande inicial funciona. */
+    width: 100%;
+    height: 100%;
+    transform-origin: top left;
+    /* El zoom y paneo se originan desde la esquina superior izquierda */
+}
+
+/* --- CONTROLES DE ZOOM --- */
+#zoom-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    z-index: 1500;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Ajustado para el nuevo tamaño del icono */
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+    padding: 8px 12px;
+    border-radius: 25px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(5px);
+    color: var(--text-light);
+}
+
+#zoom-controls button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+    color: var(--text-light);
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+    padding: 0;
+    /* Reset padding */
+}
+
+#zoom-controls button:hover {
+    background: var(--gradient-primary);
+    transform: scale(1.1);
+}
+
+/* Estilos para el modo búsqueda */
+#board.searching .stickynote {
+    opacity: 0.2;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#board.searching .stickynote.highlight {
+    opacity: 1;
+    transform: scale(1.03) !important;
+    /* !important para sobreescribir el transform al arrastrar */
+    box-shadow: 0 0 25px 5px var(--color-accent);
+    z-index: 999;
+}
+

@@ -14,7 +14,8 @@
     <meta name="author" content="HectorDanielAyarachiFuentes">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1a1a2e">
-    <link rel="image_src" href="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+    <link rel="image_src"
+        href="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
 
     <!-- Metadatos Open Graph para Redes Sociales (Facebook, LinkedIn, etc.) -->
     <meta property="og:title" content="Tablero de Notas Adhesivas Interactivo">
@@ -22,19 +23,26 @@
         content="Crea y organiza tus ideas con tableros de notas adhesivas virtuales, personalizables y fáciles de usar.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://hectordanielayarachifuentes.github.io/Sticky-Notes/">
-    <meta property="og:image" content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+    <meta property="og:image"
+        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
     <meta property="og:image:alt" content="Mascota Dulce de la aplicación Sticky Notes">
 
     <!-- Metadatos para Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Tablero de Notas Adhesivas Interactivo">
-    <meta name="twitter:description" content="Crea y organiza tus ideas con tableros de notas adhesivas virtuales, personalizables y fáciles de usar.">
-    <meta name="twitter:image" content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+    <meta name="twitter:description"
+        content="Crea y organiza tus ideas con tableros de notas adhesivas virtuales, personalizables y fáciles de usar.">
+    <meta name="twitter:image"
+        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
     <meta name="twitter:image:alt" content="Mascota Dulce de la aplicación Sticky Notes">
 
     <!-- Links -->
     <link rel="icon" href="svg/favicon-nota.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/componentes/tablero.css">
+    <link rel="stylesheet" href="css/componentes/notas.css">
+    <link rel="stylesheet" href="css/componentes/botones.css">
     <!-- Optimización de Carga de Fuentes: Preconectar y cargar todas las fuentes aquí -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,8 +59,8 @@
                 var s = JSON.parse(localStorage.getItem('stickyNotesApp') || '{}');
                 var p = s.palettePosition;
                 document.body.classList.add('no-palette-transition');
-                if (p === 'right')  document.body.classList.add('palette-right');
-                if (p === 'top')    document.body.classList.add('palette-top');
+                if (p === 'right') document.body.classList.add('palette-right');
+                if (p === 'top') document.body.classList.add('palette-top');
                 if (p === 'bottom') document.body.classList.add('palette-bottom');
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
@@ -98,23 +106,39 @@
                 <div id="global-search-results" role="region" aria-live="polite" aria-label="Resultados de búsqueda">
                 </div>
                 <!-- Control de posición de la paleta: solo escritorio -->
-                <div id="palette-position-widget" class="desktop-only" role="group" aria-label="Posición de la paleta de notas">
+                <div id="palette-position-widget" class="desktop-only" role="group"
+                    aria-label="Posición de la paleta de notas">
                     <p class="palette-position-label">📍 Posición de la paleta</p>
                     <div class="palette-position-btns">
-                        <button id="palette-pos-left" class="palette-pos-btn active" aria-pressed="true" title="Paleta a la izquierda">
-                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="6" height="20" rx="2" fill="currentColor"/><rect x="9" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                        <button id="palette-pos-left" class="palette-pos-btn active" aria-pressed="true"
+                            title="Paleta a la izquierda">
+                            <svg viewBox="0 0 28 20" aria-hidden="true">
+                                <rect x="0" y="0" width="6" height="20" rx="2" fill="currentColor" />
+                                <rect x="9" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3" />
+                            </svg>
                             Izquierda
                         </button>
-                        <button id="palette-pos-right" class="palette-pos-btn" aria-pressed="false" title="Paleta a la derecha">
-                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="22" y="0" width="6" height="20" rx="2" fill="currentColor"/><rect x="0" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                        <button id="palette-pos-right" class="palette-pos-btn" aria-pressed="false"
+                            title="Paleta a la derecha">
+                            <svg viewBox="0 0 28 20" aria-hidden="true">
+                                <rect x="22" y="0" width="6" height="20" rx="2" fill="currentColor" />
+                                <rect x="0" y="3" width="19" height="14" rx="2" fill="currentColor" opacity="0.3" />
+                            </svg>
                             Derecha
                         </button>
                         <button id="palette-pos-top" class="palette-pos-btn" aria-pressed="false" title="Paleta arriba">
-                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="28" height="5" rx="2" fill="currentColor"/><rect x="3" y="8" width="22" height="12" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                            <svg viewBox="0 0 28 20" aria-hidden="true">
+                                <rect x="0" y="0" width="28" height="5" rx="2" fill="currentColor" />
+                                <rect x="3" y="8" width="22" height="12" rx="2" fill="currentColor" opacity="0.3" />
+                            </svg>
                             Arriba
                         </button>
-                        <button id="palette-pos-bottom" class="palette-pos-btn" aria-pressed="false" title="Paleta abajo">
-                            <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="15" width="28" height="5" rx="2" fill="currentColor"/><rect x="3" y="0" width="22" height="12" rx="2" fill="currentColor" opacity="0.3"/></svg>
+                        <button id="palette-pos-bottom" class="palette-pos-btn" aria-pressed="false"
+                            title="Paleta abajo">
+                            <svg viewBox="0 0 28 20" aria-hidden="true">
+                                <rect x="0" y="15" width="28" height="5" rx="2" fill="currentColor" />
+                                <rect x="3" y="0" width="22" height="12" rx="2" fill="currentColor" opacity="0.3" />
+                            </svg>
                             Abajo
                         </button>
                     </div>
@@ -150,14 +174,21 @@
                     </div>
                 </div>
 
-                <div class="style-option style-option-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                    <div class="toggle-option" style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div class="style-option style-option-grid"
+                    style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div class="toggle-option"
+                        style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
                         <label for="line-dash-input" style="margin-bottom: 0;">Línea Animada</label>
-                        <label class="switch"><input type="checkbox" id="line-dash-input" aria-label="Activar o desactivar línea animada"><span class="slider round"></span></label>
+                        <label class="switch"><input type="checkbox" id="line-dash-input"
+                                aria-label="Activar o desactivar línea animada"><span
+                                class="slider round"></span></label>
                     </div>
-                    <div class="toggle-option" style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="toggle-option"
+                        style="background: var(--surface-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
                         <label for="line-shadow-input" style="margin-bottom: 0;">Aplicar Sombra</label>
-                        <label class="switch"><input type="checkbox" id="line-shadow-input" aria-label="Activar o desactivar sombra paralela"><span class="slider round"></span></label>
+                        <label class="switch"><input type="checkbox" id="line-shadow-input"
+                                aria-label="Activar o desactivar sombra paralela"><span
+                                class="slider round"></span></label>
                     </div>
                 </div>
 
@@ -196,8 +227,8 @@
                         <button class="visual-select-btn" data-value="magnet" role="radio" aria-checked="false"
                             aria-label="Trazado magnético">
                             <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-                                <path d="M5 20 H 30 Q 50 20, 50 10 Q 50 20, 70 20 H 95" stroke="currentColor" stroke-width="4" fill="none"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M5 20 H 30 Q 50 20, 50 10 Q 50 20, 70 20 H 95" stroke="currentColor"
+                                    stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </button>
                     </div>
@@ -205,21 +236,35 @@
 
                 <div class="style-option">
                     <label for="line-label-input">Etiqueta (Texto en la línea)</label>
-                    <input type="text" id="line-label-input" placeholder="Ej: Conecta con..." aria-label="Texto sobre la línea" maxlength="30" style="background: var(--surface-dark); border: 2px solid transparent; padding: 10px; width: 100%; border-radius: 6px; color: var(--text-light); transition: border-color 0.2s ease;">
+                    <input type="text" id="line-label-input" placeholder="Ej: Conecta con..."
+                        aria-label="Texto sobre la línea" maxlength="30"
+                        style="background: var(--surface-dark); border: 2px solid transparent; padding: 10px; width: 100%; border-radius: 6px; color: var(--text-light); transition: border-color 0.2s ease;">
                 </div>
 
                 <div class="style-option">
                     <label id="line-start-plug-label">Punta de Inicio</label>
                     <div class="visual-select-container" id="line-start-plug-select" role="radiogroup"
                         aria-labelledby="line-start-plug-label">
-                        <button class="visual-select-btn" data-value="behind" role="radio" aria-checked="false" aria-label="Sin punta">
-                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" /></svg>
+                        <button class="visual-select-btn" data-value="behind" role="radio" aria-checked="false"
+                            aria-label="Sin punta">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M5 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
                         </button>
-                        <button class="visual-select-btn" data-value="arrow1" role="radio" aria-checked="false" aria-label="Punta de flecha tipo 1">
-                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M20 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" /><path d="M5 20 L 25 10 V 30 Z" fill="currentColor" /></svg>
+                        <button class="visual-select-btn" data-value="arrow1" role="radio" aria-checked="false"
+                            aria-label="Punta de flecha tipo 1">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M20 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" />
+                                <path d="M5 20 L 25 10 V 30 Z" fill="currentColor" />
+                            </svg>
                         </button>
-                        <button class="visual-select-btn" data-value="disc" role="radio" aria-checked="false" aria-label="Punta circular">
-                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M15 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" /><circle cx="10" cy="20" r="8" fill="currentColor" /></svg>
+                        <button class="visual-select-btn" data-value="disc" role="radio" aria-checked="false"
+                            aria-label="Punta circular">
+                            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M15 20 L 95 20" stroke="currentColor" stroke-width="4" fill="none" />
+                                <circle cx="10" cy="20" r="8" fill="currentColor" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -275,7 +320,9 @@
                             aria-label="Punta de mano">
                             <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                                 <path d="M5 20 L 70 20" stroke="currentColor" stroke-width="4" fill="none" />
-                                <path d="M72 14 C72 14 76 11 80 14 L84 18 C84 18 90 14 93 17 C95 19 91 23 88 23 L80 30 L74 30 L68 26 C65 24 64 20 67 18 Z" fill="currentColor" />
+                                <path
+                                    d="M72 14 C72 14 76 11 80 14 L84 18 C84 18 90 14 93 17 C95 19 91 23 88 23 L80 30 L74 30 L68 26 C65 24 64 20 67 18 Z"
+                                    fill="currentColor" />
                             </svg>
                         </button>
                         <button class="visual-select-btn" data-value="crosshair" role="radio" aria-checked="false"
@@ -339,7 +386,8 @@
                         aria-label="Exportar tablero como HTML con JSON embebido">
                         <div class="share-card-icon" aria-hidden="true">💾</div>
                         <div class="share-card-name">Exportar HTML + JSON</div>
-                        <div class="share-card-desc">Guarda tu tablero como un visor HTML con el JSON embebido y resaltado.</div>
+                        <div class="share-card-desc">Guarda tu tablero como un visor HTML con el JSON embebido y
+                            resaltado.</div>
                     </div>
                     <div class="share-card" id="import-json-btn" role="button" tabindex="0"
                         aria-label="Importar tablero desde archivo JSON">
@@ -408,7 +456,8 @@
                 <span class="storage-label">💾 Almacenamiento</span>
                 <span id="storage-text" class="storage-text">0 KB / 5 MB</span>
             </div>
-            <div class="storage-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Uso de localStorage">
+            <div class="storage-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                aria-label="Uso de localStorage">
                 <div id="storage-bar-fill" class="storage-bar-fill"></div>
             </div>
         </div>
@@ -451,7 +500,8 @@
     <nav id="zoom-controls" role="navigation" aria-label="Controles de zoom y deshacer">
         <button id="global-undo-btn" aria-label="Deshacer" title="Deshacer (Ctrl+Z)">↩️</button>
         <button id="global-redo-btn" aria-label="Rehacer" title="Rehacer (Ctrl+Y)">↪️</button>
-        <div class="zoom-separator" style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div>
+        <div class="zoom-separator" style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;">
+        </div>
         <button id="zoom-in-btn" aria-label="Acercar zoom">+</button>
         <span id="zoom-level-display" aria-live="polite" aria-atomic="true">100%</span>
         <button id="zoom-out-btn" aria-label="Alejar zoom">-</button>
@@ -474,7 +524,8 @@
             <li id="ctx-delete-lines" role="menuitem" tabindex="-1"><span class="ctx-icon">✂️</span>Eliminar Líneas</li>
             <li class="separator" role="separator"></li>
             <li id="ctx-add-image" role="menuitem" tabindex="-1"><span class="ctx-icon">🖼️</span>Añadir Imagen</li>
-            <li id="ctx-remove-image" role="menuitem" tabindex="-1" class="hidden"><span class="ctx-icon">❌</span>Quitar Imagen</li>
+            <li id="ctx-remove-image" role="menuitem" tabindex="-1" class="hidden"><span class="ctx-icon">❌</span>Quitar
+                Imagen</li>
         </ul>
     </nav>
 
@@ -489,7 +540,7 @@
     <nav id="line-context-menu" class="hidden" role="menu" aria-label="Menú contextual de línea">
         <ul role="none">
             <li id="ctx-line-edit" role="menuitem" tabindex="-1"><span class="ctx-icon">✏️</span>Texto</li>
-            
+
             <li class="ctx-slider-item" role="menuitem" tabindex="-1">
                 <span class="ctx-icon" style="font-size:0.8em;">➖</span>
                 <input type="range" id="ctx-line-size" min="1" max="15" step="1" aria-label="Grosor">
@@ -497,20 +548,43 @@
 
             <li class="ctx-visual-item" role="menuitem" tabindex="-1">
                 <div class="visual-select-container mini" id="ctx-line-path-select">
-                    <button class="visual-select-btn" data-value="straight" aria-label="Recto"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
-                    <button class="visual-select-btn" data-value="fluid" aria-label="Fluido"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" fill="none"/></svg></button>
-                    <button class="visual-select-btn" data-value="Grid" aria-label="Grid"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                    <button class="visual-select-btn" data-value="straight" aria-label="Recto"><svg viewBox="0 0 100 40"
+                            preserveAspectRatio="none">
+                            <path d="M5 20 L 95 20" stroke="currentColor" fill="none" />
+                        </svg></button>
+                    <button class="visual-select-btn" data-value="fluid" aria-label="Fluido"><svg viewBox="0 0 100 40"
+                            preserveAspectRatio="none">
+                            <path d="M5 20 C 25 5, 75 35, 95 20" stroke="currentColor" fill="none" />
+                        </svg></button>
+                    <button class="visual-select-btn" data-value="Grid" aria-label="Grid"><svg viewBox="0 0 100 40"
+                            preserveAspectRatio="none">
+                            <path d="M5 20 H 50 V 20 L 95 20" stroke="currentColor" fill="none" />
+                        </svg></button>
                 </div>
             </li>
 
             <li class="ctx-visual-item" role="menuitem" tabindex="-1">
                 <div class="visual-select-container mini" id="ctx-line-start-plug-select" style="margin-right:2px;">
-                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
-                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M20 20 L 95 20" stroke="currentColor" fill="none"/><path d="M5 20 L 25 10 V 30 Z" fill="currentColor"/></svg></button>
+                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg
+                            viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 95 20" stroke="currentColor" fill="none" />
+                        </svg></button>
+                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40"
+                            preserveAspectRatio="none">
+                            <path d="M20 20 L 95 20" stroke="currentColor" fill="none" />
+                            <path d="M5 20 L 25 10 V 30 Z" fill="currentColor" />
+                        </svg></button>
                 </div>
                 <div class="visual-select-container mini" id="ctx-line-end-plug-select">
-                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 80 20" stroke="currentColor" fill="none"/><path d="M95 20 L 75 10 V 30 Z" fill="currentColor"/></svg></button>
-                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M5 20 L 95 20" stroke="currentColor" fill="none"/></svg></button>
+                    <button class="visual-select-btn" data-value="arrow1" aria-label="Flecha"><svg viewBox="0 0 100 40"
+                            preserveAspectRatio="none">
+                            <path d="M5 20 L 80 20" stroke="currentColor" fill="none" />
+                            <path d="M95 20 L 75 10 V 30 Z" fill="currentColor" />
+                        </svg></button>
+                    <button class="visual-select-btn" data-value="behind" aria-label="Sin punta"><svg
+                            viewBox="0 0 100 40" preserveAspectRatio="none">
+                            <path d="M5 20 L 95 20" stroke="currentColor" fill="none" />
+                        </svg></button>
                 </div>
             </li>
 
@@ -568,7 +642,8 @@
     <div id="toast-container" role="region" aria-live="polite" aria-label="Notificaciones del sistema"></div>
 
     <!-- Input oculto para adjuntar imagen a una nota -->
-    <input type="file" id="note-image-input" accept="image/*" aria-label="Seleccionar imagen para nota" style="display:none;">
+    <input type="file" id="note-image-input" accept="image/*" aria-label="Seleccionar imagen para nota"
+        style="display:none;">
 
     <!-- 1. Cargar librerías locales como scripts globales -->
     <script src="js/librerias/lz-string.min.js"></script>

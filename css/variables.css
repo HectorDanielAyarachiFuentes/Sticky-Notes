@@ -1,0 +1,111 @@
+﻿/* --- VARIABLES Y ESTILOS GLOBALES --- */
+/* Paleta de colores profesional y moderna */
+:root {
+    /* Colores base */
+    --color-primary: #007aff;
+    /* Azul vibrante para acciones principales */
+    --color-secondary: #5856d6;
+    /* PÃºrpura para elementos secundarios */
+    --color-accent: #ff9500;
+    /* Naranja para alertas o highlights */
+    --color-success: #34c759;
+    /* Verde para acciones exitosas */
+
+    /* Fondos y superficies */
+    --bg-light: linear-gradient(180deg, rgba(242, 242, 247, 0.9) 0%, rgba(232, 232, 237, 0.8) 100%);
+    /* Fondo principal claro y neutro con gradiente y transparencia */
+    --bg-dark: linear-gradient(135deg, rgba(28, 28, 30, 0.98) 0%, rgba(44, 44, 46, 0.95) 100%);
+    /* Fondo oscuro para sidebars o modos noche con gradiente y transparencia */
+    --surface-light: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 245, 0.9) 100%);
+    /* Superficie de elementos como modales o tarjetas con gradiente y transparencia */
+    --surface-dark: linear-gradient(135deg, rgba(44, 44, 46, 0.95) 0%, rgba(60, 60, 62, 0.9) 100%);
+    /* Superficie oscura con gradiente y transparencia */
+
+    /* Texto y bordes */
+    --text-primary: #1d1d1f;
+    /* Texto principal sobre fondos claros */
+    --text-secondary: rgba(60, 60, 67, 0.6);
+    /* Texto secundario, con transparencia */
+    --text-light: #f2f2f7;
+    /* Texto sobre fondos oscuros */
+    --border-color: linear-gradient(90deg, rgba(60, 60, 67, 0.05) 0%, rgba(60, 60, 67, 0.25) 50%, rgba(60, 60, 67, 0.05) 100%);
+    /* Borde sutil con gradiente y transparencia */
+
+    /* Sombras y gradientes */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --gradient-primary: linear-gradient(60deg, rgba(0, 122, 255, 0.85) 0%, rgba(88, 86, 214, 1) 100%);
+    /* Gradiente principal con transparencia ajustada */
+}
+
+body {
+    font-family: 'Roboto Slab', serif;
+    /* El fondo del body ahora usa directamente la variable --bg-light, que ya es un gradiente */
+    background: var(--bg-light);
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    /* Ocupa toda la altura de la ventana */
+    color: var(--text-primary);
+}
+
+/* --- CURSORES PERSONALIZADOS --- */
+/* --- CURSORES PERSONALIZADOS --- */
+
+/* Cursor por defecto */
+/* La URL del cursor se define con una variable CSS (--cursor-default) que se puede cambiar con JS */
+body,
+#board-container {
+    cursor: var(--cursor-default, url('../cursors/cursor.svg') 10 2, auto) !important;
+}
+
+/* Cursor por defecto para las notas, para que no herede el de agarre al mover */
+.stickynote {
+    cursor: var(--cursor-default, url('../cursors/cursor.svg') 10 2, auto);
+}
+
+/* Cursor de mano para elementos clickeables */
+/* TambiÃ©n necesita !important para poder anular la regla de body */
+button,
+a,
+.tab-btn,
+.board-item-btn,
+#sidebar-collapse-btn,
+#about-btn,
+#sidebar-expander,
+.search-result-item,
+.trash-item-actions button,
+#close-popover-btn,
+.modal-close-btn,
+.connect-btn,
+.stickynote-tab,
+.background-preview,
+#board-manager li {
+    cursor: var(--cursor-pointer, url('../cursors/hand.svg') 8 2, pointer) !important;
+}
+
+/* Cursor de agarre para elementos que se estÃ¡n arrastrando o agarrando */
+/* TambiÃ©n necesita !important (incluyendo tu nueva regla .stickynote) */
+.dragging,
+.palette-note:active,
+body.panning,
+body.panning * {
+    cursor: var(--cursor-grabbing, url('../cursors/grabing.svg') 16 16, grabbing) !important;
+}
+
+/* Cursor de mano abierta (grab) para el fondo del tablero cuando se puede mover */
+.pannable {
+    /* Usamos el cursor de mano, pero con el valor 'grab' para indicar que se puede agarrar */
+    /* No usamos !important para que la clase .panning pueda sobreescribirlo */
+    cursor: var(--cursor-pointer, url('../cursors/hand.svg') 8 2, grab);
+}
+
+/* Cursor de texto para Ã¡reas de escritura */
+.stickynote-title,
+.stickynote-text,
+#board-manager #search-input,
+#share-link-output {
+    cursor: var(--cursor-text, url('../cursors/cursor-text.svg') 8 8, text) !important;
+}
+

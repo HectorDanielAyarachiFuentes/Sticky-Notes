@@ -1,0 +1,1952 @@
+﻿/* --- PANEL DE GESTIÃ“N DE TABLEROS --- */
+#board-manager {
+    /* El ancho ahora se controla por JS, con un valor inicial y lÃ­mites */
+    flex-shrink: 0;
+    /* Evita que se encoja */
+    background: var(--bg-dark);
+    /* Usamos el gradiente definido en root */
+    color: var(--text-light);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    box-shadow: var(--shadow-md);
+    transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    /* Necesario para posicionar el botÃ³n de colapso */
+}
+
+/* El margen de colapso ahora se establece dinÃ¡micamente con JS */
+/* #board-manager.collapsed { margin-left: -300px; } */
+
+#board-manager h3 {
+    margin-top: 0;
+    font-weight: 700;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
+    padding-bottom: 10px;
+    display: flex;
+    gap: 10px;
+    /* Espacio entre elementos del tÃ­tulo */
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* --- PESTAÃ‘AS DEL PANEL --- */
+.tab-nav {
+    display: flex;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
+    margin-bottom: 15px;
+}
+
+.tab-btn {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    color: var(--text-light);
+    padding: 15px 5px;
+    /* Aumentamos el espaciado vertical */
+    font-size: 1.5em;
+    /* Icono aÃºn mÃ¡s grande */
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+    display: flex;
+    /* Para alinear icono y texto */
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    /* MÃ¡s espacio entre icono y texto */
+    min-width: 0;
+    /* Permite que el botÃ³n se encoja */
+}
+
+.tab-btn:hover {
+    opacity: 1;
+    background: var(--surface-dark);
+}
+
+/* Usamos el gradiente */
+.tab-btn.active {
+    background: var(--surface-dark);
+    border-bottom-color: var(--color-primary);
+    font-weight: bold;
+    opacity: 1;
+}
+
+/* Usamos el gradiente */
+.tab-btn .tab-text {
+    font-size: 0.55em;
+    /* Ajustamos el tamaÃ±o relativo al icono */
+    font-family: 'Roboto Slab', serif;
+    white-space: nowrap;
+    /* Evita que el texto se parta en dos lÃ­neas */
+}
+
+#tab-content-container {
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden;
+    /* Oculta el contenido que se desborda durante la animaciÃ³n */
+}
+
+.tab-content {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box; /* Permite que el padding se incluya en el 100% de alto */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 20px; /* Respiro al final del scroll */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    /* AnimaciÃ³n de entrada mÃ¡s sutil */
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Evita que los elementos se encojan, forzando el scroll vertical cuando rebalsan */
+.tab-content > * {
+    flex-shrink: 0;
+}
+
+/* --- Scroll Estilizado para PestaÃ±as y Contenidos Internos --- */
+.tab-content::-webkit-scrollbar,
+.tab-content *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tab-content::-webkit-scrollbar-track,
+.tab-content *::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tab-content::-webkit-scrollbar-thumb,
+.tab-content *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.tab-content::-webkit-scrollbar-thumb:hover,
+.tab-content *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.tab-content.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.tab-title {
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-light);
+    opacity: 0.9;
+    margin: 0 0 10px 0;
+}
+
+/* --- COMPARTIR Y EXPORTAR --- */
+.share-options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.share-card {
+    display: grid;
+    grid-template-areas:
+        "icon name"
+        "icon desc";
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    background: var(--surface-dark);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.share-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.share-card-icon {
+    grid-area: icon;
+    font-size: 1.8em;
+    margin-right: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.share-card-name {
+    grid-area: name;
+    font-weight: bold;
+    font-size: 1em;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    align-self: end;
+}
+
+.share-card-desc {
+    grid-area: desc;
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.2;
+    align-self: start;
+}
+
+#share-link-output {
+    background: var(--surface-dark);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.8em;
+    resize: none;
+    height: 40px;
+    transition: all 0.2s ease;
+}
+
+#share-link-output:focus {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+/* --- LISTA DE TABLEROS --- */
+#board-manager ul {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+    flex-grow: 1;
+}
+
+#board-manager li {
+    padding: 12px 15px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+#board-manager li:hover {
+    background: var(--surface-dark);
+}
+
+/* Usamos el gradiente */
+#board-manager li.active {
+    background-color: var(--color-primary);
+    font-weight: bold;
+}
+
+.board-item-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Para que el ellipsis funcione */
+}
+
+.board-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: bold;
+}
+
+.board-creation-date {
+    font-size: 0.75em;
+    opacity: 0.7;
+    margin-top: 4px;
+    white-space: nowrap;
+    color: var(--text-light);
+}
+
+.board-item-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.board-item-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.board-item-btn:hover {
+    opacity: 1;
+}
+
+#board-manager .tab-content button {
+    margin-top: 15px;
+    /* Espacio sobre el botÃ³n */
+    width: 100%;
+    padding: 12px;
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#board-manager #search-input {
+    /* Se mantiene el estilo del input de bÃºsqueda */
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0 0 0;
+    border-radius: 6px;
+    border: 1px solid var(--surface-dark);
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#board-manager #search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    /* El borde puede seguir siendo un color sÃ³lido */
+    background: var(--bg-dark);
+    /* Usamos el gradiente */
+}
+
+/* --- Resultados de BÃºsqueda Global --- */
+#global-search-results {
+    margin-top: 10px;
+    max-height: 200px;
+    /* Ajustado para el nuevo layout */
+    overflow-y: auto;
+}
+
+.search-result-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: var(--surface-dark);
+    /* Usamos el gradiente */
+    transition: background-color 0.2s ease;
+    border-left: 3px solid var(--color-secondary);
+    /* Mantener color sÃ³lido para el acento */
+}
+
+.search-result-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.search-result-item .note-snippet {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    opacity: 0.8;
+    font-size: 0.85em;
+}
+
+#board-manager .tab-content button:hover {
+    background-size: 150% 150%;
+    transform: translateY(-2px);
+}
+
+#board-manager .icon {
+    font-size: 1.2em;
+}
+
+/* --- TIRADOR PARA REDIMENSIONAR EL PANEL --- */
+#sidebar-resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: var(--cursor-ew_resize, url('../cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
+    z-index: 201;
+    /* Por encima del contenido del panel */
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+#sidebar-resizer:hover,
+#sidebar-resizer.resizing {
+    background-color: var(--color-primary);
+}
+
+/* Cuando se estÃ¡ redimensionando, aplicamos el cursor a todo el body */
+body.sidebar-resizing,
+body.sidebar-resizing * {
+    cursor: var(--cursor-ew_resize, url('../cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
+}
+
+/* Cuando se estÃ¡ redimensionando una NOTA, forzamos el cursor de redimensionar en todo el body */
+body.sidebar-resizing,
+body.sidebar-resizing * {
+    cursor: var(--cursor-se_resize, se-resize) !important;
+}
+
+/* --- INDICADOR DE USO DE localStorage --- */
+#storage-indicator {
+    padding: 10px 0 6px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.storage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.storage-label {
+    font-size: 0.72em;
+    font-weight: 700;
+    opacity: 0.55;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-light);
+}
+
+.storage-text {
+    font-size: 0.72em;
+    font-weight: 600;
+    color: var(--text-light);
+    opacity: 0.7;
+    font-family: 'Roboto Slab', monospace;
+}
+
+.storage-bar-track {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.storage-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    background: var(--color-primary);
+    transition: width 0.5s ease, background-color 0.4s ease;
+}
+
+/* Colores de alerta segÃºn uso */
+.storage-bar-fill.warn {
+    background: var(--color-accent); /* naranja al 70% */
+}
+
+.storage-bar-fill.danger {
+    background: #ff3b30; /* rojo al 90% */
+}
+
+/* --- SECCIÃ“N DE PLANTILLAS --- */
+#template-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+    flex-grow: 1;
+}
+
+.template-card {
+    background: var(--surface-dark);
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "icon name"
+        "icon desc";
+    gap: 0 12px;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+    cursor: var(--cursor-pointer, pointer) !important;
+}
+
+.template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+    background: var(--gradient-primary);
+}
+
+.template-card-icon {
+    grid-area: icon;
+    font-size: 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.template-card-name {
+    grid-area: name;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.template-card-desc {
+    grid-area: desc;
+    font-size: 0.85em;
+    opacity: 0.7;
+    line-height: 1.4;
+}
+
+/* --- ESTILOS PARA LA PESTAÃ‘A DE LÃNEAS --- */
+.style-option {
+    margin-bottom: 20px;
+    position: relative;
+    /* Para el posicionamiento del valor del range */
+}
+
+.style-option label {
+    display: block;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.style-option input[type="color"],
+.style-option select,
+.style-option input[type="range"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(60, 60, 67, 0.2);
+    /* Fallback para border-color */
+    background-color: #3a3a3a;
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+}
+
+.style-option input[type="color"] {
+    padding: 0;
+    height: 38px;
+    border-radius: 6px;
+    border: 2px solid var(--surface-dark);
+    background: none;
+    transition: border-color 0.2s ease;
+}
+
+.style-option input[type="color"]:hover {
+    border-color: var(--color-primary);
+}
+
+.style-option input[type="range"] {
+    padding: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: var(--surface-dark);
+    border-radius: 4px;
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.style-option input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--text-light);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 3px solid var(--bg-dark);
+    transition: background 0.2s ease;
+}
+
+.style-option input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--color-primary);
+}
+
+.style-option input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--text-light);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 3px solid var(--bg-dark);
+}
+
+.style-option-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.style-option-slider {
+    position: relative;
+}
+
+.range-value {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.8em;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+.visual-select-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: rgba(40, 40, 40, 0.5); /* Subtle container background */
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.visual-select-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 6px;
+    transition: all 0.2s ease;
+    color: var(--text-light);
+    opacity: 0.5;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.visual-select-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0.8;
+}
+
+.visual-select-btn.active {
+    background: var(--surface-light); /* Light elevated color */
+    color: var(--color-primary); /* Use primary color for the icon */
+    opacity: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.visual-select-btn svg {
+    width: 100%;
+    height: 20px;
+}  
+
+/* For SVG overriding inline stroke-width */
+.visual-select-btn svg path,
+.visual-select-btn svg rect,
+.visual-select-btn svg circle,
+.visual-select-btn svg line {
+    stroke-width: 2.5 !important;
+}
+
+.visual-select-btn img {
+    width: 100%;
+    height: 20px;
+    filter: invert(1) opacity(0.8);
+    transition: filter 0.2s ease;
+}
+
+.visual-select-btn.active img {
+    filter: invert(0) opacity(1);
+}
+
+.checkbox-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.checkbox-group label {
+    margin-bottom: 0;
+    /* Anular el margen de .style-option label */
+    cursor: pointer;
+}
+
+/* --- NUEVO: Estilos para el checkbox de confirmaciÃ³n en la pestaÃ±a de lÃ­neas --- */
+.prompt-delete-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-dark);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.prompt-delete-container label {
+    margin: 0;
+}
+
+/* --- NUEVO: Estilos para tarjetas de "Aplicar a" en Fondos --- */
+.apply-to-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.apply-to-card {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface-dark);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.apply-to-card:hover {
+    border-color: var(--color-secondary);
+    transform: translateY(-2px);
+}
+
+.apply-to-card.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--bg-dark);
+}
+
+.apply-to-icon {
+    font-size: 1.5em;
+}
+
+.apply-to-text {
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+/* --- ESTILOS PARA LA PESTAÃ‘A DE FONDOS --- */
+#background-options-container {
+    margin-top: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.background-category {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
+}
+
+.background-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.background-preview:hover {
+    transform: scale(1.15);
+    z-index: 2;
+    position: relative;
+}
+
+.background-preview.active {
+    border-color: var(--color-accent);
+    transform: scale(1.1);
+}
+
+/* --- PALETA DE NOTAS --- */
+#note-palette {
+    width: 90px;
+    /* Un poco mÃ¡s estrecho para un look mÃ¡s compacto */
+    flex-shrink: 0;
+    padding-top: 20px;
+    /* Solo padding superior */
+    background: var(--surface-light);
+    /* Usamos el gradiente */
+    box-shadow: var(--shadow-sm);
+    z-index: 100;
+    display: flex;
+    /* Cambiado para el nuevo layout */
+    flex-direction: column;
+    align-items: center;
+    /* Centramos los elementos */
+    gap: 20px;
+    /* Aumentamos el espacio */
+    border-right: 1px solid rgba(60, 60, 67, 0.2);
+    /* Fallback para border-color */
+    transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    overflow: hidden;
+    /* Evita que las notas se salgan al animarse */
+    position: relative;
+    /* Â¡CLAVE! Para que el indicador de scroll se posicione dentro de la paleta */
+}
+
+
+/* Cuando el panel estÃ¡ colapsado Y la paleta estÃ¡ fijada, se oculta */
+#board-manager.collapsed~#note-palette {
+    margin-left: -120px;
+    /* Ancho de la paleta (100px) + padding (2*10px) */
+}
+
+/* Si la paleta NO estÃ¡ fijada, se ignora la regla anterior */
+body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
+    margin-left: 0;
+}
+
+.palette-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+    /* AÃ±adimos padding aquÃ­ */
+    width: 100%;
+    /* Ocupa todo el ancho del contenedor */
+    box-sizing: border-box;
+}
+
+.palette-title-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.palette-create-icon {
+    width: 30px;
+    height: 30px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.palette-header span {
+    margin: 0;
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+#pin-palette-btn {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.palette-title-container:hover .palette-create-icon {
+    opacity: 1;
+}
+
+#pin-palette-btn:hover {
+    opacity: 1;
+    background-color: var(--bg-light);
+}
+
+#pin-palette-btn.active {
+    opacity: 1;
+    color: var(--color-primary);
+    background-color: var(--bg-light);
+    transform: rotate(45deg);
+}
+
+.pin-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* --- NUEVO: Contenedor con scroll para las notas de la paleta --- */
+#palette-scroll-container {
+    flex-grow: 1;
+    /* Ocupa el espacio disponible */
+    width: 100%;
+    position: relative;
+    /* Para posicionar las notas dentro */
+    overflow-y: auto;
+    /* Habilita el scroll vertical */
+    padding: 20px 0;
+    /* MÃ¡s padding para el efecto de desvanecimiento */
+    /* --- NUEVO: MÃ¡scara para el efecto de scroll infinito --- */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+/* Ocultar la barra de scroll por defecto */
+#palette-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+#palette-scroll-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* --- NUEVO: Indicador de scroll --- */
+.scroll-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    /* No interfiere con el drag & drop */
+    z-index: 5;
+    /* Asegura que estÃ© sobre las notas de la paleta */
+}
+
+/* --- FLECHAS DE SCROLL: ANIMACIONES DIRECCIONALES CINEMATICAS --- */
+
+/* Flecha ABAJO: cae con impulso, rebota suavemente, deja estela */
+@keyframes arrow-dive-down {
+    0% {
+        transform: translateY(-6px) translateX(-50%) scale(0.85);
+        opacity: 0.3;
+        filter: brightness(0.7);
+    }
+
+    30% {
+        transform: translateY(4px) translateX(-50%) scale(1.12);
+        opacity: 1;
+        filter: brightness(1.4) drop-shadow(0 4px 8px rgba(0, 180, 255, 0.8));
+    }
+
+    55% {
+        transform: translateY(-2px) translateX(-50%) scale(1.02);
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    75% {
+        transform: translateY(2px) translateX(-50%) scale(1.05);
+        opacity: 0.95;
+        filter: brightness(1.2) drop-shadow(0 6px 12px rgba(0, 180, 255, 0.5));
+    }
+
+    100% {
+        transform: translateY(0) translateX(-50%) scale(1);
+        opacity: 0.85;
+        filter: brightness(1);
+    }
+}
+
+/* Anillo de onda que emana hacia abajo desde la flecha */
+@keyframes ring-pulse-down {
+    0% {
+        transform: translateX(-50%) scale(0.5);
+        opacity: 0.9;
+        border-color: rgba(0, 200, 255, 0.9);
+    }
+
+    60% {
+        transform: translateX(-50%) scale(2.2);
+        opacity: 0.3;
+        border-color: rgba(0, 200, 255, 0.3);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(3);
+        opacity: 0;
+        border-color: rgba(0, 200, 255, 0);
+    }
+}
+
+/* Flecha ARRIBA: asciende con impulso hacia arriba */
+@keyframes arrow-dive-up {
+    0% {
+        transform: translateY(6px) translateX(-50%) scale(0.85);
+        opacity: 0.3;
+        filter: brightness(0.7);
+    }
+
+    30% {
+        transform: translateY(-4px) translateX(-50%) scale(1.12);
+        opacity: 1;
+        filter: brightness(1.4) drop-shadow(0 -4px 8px rgba(255, 220, 0, 0.8));
+    }
+
+    55% {
+        transform: translateY(2px) translateX(-50%) scale(1.02);
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    75% {
+        transform: translateY(-2px) translateX(-50%) scale(1.05);
+        opacity: 0.95;
+        filter: brightness(1.2) drop-shadow(0 -6px 12px rgba(255, 220, 0, 0.5));
+    }
+
+    100% {
+        transform: translateY(0) translateX(-50%) scale(1);
+        opacity: 0.85;
+        filter: brightness(1);
+    }
+}
+
+@keyframes ring-pulse-up {
+    0% {
+        transform: translateX(-50%) scale(0.5);
+        opacity: 0.9;
+        border-color: rgba(255, 220, 50, 0.9);
+    }
+
+    60% {
+        transform: translateX(-50%) scale(2.2);
+        opacity: 0.3;
+        border-color: rgba(255, 220, 50, 0.3);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(3);
+        opacity: 0;
+        border-color: rgba(255, 220, 50, 0);
+    }
+}
+
+/* Idle: suave flotacion continua mientras la flecha es visible */
+@keyframes float-down {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(-50%);
+    }
+
+    50% {
+        transform: translateY(5px) translateX(-50%);
+    }
+}
+
+@keyframes float-up {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(-50%);
+    }
+
+    50% {
+        transform: translateY(-5px) translateX(-50%);
+    }
+}
+
+.scroll-indicator img {
+    width: 36px;
+    height: 36px;
+    filter: drop-shadow(0 2px 6px rgba(0, 180, 255, 0.4));
+}
+
+/* --- NUEVO: Indicador de scroll hacia arriba (posicion base) --- */
+.scroll-indicator-up {
+    position: absolute;
+    top: 55px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.scroll-indicator-up img {
+    width: 36px;
+    height: 36px;
+    filter: drop-shadow(0 -2px 6px rgba(255, 220, 0, 0.4));
+}
+
+/* Anillo decorativo pseudo-elemento */
+.scroll-indicator::before,
+.scroll-indicator-up::before {
+    content: '';
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    left: 50%;
+    top: 50%;
+    margin-top: -18px;
+    margin-left: -18px;
+    pointer-events: none;
+}
+
+/* Idle: flotan continuamente cuando tienen clase .visible (asignada desde JS) */
+.scroll-indicator.visible {
+    animation: float-down 1.8s ease-in-out infinite;
+}
+
+.scroll-indicator-up.visible {
+    animation: float-up 1.8s ease-in-out infinite;
+}
+
+/* Al hacer scroll se dispara la animacion de impacto */
+.scroll-indicator.scrolling-down {
+    animation: arrow-dive-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.scroll-indicator.scrolling-down::before {
+    animation: ring-pulse-down 0.55s ease-out forwards;
+}
+
+.scroll-indicator-up.scrolling-up {
+    animation: arrow-dive-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.scroll-indicator-up.scrolling-up::before {
+    animation: ring-pulse-up 0.55s ease-out forwards;
+}
+
+
+/* --- MODAL GENÃ‰RICO --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: var(--surface-light);
+    /* Usamos el gradiente */
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    /* --- MEJORA: AnimaciÃ³n de desvanecimiento y deslizamiento --- */
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+    color: var(--text-primary);
+}
+
+.modal-overlay.hidden .modal-content {
+    /* --- MEJORA: Estado inicial de la animaciÃ³n --- */
+    transform: translateY(20px);
+    opacity: 0;
+}
+
+/* --- NUEVO: AnimaciÃ³n para el Ã­cono de alerta --- */
+@keyframes pulse-alert {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 149, 0, 0.7);
+        /* --color-accent con opacidad */
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 15px rgba(255, 149, 0, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 149, 0, 0);
+    }
+}
+
+/* --- NUEVO: Estilos para el Modal de ConfirmaciÃ³n --- */
+.confirmation-modal-content {
+    padding: 25px 30px;
+    text-align: center;
+    max-width: 420px;
+}
+
+.confirmation-modal-content .modal-header {
+    padding: 0;
+    border-bottom: none;
+    margin-bottom: 15px;
+}
+
+.confirmation-modal-content .modal-icon-container {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px auto;
+    background-color: #fff0e8;
+    /* Naranja muy claro */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-alert 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.confirmation-modal-content .modal-icon-text {
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--color-accent);
+    line-height: 1;
+}
+
+.confirmation-modal-content .modal-title {
+    font-size: 1.3em;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.confirmation-modal-content .modal-body p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.confirmation-modal-content .modal-footer {
+    padding: 0;
+    margin-top: 25px;
+    background: none;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dont-ask-again-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+}
+
+.dont-ask-again-container label {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.confirmation-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* --- NUEVO: Estilos mejorados para los botones del modal de confirmaciÃ³n --- */
+.modal-btn.secondary {
+    background-color: #f0f0f0;
+    color: var(--text-secondary);
+    border: 1px solid #e0e0e0;
+    transition: background-color 0.2s ease;
+}
+
+.modal-btn.secondary:hover {
+    background-color: #e5e5e5;
+}
+
+.modal-btn.danger {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    font-weight: bold;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* --- ESTILOS DEL MODAL "SOBRE MÃ" --- */
+#about-modal .modal-content {
+    background: var(--surface-light);
+    /* Usamos el gradiente */
+    padding: 0;
+    /* Quitamos el padding para un control total */
+    border-radius: 16px;
+    width: 90%;
+    /* Asegura que no se desborde en pantallas pequeÃ±as */
+    max-width: 420px;
+    /* --- MEJORA: Adaptabilidad vertical --- */
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh;
+    /* LÃ­mite para que no ocupe toda la pantalla */
+    /* --- FIN MEJORA --- */
+    text-align: center;
+    overflow: hidden;
+    /* Para que los bordes redondeados afecten a los hijos */
+    font-family: 'Nunito', sans-serif;
+    /* Usamos una fuente mÃ¡s suave */
+    margin: 20px;
+    /* AÃ±ade un margen para que no se pegue a los bordes */
+}
+
+.modal-overlay.hidden .modal-content {
+    transform: scale(0.95) translateY(15px);
+    opacity: 0;
+}
+
+.modal-header {
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    background: var(--bg-light);
+    /* Usamos el gradiente */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    padding: 20px 20px 15px 20px;
+    /* Reducimos padding vertical */
+}
+
+.modal-body {
+    padding: 20px 35px;
+    /* Reducimos padding vertical */
+    flex-grow: 1;
+    /* Permite que esta Ã¡rea crezca si hay espacio */
+    overflow-y: auto;
+    /* AÃ±adido como fallback por si el contenido es demasiado grande */
+}
+
+.modal-footer {
+    padding: 20px 35px;
+    /* Ajustado para el nuevo tamaÃ±o del icono */
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    background: var(--bg-light);
+    /* Usamos el gradiente */
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    font-size: 0.9em;
+}
+
+.modal-footer p {
+    margin: 0 0 8px 0;
+    color: #777;
+}
+
+.github-link {
+    display: inline-block;
+    background: var(--bg-dark);
+    /* Usamos el gradiente */
+    color: white;
+    padding: 10px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.github-link:hover {
+    background-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.about-image-container {
+    /* Ahora es el contenedor del canvas y la imagen */
+    position: relative;
+    width: 140px;
+    /* Reducido para ahorrar espacio */
+    height: 140px;
+    margin: 0 auto 15px auto;
+    /* Reducido margen inferior */
+}
+
+.about-modal-img {
+    width: 120px;
+    /* Reducido para un look mÃ¡s fino */
+    height: 120px;
+    margin: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid white;
+    box-shadow: var(--shadow-md);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+/* --- NUEVO: Visualizador de audio con Canvas --- */
+#audio-visualizer {
+    /* Ahora es un canvas */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.modal-title {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: var(--color-accent);
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.8em;
+}
+
+.modal-subtitle {
+    margin: 0;
+    font-size: 1.1em;
+    color: #666;
+    font-weight: normal;
+}
+
+.modal-body p {
+    color: #555;
+    line-height: 1.6;
+}
+
+.skills-container {
+    margin-top: 20px;
+    /* Reducido */
+}
+
+.skills-container h3 {
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.1em;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    /* Ajustado para el nuevo tamaÃ±o del icono */
+    /* Para bordes con gradiente, se usa border-image. Si no, fallback a color sÃ³lido. */
+    border-bottom: 1px solid rgba(60, 60, 67, 0.2);
+    border-image: var(--border-color) 1;
+    /* Aplicar el gradiente como borde */
+    border-image-slice: 1;
+    padding-bottom: 8px;
+}
+
+.skills-list {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.skill-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(15px);
+    /* La animaciÃ³n se aplicarÃ¡ con JS */
+}
+
+.modal-overlay:not(.hidden) .skill-item {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* AnimaciÃ³n escalonada para los items de habilidad */
+.modal-overlay:not(.hidden) .skill-item:nth-child(1) {
+    animation-delay: 0.3s;
+}
+
+.modal-overlay:not(.hidden) .skill-item:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.modal-overlay:not(.hidden) .skill-item:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.skill-item img {
+    width: 48px;
+    height: 48px;
+    filter: grayscale(30%);
+    transition: all 0.3s ease;
+}
+
+.skill-item:hover img {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+.skill-item span {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #666;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    font-weight: bold;
+    color: #bbb;
+    transition: color 0.2s ease;
+    z-index: 10;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
+}
+
+/* --- Media Query para mejorar la responsividad del modal en pantallas pequeÃ±as --- */
+@media (max-width: 480px) {
+    .modal-header {
+        padding: 25px 15px;
+    }
+
+    .modal-title {
+        font-size: 1.5em;
+        /* Reducimos un poco el tÃ­tulo */
+    }
+
+    .modal-subtitle {
+        font-size: 1em;
+        /* Reducimos el subtÃ­tulo */
+    }
+
+    .skills-list {
+        gap: 15px;
+        /* Menos espacio entre habilidades */
+    }
+}
+
+/* Media Query para pantallas de baja altura */
+@media (max-height: 700px) {
+    #about-modal .modal-content {
+        font-size: 14px;
+        /* Reducimos la fuente base para que todo quepa */
+    }
+}
+
+
+@keyframes toast-fade-in-out {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    10%,
+    90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* --- PESTAÃ‘A DE CURSOR --- */
+#tab-content-cursor {
+    overflow-y: auto;
+    /* Habilita el scroll vertical si el contenido se desborda */
+}
+
+/* --- RESPONSIVE DESIGN: TABLET & MOBILE --- */
+
+/* TABLET MODO: <= 1024px */
+@media (max-width: 1024px) {
+    #board-manager {
+        width: 320px;
+        /* Reducir el ancho del sidebar izquierdo */
+    }
+
+    #note-palette {
+        width: 70px;
+        /* Reducir el panel derecho */
+    }
+}
+
+/* MOBILE MODO: <= 768px */
+@media (max-width: 768px) {
+
+    /* 1. Panel de GestiÃ³n (Izquierdo) Flotante / Drawer */
+    #board-manager {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 85vw;
+        /* Ocupa la mayor parte de la pantalla */
+        max-width: 350px;
+        z-index: 1000;
+        transform: translateX(0);
+        /* Visible = 0. Colapsado = gestionado dinamicamente / por clase */
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    #board-manager.collapsed {
+        transform: translateX(-100%);
+        margin-left: 0;
+        /* Anulamos el margin-left que se usa en desktop */
+    }
+
+    #sidebar-expander {
+        z-index: 999;
+    }
+
+    /* Tabs scrollables horizontalmente si son muchos */
+    .tab-nav {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
+        min-width: 70px;
+    }
+
+    #tab-content-container {
+        /* Permitiremos que se scrollee todo el contenido y usamos flex */
+        min-height: 400px;
+    }
+
+    /* 2. Paleta de Plantillas -> Fijar al lado DERECHO de la pantalla */
+    #note-palette {
+        position: fixed;
+        right: 0;
+        top: 0;
+        height: 100vh;
+        width: 90px;
+        transform: none;
+        z-index: 900;
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* Paleta colapsada: se desliza fuera de la pantalla por la derecha */
+    #note-palette.palette-collapsed {
+        transform: translateX(100%);
+    }
+
+    /* La paleta no debe desaparecer cuando el sidebar estÃ¡ colapsado */
+    #board-manager.collapsed~#note-palette {
+        margin-left: 0 !important;
+    }
+
+    /* PestaÃ±a para abrir la paleta (visible solo en mÃ³vil) */
+    #palette-expander {
+        display: flex;
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%) translateX(0);
+        width: 25px;
+        height: 60px;
+        background: var(--bg-dark);
+        color: var(--text-light);
+        border-radius: 8px 0 0 8px;
+        align-items: center;
+        justify-content: center;
+        box-shadow: -2px 0px 8px rgba(0, 0, 0, 0.3);
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+        z-index: 901;
+        border: none;
+    }
+
+    #palette-expander:hover {
+        background: var(--gradient-primary);
+    }
+
+    #palette-expander img {
+        width: 18px;
+        height: 18px;
+        filter: invert(1);
+        opacity: 0.9;
+    }
+
+    /* Cuando la paleta estÃ¡ visible, la pestaÃ±a se oculta deslizando hacia la derecha */
+    #note-palette:not(.palette-collapsed)~* #palette-expander,
+    #palette-expander.palette-visible {
+        transform: translateY(-50%) translateX(200%);
+    }
+
+    /* 3. Controles Flotantes */
+    #zoom-controls {
+        top: auto;
+        left: 50%;
+        bottom: 20px;
+        right: auto;
+        transform: translateX(-50%);
+        padding: 5px 8px;
+        z-index: 800;
+        background: var(--surface-dark);
+    }
+
+    #zoom-level-display {
+        font-size: 0.85em;
+        width: 35px;
+    }
+
+    #zoom-controls button {
+        width: 25px;
+        height: 25px;
+        font-size: 1.1em;
+    }
+
+    #trash-can {
+        right: auto;
+        left: 10px;
+        bottom: 70px;
+        /* Por encima del centro, a la izquierda */
+        width: 50px;
+        height: 50px;
+        z-index: 800;
+    }
+
+    #trash-can img {
+        width: 25px;
+        height: 25px;
+    }
+
+    /* 4. Modales y Popovers */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    #color-picker-popover {
+        width: 90%;
+        max-width: 300px;
+        left: 50% !important;
+        /* Se centra en mÃ³viles */
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        position: fixed;
+    }
+
+    /* Ocultamos resizer lateral */
+    #sidebar-resizer {
+        display: none;
+    }
+
+}
+/* --- POSICIÃ“N DE PALETA: MODOS (solo desktop) --- */
+@media (min-width: 769px) {
+
+    /* ======= MODO DERECHA ======= */
+    body.palette-right #note-palette {
+        order: 10;
+        border-right: none;
+        border-left: 1px solid rgba(60, 60, 67, 0.2);
+        transition: margin-right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        margin-left: 0;
+    }
+
+    body.palette-right #palette-expander {
+        left: auto;
+        right: 0;
+        border-radius: 8px 0 0 8px;
+        transform: translateY(-50%) translateX(100%);
+    }
+
+    body.palette-right #palette-expander.palette-visible {
+        transform: translateY(-50%) translateX(-200%);
+    }
+
+    body.palette-right #board-manager.collapsed ~ #note-palette {
+        margin-left: 0;
+    }
+
+    body.palette-right #note-palette.palette-collapsed {
+        margin-right: -120px;
+    }
+
+    /* Keyframe: fade-in suave de la paleta para ocultar el flash de carga */
+    @keyframes aero-palette-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* ======= MODO ARRIBA / ABAJO =======
+       Paleta fija como overlay. margin:0 !important anula cualquier
+       margin inline del JS de collapse (author !important > normal inline). */
+
+    /* El body toma el fondo oscuro del tablero para evitar franja blanca */
+    body.palette-top,
+    body.palette-bottom {
+        background: hsl(226, 47%, 26%);
+        overflow: hidden;
+    }
+
+    body.palette-top #note-palette,
+    body.palette-bottom #note-palette {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        margin: 0 !important;       /* Anula inline margin del collapse JS */
+        top: auto !important;
+        bottom: auto !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        overflow: hidden !important;
+        /* Cristal Aero: muy transparente, el tablero se ve a travÃ©s */
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.055) 0%,
+            rgba(180, 210, 255, 0.025) 50%,
+            rgba(255, 255, 255, 0.015) 100%
+        ) !important;
+        -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
+        backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
+        border-right: none !important;
+        border-left: none !important;
+        /* Fade-in: espera 0.15s para que el JS cargue las notas antes de mostrar la barra */
+        animation: aero-palette-in 0.3s ease 0.15s both !important;
+        z-index: 149;
+    }
+
+    body.palette-top #note-palette {
+        top: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+        box-shadow:
+            0 2px 16px rgba(0,0,0,0.25),
+            inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    body.palette-bottom #note-palette {
+        bottom: 0 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
+        box-shadow:
+            0 -2px 20px rgba(0,0,0,0.35),
+            inset 0 1px 0 rgba(255,255,255,0.22),
+            inset 0 -1px 0 rgba(0,0,0,0.10);
+    }
+
+    /* Ocultar header y controles de scroll vertical */
+    body.palette-top .palette-header,
+    body.palette-bottom .palette-header,
+    body.palette-top .scroll-indicator,
+    body.palette-top .scroll-indicator-up,
+    body.palette-bottom .scroll-indicator,
+    body.palette-bottom .scroll-indicator-up,
+    body.palette-top #palette-expander,
+    body.palette-bottom #palette-expander {
+        display: none !important;
+    }
+
+    /* Scroll container: horizontal y centrado */
+    body.palette-top #palette-scroll-container,
+    body.palette-bottom #palette-scroll-container {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        align-self: stretch !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 16px !important;
+        gap: 0 !important;            /* Sin gap: el overlap lo manejan los margins */
+        align-items: center !important;
+        justify-content: center !important;  /* Centra notas en la barra */
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+        mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+        scroll-behavior: auto !important;
+    }
+
+    body.palette-top #palette-scroll-container::-webkit-scrollbar,
+    body.palette-bottom #palette-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Notas: superpuestas como en modo vertical, efecto mazo de cartas */
+    body.palette-top .palette-note,
+    body.palette-bottom .palette-note {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        margin-left: -9px !important;  /* Overlap: cada nota tapa parcialmente la anterior */
+        width: 26px !important;
+        height: 42px !important;
+        flex-shrink: 0 !important;
+        border-radius: 6px !important;
+        transform: none !important;
+        transform-origin: center bottom !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, z-index 0s !important;
+    }
+
+    /* La primera nota no tiene margen negativo */
+    body.palette-top #palette-scroll-container .palette-note:first-child,
+    body.palette-bottom #palette-scroll-container .palette-note:first-child {
+        margin-left: 0 !important;
+    }
+
+    body.palette-top .palette-note:hover,
+    body.palette-bottom .palette-note:hover {
+        transform: translateY(-6px) scale(1.18) !important;
+        z-index: 999 !important;
+        margin-left: 0 !important;        /* Al hacer hover, deja un pequeÃ±o espacio */
+        box-shadow: 0 8px 18px rgba(0,0,0,0.5) !important;
+    }
+
+    /* Zoom controls en modo abajo: subirlos por encima de la paleta */
+    body.palette-bottom #zoom-controls {
+        bottom: 68px;
+    }
+    body.palette-bottom #trash-can {
+        bottom: 126px;
+    }
+
+} /* fin @media (min-width: 769px) */
+
+/* Suprime transiciones de la paleta solo durante la carga inicial */
+body.no-palette-transition #note-palette,
+body.no-palette-transition #palette-expander,
+body.no-palette-transition #board-container {
+    transition: none !important;
+}
