@@ -195,7 +195,7 @@ function handlePointerMove(e) {
     });
 }
 
-function handlePointerUp(e) {
+async function handlePointerUp(e) {
     if (ghostNote) {
         const boardRect = DOM.boardContainer.getBoundingClientRect();
 
@@ -262,21 +262,39 @@ function handlePointerUp(e) {
     if (!activeNote) return;
 
     if (DOM.trashCan.classList.contains('active')) {
-        const confirmar = confirm("¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
-        if (confirmar) {
-            Callbacks.moveNoteToTrash(activeNoteData.id); 
-            activeNote = null; activeNoteData = null; isResizing = false;
-            offsetX = 0; offsetY = 0;
+        // Guardar estado local antes de await para evitar bugs de reentrada
+        const noteId = activeNoteData.id;
+        const noteEl = activeNote;
+        const origX = originalNoteX;
+        const origY = originalNoteY;
+
+        // Limpiar estado global de arrastre INMEDIATAMENTE
+        activeNote.classList.remove('dragging');
+        activeNote = null; activeNoteData = null; isResizing = false;
+        offsetX = 0; offsetY = 0;
+
+        const userRes = await Callbacks.showConfirmationModal("Eliminar Nota", "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
+        if (userRes.confirmed) {
+            Callbacks.moveNoteToTrash(noteId); 
             DOM.trashCan.classList.remove('visible', 'active');
-            return; // Salimos temprano y no llamamos a saveState con la posición "basura"
+            return; 
         } else {
-            // Devolver la nota a su posición original fuerte usando variables
-            activeNoteData.x = originalNoteX; 
-            activeNoteData.y = originalNoteY;
-            activeNote.style.left = `${activeNoteData.x}px`;
-            activeNote.style.top = `${activeNoteData.y}px`;
-            activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1)`;
-            if (!isResizing) Callbacks.updateAllLinesPosition();
+            // Devolver la nota a su posición original
+            const currentBoard = appState.boards[appState.activeBoardId];
+            if (currentBoard) {
+                const nData = currentBoard.notes.find(n => n.id === noteId);
+                if (nData) {
+                    nData.x = origX; 
+                    nData.y = origY;
+                    noteEl.style.left = `${nData.x}px`;
+                    noteEl.style.top = `${nData.y}px`;
+                    noteEl.style.transform = `rotate(${nData.rotation}deg) scale(1)`;
+                }
+            }
+            Callbacks.updateAllLinesPosition();
+            DOM.trashCan.classList.remove('visible', 'active');
+            Callbacks.saveState();
+            return;
         }
     } else {
         if (!isResizing) Callbacks.updateAllLinesPosition();

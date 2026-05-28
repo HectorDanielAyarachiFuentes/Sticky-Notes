@@ -73,7 +73,6 @@ export function moveNoteToTrash(noteId) {
             Callbacks.removeLinesForNote(noteId);
             noteElement.remove();
 
-            Callbacks.updateBoardSize();
             Callbacks.showToast('Nota movida a la papelera.');
 
             // Actualizar la vista de la papelera si está abierta
@@ -157,8 +156,9 @@ export function renderTrash() {
 /**
  * Vacía completamente la papelera previa confirmación.
  */
-export function emptyTrash() {
-    if (confirm('¿Estás seguro de que quieres vaciar la papelera? Todos los elementos se borrarán permanentemente.')) {
+export async function emptyTrash() {
+    const userRes = await Callbacks.showConfirmationModal('Vaciar Papelera', '¿Estás seguro de que quieres vaciar la papelera? Todos los elementos se borrarán permanentemente.');
+    if (userRes.confirmed) {
         appState.trash = [];
         appState.boardsTrash = [];
         Callbacks.saveState();
@@ -181,8 +181,9 @@ function restoreBoard(boardId) {
     }
 }
 
-function deleteBoardPermanently(boardId) {
-    if (confirm('Esta acción es irreversible. ¿Seguro que quieres borrar este tablero permanentemente?')) {
+async function deleteBoardPermanently(boardId) {
+    const userRes = await Callbacks.showConfirmationModal('Borrar Tablero', 'Esta acción es irreversible. ¿Seguro que quieres borrar este tablero permanentemente?');
+    if (userRes.confirmed) {
         appState.boardsTrash = appState.boardsTrash.filter(b => b.id !== boardId);
         Callbacks.saveState();
         renderTrash();
@@ -202,7 +203,6 @@ function restoreNote(noteId) {
             renderTrash();
             if (targetBoard.id === appState.activeBoardId) {
                 Callbacks.renderActiveBoard();
-                Callbacks.updateBoardSize();
             }
             Callbacks.showToast('Nota restaurada.');
         } else {
@@ -214,7 +214,6 @@ function restoreNote(noteId) {
                 renderTrash();
                 if (firstBoardId === appState.activeBoardId) {
                     Callbacks.renderActiveBoard();
-                    Callbacks.updateBoardSize();
                 }
                 Callbacks.showToast(`Nota restaurada en el tablero "${appState.boards[firstBoardId].name}".`);
             } else {
@@ -225,8 +224,9 @@ function restoreNote(noteId) {
     }
 }
 
-function deletePermanently(noteId) {
-    if (confirm('Esta acción es irreversible. ¿Seguro que quieres borrar esta nota permanentemente?')) {
+async function deletePermanently(noteId) {
+    const userRes = await Callbacks.showConfirmationModal('Borrar Nota', 'Esta acción es irreversible. ¿Seguro que quieres borrar esta nota permanentemente?');
+    if (userRes.confirmed) {
         appState.trash = appState.trash.filter(n => n.id !== noteId);
         Callbacks.saveState();
         renderTrash();

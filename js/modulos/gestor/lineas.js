@@ -31,10 +31,13 @@ let currentLineContext = null;
  * @param {HTMLElement} boardRef - Referencia al elemento del DOM #board.
  * @param {Function} renderCallback - Función a llamar para refrescar el tablero (ej. renderActiveBoard).
  */
-export function initializeLineManager(appStateRef, boardRef, renderCallback) {
+export function initializeLineManager(appStateRef, boardRef, renderCallback, showConfirmationModalCallback) {
     appState = appStateRef;
     board = boardRef;
     reRenderCallback = renderCallback;
+    if (showConfirmationModalCallback) {
+        window._showConfirmationModal = showConfirmationModalCallback;
+    }
 }
 
 /**
@@ -470,9 +473,12 @@ export function removeLinesForNote(noteId) {
  * @param {string} toId - ID de la nota de destino.
  * @param {LeaderLine} lineInstance - Instancia de LeaderLine a eliminar.
  */
-function deleteSpecificLine(fromId, toId, lineInstance) {
+async function deleteSpecificLine(fromId, toId, lineInstance) {
     if (appState.lineOptions.promptBeforeDelete) {
-        if (!confirm('¿Estás seguro de que quieres borrar esta conexión?')) {
+        if (window._showConfirmationModal) {
+            const userRes = await window._showConfirmationModal('Borrar Conexión', '¿Estás seguro de que quieres borrar esta conexión?');
+            if (!userRes.confirmed) return;
+        } else if (!confirm('¿Estás seguro de que quieres borrar esta conexión?')) {
             return;
         }
     }
@@ -648,13 +654,12 @@ if (ctxLineColor) {
 }
 
 if (ctxLineDelete) {
-    ctxLineDelete.addEventListener('click', (e) => {
-        e.stopPropagation();
+    ctxLineDelete.addEventListener('click', async () => {
         if (currentLineContext) {
-            deleteSpecificLine(currentLineContext.fromId, currentLineContext.toId, currentLineContext.lineInstance);
+            const { fromId, toId, lineInstance } = currentLineContext;
+            closeLineContextMenu();
+            await deleteSpecificLine(fromId, toId, lineInstance);
         }
-        lineContextMenu.classList.add('hidden');
-        currentLineContext = null;
     });
 }
 

@@ -493,13 +493,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function deleteBoard(boardId) {
+    async function deleteBoard(boardId) {
         const boardToDelete = appState.boards[boardId];
         const isLastBoard = Object.keys(appState.boards).length <= 1;
         const confirmMessage = isLastBoard
             ? `¿Estás seguro de que quieres eliminar el último tablero "${boardToDelete.name}"?`
             : `¿Estás seguro de que quieres mover el tablero "${boardToDelete.name}" a la papelera?`;
-        if (confirm(confirmMessage)) {
+        const userRes = await showConfirmationModal('Alerta', confirmMessage);
+        if (userRes.confirmed) {
             appState.boardsTrash.push(boardToDelete);
             delete appState.boards[boardId];
             if (appState.activeBoardId === boardId) {
@@ -848,13 +849,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         contextMenuTabInfo = null;
     }
 
-    function clearTab() {
+    async function clearTab() {
         if (!contextMenuTabInfo) return;
         const { noteId, tabIndex } = contextMenuTabInfo;
         hideTabContextMenu();
         const noteData = appState.boards[appState.activeBoardId].notes.find(n => n.id === noteId);
         const noteElement = board.querySelector(`.stickynote[data-note-id="${noteId}"]`);
-        if (!noteData || !noteElement || !confirm('¿Limpiar el contenido de esta pestaña?')) return;
+        if (!noteData || !noteElement) return;
+        const userRes = await showConfirmationModal('Alerta', '¿Limpiar el contenido de esta pestaña?');
+        if (!userRes.confirmed) return;
         const contentElement = noteElement.querySelector(`.stickynote-text[data-tab-index="${tabIndex}"]`);
         contentElement.classList.add('clearing-out');
         contentElement.addEventListener('animationend', () => {
@@ -906,14 +909,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         hideContextMenu();
     }
 
-    function deleteNoteFromContext() {
-        if (contextMenuNoteId) {
-            const confirmar = confirm("¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
-            if (confirmar) {
-                moveNoteToTrash(contextMenuNoteId);
-            }
-        }
+    async function deleteNoteFromContext() {
+        if (!contextMenuNoteId) return;
+        
+        const noteId = contextMenuNoteId;
         hideContextMenu();
+        
+        const userRes = await showConfirmationModal("Eliminar Nota", "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
+        if (userRes.confirmed) {
+            moveNoteToTrash(noteId);
+        }
     }
 
     /**
@@ -1234,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         createConfirmationModal();
 
         // Inicializar módulos principales que no dependen de otros
-        initializeLineManager(appState, board, renderActiveBoard);
+        initializeLineManager(appState, board, renderActiveBoard, showConfirmationModal);
         initializePanning(boardContainer, board, appState, () => { updateZoom(); });
         initializeColorPopover();
         initializeSidebarResizing();
@@ -1247,13 +1252,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initializeBackgroundManager(appState, backgroundDOM, backgroundCallbacks);
 
         const trashDOM = { board, trashNotesContainer, trashBoardsContainer, emptyTrashBtn };
-        const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, hideContextMenu, removeLinesForNote };
+        const trashCallbacks = { saveState, showToast, renderBoardList, renderActiveBoard, hideContextMenu, removeLinesForNote, showConfirmationModal };
         initializeTrashManager(appState, trashDOM, trashCallbacks);
 
         const noteInteractionDOM = { boardContainer, board, trashCan };
         const noteInteractionCallbacks = {
             handleConnectionClick, bringToFront, updateAllLinesPosition, moveNoteToTrash, saveState,
-            renderActiveBoard, createDefaultBoard, switchBoard, showToast, createStickyNoteElement,
+            renderActiveBoard, createDefaultBoard, switchBoard, showToast, createStickyNoteElement, showConfirmationModal,
             getNewZIndex: () => ++maxZIndex
         };
         initializeNoteInteractions(appState, noteInteractionDOM, noteInteractionCallbacks);
