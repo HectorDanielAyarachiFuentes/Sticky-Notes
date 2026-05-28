@@ -1618,15 +1618,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const paletteScrollContainer = document.querySelector("#palette-scroll-container");
         const scrollIndicatorUp = paletteScrollContainer.previousElementSibling;
         const scrollIndicator = paletteScrollContainer.nextElementSibling;
-        const rainbowColors = ['#ff7979', '#ffbe76', '#f6e58d', '#badc58', '#7ed6df', '#54a0ff', '#be2edd', '#FFFFFF', '#808080'];
-        const fullPalette = [];
-        rainbowColors.forEach(color => {
-            const [h, s, l] = hexToHsl(color);
-            for (let i = -2; i <= 2; i++) {
-                fullPalette.push(hslToHex(h, s, Math.max(0.15, Math.min(0.95, l + i * 0.08))));
-            }
-        });
-        const extendedColors = [...fullPalette, ...fullPalette, ...fullPalette, ...fullPalette];
         const updateScrollIndicator = () => {
             const { scrollTop, scrollHeight, clientHeight } = paletteScrollContainer;
             const isScrollable = scrollHeight > clientHeight;
@@ -1662,16 +1653,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (scrollTop + clientHeight >= blockHeight * 3) paletteScrollContainer.scrollTop -= blockHeight;
             else if (scrollTop <= blockHeight) paletteScrollContainer.scrollTop += blockHeight;
         }, { passive: true });
-        extendedColors.forEach((color, index) => {
-            const paletteNote = document.createElement("div");
-            paletteNote.className = `palette-note ${isColorDark(color) ? 'dark-theme' : ''}`;
-            paletteNote.style.backgroundColor = color;
-            paletteNote.dataset.color = color;
-            paletteNote.style.top = `${index * 22}px`;
-            paletteNote.style.zIndex = extendedColors.length - index;
-            paletteNote.style.transform = `perspective(600px) rotateX(25deg) rotateZ(${(Math.random() - 0.5) * 4}deg)`;
-            paletteScrollContainer.appendChild(paletteNote);
-        });
+
+        // Si el contenedor está vacío (no se cargó del caché en HTML), generamos la paleta
+        if (paletteScrollContainer.children.length === 0) {
+            const rainbowColors = ['#ff7979', '#ffbe76', '#f6e58d', '#badc58', '#7ed6df', '#54a0ff', '#be2edd', '#FFFFFF', '#808080'];
+            const fullPalette = [];
+            rainbowColors.forEach(color => {
+                const [h, s, l] = hexToHsl(color);
+                for (let i = -2; i <= 2; i++) {
+                    fullPalette.push(hslToHex(h, s, Math.max(0.15, Math.min(0.95, l + i * 0.08))));
+                }
+            });
+            const extendedColors = [...fullPalette, ...fullPalette, ...fullPalette, ...fullPalette];
+            
+            extendedColors.forEach((color, index) => {
+                const paletteNote = document.createElement("div");
+                paletteNote.className = `palette-note ${isColorDark(color) ? 'dark-theme' : ''}`;
+                paletteNote.style.backgroundColor = color;
+                paletteNote.dataset.color = color;
+                paletteNote.style.top = `${index * 22}px`;
+                paletteNote.style.zIndex = extendedColors.length - index;
+                paletteNote.style.transform = `perspective(600px) rotateX(25deg) rotateZ(${(Math.random() - 0.5) * 4}deg)`;
+                paletteNote.style.animationDelay = `${Math.min(index * 0.015, 0.5)}s`;
+                paletteScrollContainer.appendChild(paletteNote);
+            });
+
+            // Guardar en caché para la próxima vez
+            try {
+                localStorage.setItem('stickyNotesPaletteCache', paletteScrollContainer.innerHTML);
+            } catch(e) {}
+        }
         paletteScrollContainer.scrollTop = paletteScrollContainer.scrollHeight / 4;
         setTimeout(updateScrollIndicator, 100);
 

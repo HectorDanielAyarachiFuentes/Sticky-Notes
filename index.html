@@ -487,6 +487,15 @@
         <div id="palette-scroll-container" role="list" aria-label="Plantillas de notas disponibles">
             <!-- Las notas de plantilla se generarán aquí con JS -->
         </div>
+        <script>
+            // Carga instantánea desde caché para evitar retraso visual (espacio en blanco)
+            try {
+                var cachedPalette = localStorage.getItem('stickyNotesPaletteCache');
+                if (cachedPalette) {
+                    document.getElementById('palette-scroll-container').innerHTML = cachedPalette;
+                }
+            } catch(e) {}
+        </script>
         <div class="scroll-indicator" aria-hidden="true">
             <img src="svg/abajo.svg" alt="">
         </div>
