@@ -196,7 +196,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
     function saveState() {
-        localStorage.setItem('stickyNotesApp', JSON.stringify(appState));
+        const stateString = JSON.stringify(appState, (key, value) => {
+            if (key === 'history' || key === 'historyTitle' || key === 'historyIndex' || key === 'historyTitleIndex') {
+                return undefined;
+            }
+            return value;
+        });
+        localStorage.setItem('stickyNotesApp', stateString);
         updateStorageIndicator();
     }
 
@@ -421,7 +427,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             welcomeMsg.innerHTML = '¡Bienvenido! <br>Arrastra una nota o haz doble clic para comenzar.';
             board.appendChild(welcomeMsg);
         } else {
-            currentBoard.notes.forEach(noteData => createStickyNoteElement(noteData));
+            const fragment = document.createDocumentFragment();
+            currentBoard.notes.forEach(noteData => createStickyNoteElement(noteData, false, fragment));
+            board.appendChild(fragment);
         }
         renderConnections();
     }
@@ -574,7 +582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function createStickyNoteElement(noteData, isNew = false) {
+    function createStickyNoteElement(noteData, isNew = false, container = board) {
         const sticky = document.createElement("div");
         sticky.className = `stickynote ${noteData.locked ? 'locked' : ''} ${isColorDark(noteData.color) ? 'dark-theme' : ''}`;
         sticky.dataset.noteId = noteData.id;
@@ -645,78 +653,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         tabContainer.className = 'stickynote-tabs';
         const contentContainer = document.createElement('div');
         contentContainer.className = 'stickynote-content-container';
+        const content = document.createElement("div");
+        content.contentEditable = !noteData.locked;
+        content.className = `stickynote-text active`;
+        content.dataset.tabIndex = noteData.activeTab;
+        content.setAttribute("placeholder", "Escribe algo...");
+        content.innerHTML = noteData.tabs[noteData.activeTab].content || '';
+        
+        let debounceTimer;
+        const guardarHistorialTexto = (newContent, tabIndex) => {
+            if (!noteData.tabs[tabIndex].history) {
+                noteData.tabs[tabIndex].history = [noteData.tabs[tabIndex].content || ''];
+                noteData.tabs[tabIndex].historyIndex = 0;
+            }
+            const historyArr = noteData.tabs[tabIndex].history;
+            let currentIndex = noteData.tabs[tabIndex].historyIndex;
+            
+            if (currentIndex < historyArr.length - 1) {
+                historyArr.length = currentIndex + 1;
+            }
+            if (historyArr[historyArr.length - 1] !== newContent) {
+                historyArr.push(newContent);
+                if (historyArr.length > 30) historyArr.shift();
+                noteData.tabs[tabIndex].historyIndex = historyArr.length - 1;
+            }
+        };
+
+        content.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const currentTab = noteData.activeTab;
+            debounceTimer = setTimeout(() => {
+                guardarHistorialTexto(content.innerHTML, currentTab);
+                noteData.tabs[currentTab].content = content.innerHTML;
+                saveState();
+            }, 800);
+        });
+
+        content.addEventListener('blur', () => {
+            const newContent = content.innerHTML;
+            const currentTab = noteData.activeTab;
+            if (noteData.tabs[currentTab].content !== newContent) {
+                noteData.tabs[currentTab].content = newContent;
+                guardarHistorialTexto(newContent, currentTab);
+                saveState();
+                const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${currentTab}"] .stickynote-tab-part[data-part="content"]`);
+                if(tabPart) {
+                    tabPart.classList.toggle('filled', !!newContent.trim());
+                    tabPart.classList.toggle('empty', !newContent.trim());
+                }
+                handleSearch();
+            }
+        });
+
+        contentContainer.appendChild(content);
+
         for (let i = 0; i < 5; i++) {
             const tab = document.createElement('div');
             tab.className = `stickynote-tab ${i === noteData.activeTab ? 'active' : ''}`;
             tab.dataset.tabIndex = i;
             tab.innerHTML = `<span class="stickynote-tab-part ${noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty'}" data-part="title">Título</span><span class="stickynote-tab-part ${noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty'}" data-part="content">Cuerpo</span>`;
+            
             tab.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (noteData.activeTab === i) return;
+
+                content.blur();
+                
                 noteData.activeTab = i;
                 saveState();
+                
                 sticky.querySelector('.stickynote-tab.active')?.classList.remove('active');
                 tab.classList.add('active');
-                sticky.querySelector('.stickynote-text.active')?.classList.remove('active');
-                sticky.querySelector(`.stickynote-text[data-tab-index="${i}"]`).classList.add('active');
+                
+                content.dataset.tabIndex = i;
+                content.innerHTML = noteData.tabs[i].content || '';
                 title.innerHTML = noteData.tabs[i].title || '';
             });
+            
             tab.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); e.stopPropagation();
                 contextMenuTabInfo = { noteId: noteData.id, tabIndex: i };
                 showTabContextMenu(e.clientX, e.clientY);
             });
             tabContainer.appendChild(tab);
-            const content = document.createElement("div");
-            content.contentEditable = !noteData.locked;
-            content.className = `stickynote-text ${i === noteData.activeTab ? 'active' : ''}`;
-            content.dataset.tabIndex = i;
-            content.setAttribute("placeholder", "Escribe algo...");
-            content.innerHTML = noteData.tabs[i].content || '';
-            // --- INICIO SISTEMA DESHACER LOCAL ---
-            let debounceTimer;
-            const guardarHistorialTexto = (newContent) => {
-                if (!noteData.tabs[i].history) {
-                    noteData.tabs[i].history = [noteData.tabs[i].content || ''];
-                    noteData.tabs[i].historyIndex = 0;
-                }
-                const historyArr = noteData.tabs[i].history;
-                let currentIndex = noteData.tabs[i].historyIndex;
-                
-                if (currentIndex < historyArr.length - 1) {
-                    historyArr.length = currentIndex + 1;
-                }
-                if (historyArr[historyArr.length - 1] !== newContent) {
-                    historyArr.push(newContent);
-                    if (historyArr.length > 30) historyArr.shift();
-                    noteData.tabs[i].historyIndex = historyArr.length - 1;
-                }
-            };
-            
-            content.addEventListener('input', () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    guardarHistorialTexto(content.innerHTML);
-                    noteData.tabs[i].content = content.innerHTML;
-                    saveState();
-                }, 800);
-            });
-            // --- FIN SISTEMA DESHACER LOCAL ---
-
-            content.addEventListener('blur', () => {
-                const newContent = content.innerHTML;
-                if (noteData.tabs[i].content !== newContent) {
-                    noteData.tabs[i].content = newContent;
-                    guardarHistorialTexto(newContent);
-                    saveState();
-                    const tabPart = tab.querySelector('.stickynote-tab-part[data-part="content"]');
-                    if(tabPart) {
-                        tabPart.classList.toggle('filled', !!newContent.trim());
-                        tabPart.classList.toggle('empty', !newContent.trim());
-                    }
-                    handleSearch();
-                }
-            });
-            contentContainer.appendChild(content);
         }
         const connectionBtnsContainer = document.createElement("div");
         connectionBtnsContainer.className = 'connection-buttons-container';
@@ -738,7 +757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sticky.appendChild(contentWrapper);
         sticky.appendChild(connectionBtnsContainer);
         sticky.appendChild(resizer);
-        board.appendChild(sticky);
+        container.appendChild(sticky);
         if (isNew) {
             sticky.classList.add('new-note-animation');
             sticky.addEventListener('animationend', () => sticky.classList.remove('new-note-animation'), { once: true });

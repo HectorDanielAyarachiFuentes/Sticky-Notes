@@ -134,51 +134,65 @@ function handlePointerDown(e) {
     }
 }
 
+let animationFrameId = null;
+let currentEventX = 0;
+let currentEventY = 0;
+
 function handlePointerMove(e) {
     if (ghostNote) {
-        ghostNote.style.left = `${e.clientX - offsetX}px`;
-        ghostNote.style.top = `${e.clientY - offsetY}px`;
-        const trashRect = DOM.trashCan.getBoundingClientRect();
-        DOM.trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
+        // no-op
+    } else if (!activeNote || (activeNoteData && activeNoteData.locked)) {
         return;
-    }
-
-    if (!activeNote || (activeNoteData && activeNoteData.locked)) return;
-    e.preventDefault();
-    const boardRect = DOM.boardContainer.getBoundingClientRect();
-
-    if (isResizing) {
-        const currentBoard = appState.boards[appState.activeBoardId];
-        const panX = currentBoard.panX || 0;
-        const panY = currentBoard.panY || 0;
-        const noteRect = activeNote.getBoundingClientRect();
-
-        const newWidth = (e.clientX - noteRect.left) / appState.zoomLevel;
-        const newHeight = (e.clientY - noteRect.top) / appState.zoomLevel;
-        activeNoteData.width = Math.max(150, newWidth);
-        activeNoteData.height = Math.max(150, newHeight);
-        activeNote.style.width = `${activeNoteData.width}px`;
-        activeNote.style.height = `${activeNoteData.height}px`;
-        // Aseguramos que la papelera no esté visible ni activa al redimensionar
-        DOM.trashCan.classList.remove('visible', 'active');
     } else {
-        // Hacemos visible la papelera solo cuando se empieza a mover la nota de verdad (no al redimensionar)
-        DOM.trashCan.classList.add('visible');
-        
-        const currentBoard = appState.boards[appState.activeBoardId];
-        const mouseXInBoard = (e.clientX - boardRect.left - (currentBoard.panX || 0)) / appState.zoomLevel;
-        const mouseYInBoard = (e.clientY - boardRect.top - (currentBoard.panY || 0)) / appState.zoomLevel;
-        activeNoteData.x = mouseXInBoard - offsetX;
-        activeNoteData.y = mouseYInBoard - offsetY;
-        activeNote.style.left = `${activeNoteData.x}px`;
-        activeNote.style.top = `${activeNoteData.y}px`;
-        Callbacks.updateAllLinesPosition();
-        activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
-        
-        // Solo comprobamos la papelera si estamos arrastrando para mover, no al redimensionar
-        const trashRect = DOM.trashCan.getBoundingClientRect();
-        DOM.trashCan.classList.toggle('active', e.clientX > trashRect.left && e.clientX < trashRect.right && e.clientY > trashRect.top && e.clientY < trashRect.bottom);
+        e.preventDefault();
     }
+
+    currentEventX = e.clientX;
+    currentEventY = e.clientY;
+
+    if (animationFrameId) return;
+
+    animationFrameId = requestAnimationFrame(() => {
+        if (ghostNote) {
+            ghostNote.style.left = `${currentEventX - offsetX}px`;
+            ghostNote.style.top = `${currentEventY - offsetY}px`;
+            const trashRect = DOM.trashCan.getBoundingClientRect();
+            DOM.trashCan.classList.toggle('active', currentEventX > trashRect.left && currentEventX < trashRect.right && currentEventY > trashRect.top && currentEventY < trashRect.bottom);
+        } else if (activeNote && !(activeNoteData && activeNoteData.locked)) {
+            const boardRect = DOM.boardContainer.getBoundingClientRect();
+
+            if (isResizing) {
+                const currentBoard = appState.boards[appState.activeBoardId];
+                const panX = currentBoard.panX || 0;
+                const panY = currentBoard.panY || 0;
+                const noteRect = activeNote.getBoundingClientRect();
+
+                const newWidth = (currentEventX - noteRect.left) / appState.zoomLevel;
+                const newHeight = (currentEventY - noteRect.top) / appState.zoomLevel;
+                activeNoteData.width = Math.max(150, newWidth);
+                activeNoteData.height = Math.max(150, newHeight);
+                activeNote.style.width = `${activeNoteData.width}px`;
+                activeNote.style.height = `${activeNoteData.height}px`;
+                DOM.trashCan.classList.remove('visible', 'active');
+            } else {
+                DOM.trashCan.classList.add('visible');
+                
+                const currentBoard = appState.boards[appState.activeBoardId];
+                const mouseXInBoard = (currentEventX - boardRect.left - (currentBoard.panX || 0)) / appState.zoomLevel;
+                const mouseYInBoard = (currentEventY - boardRect.top - (currentBoard.panY || 0)) / appState.zoomLevel;
+                activeNoteData.x = mouseXInBoard - offsetX;
+                activeNoteData.y = mouseYInBoard - offsetY;
+                activeNote.style.left = `${activeNoteData.x}px`;
+                activeNote.style.top = `${activeNoteData.y}px`;
+                Callbacks.updateAllLinesPosition();
+                activeNote.style.transform = `rotate(${activeNoteData.rotation}deg) scale(1.05)`;
+                
+                const trashRect = DOM.trashCan.getBoundingClientRect();
+                DOM.trashCan.classList.toggle('active', currentEventX > trashRect.left && currentEventX < trashRect.right && currentEventY > trashRect.top && currentEventY < trashRect.bottom);
+            }
+        }
+        animationFrameId = null;
+    });
 }
 
 function handlePointerUp(e) {

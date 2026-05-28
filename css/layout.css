@@ -1,4 +1,4 @@
-﻿/* --- PANEL DE GESTIÃ“N DE TABLEROS --- */
+/* --- PANEL DE GESTIÃ“N DE TABLEROS --- */
 #board-manager {
     /* El ancho ahora se controla por JS, con un valor inicial y lÃ­mites */
     flex-shrink: 0;
@@ -1114,13 +1114,13 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     pointer-events: none;
 }
 
-/* Idle: flotan continuamente cuando tienen clase .visible (asignada desde JS) */
+/* Idle: flotan suavemente una vez al aparecer (sin infinite para salvar CPU) */
 .scroll-indicator.visible {
-    animation: float-down 1.8s ease-in-out infinite;
+    animation: float-down 1.8s ease-in-out forwards;
 }
 
 .scroll-indicator-up.visible {
-    animation: float-up 1.8s ease-in-out infinite;
+    animation: float-up 1.8s ease-in-out forwards;
 }
 
 /* Al hacer scroll se dispara la animacion de impacto */
@@ -1227,7 +1227,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: pulse-alert 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    /* Animación removida para ahorrar CPU en idle */
 }
 
 .confirmation-modal-content .modal-icon-text {

@@ -41,22 +41,32 @@ export function initializePanning(boardContainer, board, appState, onPanCallback
         boardContainer.style.userSelect = 'none';
     };
 
+    let animationFrameId = null;
+    let latestClientX = 0;
+    let latestClientY = 0;
+
     const doPanning = (e) => {
         if (!isPanning) return;
 
         e.preventDefault();
-        const dx = e.clientX - lastPointerX;
-        const dy = e.clientY - lastPointerY;
+        latestClientX = e.clientX;
+        latestClientY = e.clientY;
 
-        const currentBoard = appState.boards[appState.activeBoardId];
-        if (!currentBoard) return;
+        if (animationFrameId) return;
 
-        // Actualizamos la posición del paneo en el estado
-        currentBoard.panX = startPanX + dx;
-        currentBoard.panY = startPanY + dy;
+        animationFrameId = requestAnimationFrame(() => {
+            const dx = latestClientX - lastPointerX;
+            const dy = latestClientY - lastPointerY;
 
-        // Notificar que el paneo ha ocurrido para que otros elementos se actualicen.
-        if (onPanCallback) onPanCallback();
+            const currentBoard = appState.boards[appState.activeBoardId];
+            if (currentBoard) {
+                currentBoard.panX = startPanX + dx;
+                currentBoard.panY = startPanY + dy;
+
+                if (onPanCallback) onPanCallback();
+            }
+            animationFrameId = null;
+        });
     };
 
     const stopPanning = () => {

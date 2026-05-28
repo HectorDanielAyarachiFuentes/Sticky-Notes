@@ -14,6 +14,8 @@ let isRainbowModeActive = false;
 let rainbowAnimationId = null;
 let currentHue = 0;
 let rainbowSpeed = 5;
+let isMouseMoving = true;
+let mouseIdleTimer = null;
 
 // --- Caché de frames pre-computados para el arcoíris ---
 // Generamos 60 entradas (una por grado de hue) al activar el modo,
@@ -170,6 +172,17 @@ export function initializeCursorManager(appStateRef, domRefs, callbackFuncs) {
         if (!appState.settings) appState.settings = {};
         appState.settings.cursorRainbowSpeed = rainbowSpeed;
         Callbacks.saveState();
+    });
+
+    document.addEventListener('pointermove', () => {
+        isMouseMoving = true;
+        if (isRainbowModeActive && !rainbowAnimationId) {
+            animateRainbow();
+        }
+        clearTimeout(mouseIdleTimer);
+        mouseIdleTimer = setTimeout(() => {
+            isMouseMoving = false;
+        }, 500);
     });
 }
 
@@ -384,7 +397,10 @@ function toggleRainbowMode(isActive) {
  * Ultra-optimizado: usa frames pre-computados — costo mínimo, solo array lookup.
  */
 function animateRainbow() {
-    if (!isRainbowModeActive) return;
+    if (!isRainbowModeActive || !isMouseMoving) {
+        rainbowAnimationId = null;
+        return;
+    }
 
     // Avanzar frames por ticks según la velocidad (1–10 → 1–3 frames por tick)
     const framesPerTick = Math.max(1, Math.round((rainbowSpeed / 10) * 3));
