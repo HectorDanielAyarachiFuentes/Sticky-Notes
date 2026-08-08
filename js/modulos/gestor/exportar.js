@@ -186,8 +186,8 @@ export function initializeShareAndImport(appState, callbacks) {
             const compressedWithImages = LZString.compressToEncodedURIComponent(JSON.stringify(urlDataWithImages));
             const tryUrl = `${baseUrl}?board=${encodeURIComponent(compressedWithImages)}`;
 
-            // El límite seguro para CleanURI es 2000 caracteres.
-            if (tryUrl.length < 2000) {
+            // El límite seguro para GitHub Pages (para evitar I/O error) y CleanURI es 1000 caracteres.
+            if (tryUrl.length < 1000) {
                 finalUrl = tryUrl;
                 imagesIncluded = urlDataWithImages.notes.some(n => n.image);
             } else {
