@@ -1,3 +1,5 @@
+import { nativeCompressToURL, nativeDecompressFromURL, isNativeCompressionSupported } from './native-compressor.js';
+
 /**
  * Inicializa toda la funcionalidad de compartir e importar tableros.
  * @param {object} appState - El estado global de la aplicación.
@@ -88,57 +90,89 @@ export function initializeShareAndImport(appState, callbacks) {
 
     /**
      * Revisa la URL al cargar la página en busca de datos para importar.
+     * Soporta tres formatos (prioridad de detección):
+     *   1. #gzboard=  → Gzip nativo vía hash (nuevo, sin HTTP 431)
+     *   2. ?bboard=   → Gzip nativo vía query param (compatibilidad transitoria)
+     *   3. ?board=    → LZ-String (legacy, retrocompatibilidad)
      */
     function handleImportFromURL() {
-        // Usamos directamente window.location.search con decodeURIComponent para evitar
-        // que URLSearchParams convierta los '+' en espacios (rompe el dato de LZ-String).
+        // === 1. Buscar en el fragmento hash (NUNCA se envía al servidor) ===
+        const rawHash = window.location.hash.substring(1); // Quitar el '#'
+        const hashGzMatch = rawHash.match(/^gzboard=(.+)/);
+
+        // === 2. Buscar en query params (legacy) ===
         const rawSearch = window.location.search;
-        const boardMatch = rawSearch.match(/[?&]board=([^&]*)/);
-        const boardDataParam = boardMatch ? decodeURIComponent(boardMatch[1]) : null;
+        const queryGzMatch = rawSearch.match(/[?&]bboard=([^&]*)/);
+        const lzMatch      = rawSearch.match(/[?&]board=([^&]*)/);
 
-        if (boardDataParam) {
-            // Mostrar cartel de procesando
-            const processingOverlay = document.getElementById('processing-overlay');
-            if (processingOverlay) processingOverlay.classList.remove('hidden');
+        // Determinar tipo y valor
+        let compressionType = null; // 'gzip' | 'lzstring'
+        let paramValue = null;
 
-            // Usamos setTimeout para permitir que el navegador dibuje el modal antes de procesar el JSON pesado
-            setTimeout(() => {
-                try {
-                    // Descomprimir con LZ-String y parsear el JSON.
-                    const jsonString = LZString.decompressFromEncodedURIComponent(boardDataParam);
-                    if (!jsonString) throw new Error('No se pudo descomprimir el enlace.');
-                    const importedData = JSON.parse(jsonString);
-
-                    // Validar datos importados
-                    if (!Array.isArray(importedData.notes)) throw new Error("Datos de tablero inválidos.");
-
-                    const newBoardName = `Copia de Tablero`;
-                    const newBoardId = createBoardFromData(importedData, newBoardName);
-                    
-                    // Cambiar a la vista del tablero recién importado.
-                    switchBoard(newBoardId); 
-
-                    showToast(`✨ Tablero "${newBoardName}" importado con éxito.`);
-
-                    // Limpia la URL para que no se re-importe al recargar la página.
-                    const cleanUrl = new URL(window.location.origin + window.location.pathname);
-                    window.history.replaceState({}, document.title, cleanUrl);
-
-                } catch (error) {
-                    console.error('Error al importar el tablero desde la URL:', error);
-                    showToast('❌ El enlace de importación parece estar dañado o es inválido.');
-                } finally {
-                    if (processingOverlay) {
-                        // Añadir un pequeño retraso antes de ocultarlo para que se vea la animación
-                        setTimeout(() => processingOverlay.classList.add('hidden'), 800);
-                    }
-                }
-            }, 100);
+        if (hashGzMatch) {
+            compressionType = 'gzip';
+            paramValue = hashGzMatch[1]; // Ya está decodificado (hash no se encode)
+        } else if (queryGzMatch) {
+            compressionType = 'gzip';
+            paramValue = decodeURIComponent(queryGzMatch[1]);
+        } else if (lzMatch) {
+            compressionType = 'lzstring';
+            paramValue = decodeURIComponent(lzMatch[1]);
         }
+
+        if (!paramValue) return;
+
+        // Mostrar cartel de procesando
+        const processingOverlay = document.getElementById('processing-overlay');
+        if (processingOverlay) processingOverlay.classList.remove('hidden');
+
+        // Usamos setTimeout para permitir que el navegador dibuje el modal
+        setTimeout(async () => {
+            try {
+                let jsonString;
+
+                if (compressionType === 'gzip') {
+                    // Descomprimir con CompressionStream nativo del navegador
+                    jsonString = await nativeDecompressFromURL(paramValue);
+                } else {
+                    // Descomprimir con LZ-String (legacy)
+                    jsonString = LZString.decompressFromEncodedURIComponent(paramValue);
+                }
+
+                if (!jsonString) throw new Error('No se pudo descomprimir el enlace.');
+                const importedData = JSON.parse(jsonString);
+
+                // Validar datos importados
+                if (!Array.isArray(importedData.notes)) throw new Error("Datos de tablero inválidos.");
+
+                const newBoardName = `Copia de Tablero`;
+                const newBoardId = createBoardFromData(importedData, newBoardName);
+                
+                // Cambiar a la vista del tablero recién importado.
+                switchBoard(newBoardId); 
+
+                showToast(`✨ Tablero "${newBoardName}" importado con éxito.`);
+
+                // Limpia la URL para que no se re-importe al recargar la página.
+                const cleanUrl = new URL(window.location.origin + window.location.pathname);
+                window.history.replaceState({}, document.title, cleanUrl);
+
+            } catch (error) {
+                console.error('Error al importar el tablero desde la URL:', error);
+                showToast('❌ El enlace de importación parece estar dañado o es inválido.');
+            } finally {
+                if (processingOverlay) {
+                    setTimeout(() => processingOverlay.classList.add('hidden'), 800);
+                }
+            }
+        }, 100);
     }
 
     /**
      * Maneja la generación y copia del enlace para compartir.
+     * Usa CompressionStream nativo (Gzip) + hash fragment (#) para evitar HTTP 431.
+     * El fragmento hash NUNCA se envía al servidor → sin límite de tamaño en headers.
+     * Fallback a LZ-String si el navegador no soporta CompressionStream.
      */
     async function handleShareLink() {
         const activeBoardId = getActiveBoardId(); 
@@ -149,19 +183,24 @@ export function initializeShareAndImport(appState, callbacks) {
         }
 
         shareLinkOutput.style.display = 'block';
-        shareLinkOutput.value = 'Generando enlace...';
+        shareLinkOutput.value = '🗜️ Comprimiendo tablero...';
 
         try {
             const baseUrl = window.location.origin + window.location.pathname;
-            const boardData = getBoardDataForSharing(activeBoardId, false);
-            if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
+            // El hash fragment no tiene límite de servidor, pero los navegadores
+            // manejan bien hasta ~64KB. Usamos 32KB como límite conservador.
+            const MAX_HASH_LENGTH = 32000;
 
-            // Siempre quitamos imágenes del enlace: evita "URI Too Long" (HTTP 414)
-            // y protege al navegador del receptor de recibir megabytes sin querer.
-            const hasImages = boardData.notes.some(n => n.image || n.imageMini);
-            const safeData = {
-                ...boardData,
-                notes: boardData.notes.map(n => {
+            // Datos completos con miniaturas de imágenes
+            const boardDataWithImages = getBoardDataForSharing(activeBoardId, true);
+            if (!boardDataWithImages) { showToast('Error al recopilar los datos del tablero.'); return; }
+
+            const hasImages = boardDataWithImages.notes.some(n => n.image || n.imageMini);
+
+            // Datos sin imágenes (fallback)
+            const boardDataNoImages = {
+                ...boardDataWithImages,
+                notes: boardDataWithImages.notes.map(n => {
                     const c = { ...n };
                     delete c.image;
                     delete c.imageMini;
@@ -169,18 +208,54 @@ export function initializeShareAndImport(appState, callbacks) {
                 })
             };
 
-            const jsonString = JSON.stringify(safeData);
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
-            const shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+            let shareUrl;
+            let imagesIncluded = false;
+            let usedNative = false;
+
+            if (isNativeCompressionSupported()) {
+                // === INTENTO 1: Gzip nativo con imágenes (vía hash #) ===
+                if (hasImages) {
+                    shareLinkOutput.value = '🗜️ Comprimiendo con Gzip nativo (con imágenes)...';
+                    const jsonWithImages = JSON.stringify(boardDataWithImages);
+                    const compressedWithImages = await nativeCompressToURL(jsonWithImages);
+                    const hashWithImages = `gzboard=${compressedWithImages}`;
+
+                    if (hashWithImages.length < MAX_HASH_LENGTH) {
+                        shareUrl = `${baseUrl}#${hashWithImages}`;
+                        imagesIncluded = true;
+                        usedNative = true;
+                    }
+                }
+
+                // === INTENTO 2: Gzip nativo sin imágenes (vía hash #) ===
+                if (!shareUrl) {
+                    shareLinkOutput.value = '🗜️ Comprimiendo con Gzip nativo...';
+                    const jsonNoImages = JSON.stringify(boardDataNoImages);
+                    const compressedNoImages = await nativeCompressToURL(jsonNoImages);
+                    shareUrl = `${baseUrl}#gzboard=${compressedNoImages}`;
+                    usedNative = true;
+                }
+            } else {
+                // === FALLBACK: LZ-String sin imágenes (query param legacy) ===
+                console.warn('[compartir] CompressionStream no soportado, usando LZ-String.');
+                shareLinkOutput.value = '🔄 Usando compresor alternativo...';
+                const jsonNoImages = JSON.stringify(boardDataNoImages);
+                const compressed = LZString.compressToEncodedURIComponent(jsonNoImages);
+                shareUrl = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+            }
 
             shareLinkOutput.value = shareUrl;
             shareLinkOutput.select();
             await navigator.clipboard.writeText(shareUrl);
 
-            if (hasImages) {
-                showToast('🔗 Enlace generado (imágenes excluidas para no explotar el navegador 💣). Usa «Imagen Mágica» para compartir con imágenes.');
+            // Mensaje informativo según el resultado
+            const compressionLabel = usedNative ? 'Gzip nativo' : 'LZ-String';
+            if (imagesIncluded) {
+                showToast(`✅ ¡Enlace generado con imágenes! (${compressionLabel}) 🖼️`);
+            } else if (hasImages) {
+                showToast(`🔗 Enlace generado con ${compressionLabel} (imágenes excluidas por tamaño). Usa «Imagen Mágica» para compartir con imágenes.`);
             } else {
-                showToast('✅ ¡Enlace generado y copiado al portapapeles!');
+                showToast(`✅ ¡Enlace generado y copiado! (${compressionLabel})`);
             }
         } catch (error) {
             console.error('Error al generar el enlace para compartir:', error);
@@ -235,7 +310,7 @@ export function initializeShareAndImport(appState, callbacks) {
      * Exporta el tablero activo como un archivo HTML autocontenido
      * que muestra el JSON formateado con syntax highlighting.
      */
-    function exportBoardToJson() {
+    async function exportBoardToJson() {
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) {
             showToast('No hay un tablero activo para exportar.');
@@ -255,27 +330,38 @@ export function initializeShareAndImport(appState, callbacks) {
         const boardName  = currentBoard.name;
 
         // --- URL "Abrir en App" apuntando a la app de GitHub Pages ---
-        // Siempre sin imágenes para evitar HTTP 414 (URI Too Long).
+        // Usa Gzip nativo + hash fragment para evitar HTTP 431.
         const APP_BASE_URL = 'https://hectordanielayarachifuentes.github.io/Sticky-Notes/';
+        const APP_MAX_HASH = 32000;
         let openInAppUrl = null;
         let imagesIncludedInUrl = false;
         try {
             const urlDataWithImages = getBoardDataForSharing(appState.activeBoardId, true);
-            if (urlDataWithImages) {
-                const compressedWithImages = LZString.compressToEncodedURIComponent(JSON.stringify(urlDataWithImages));
-                const tryUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressedWithImages)}`;
-                
-                if (tryUrl.length < 3500) {
-                    openInAppUrl = tryUrl;
+            if (urlDataWithImages && isNativeCompressionSupported()) {
+                // Intentar con Gzip nativo + imágenes (vía hash)
+                const gzWithImages = await nativeCompressToURL(JSON.stringify(urlDataWithImages));
+                const tryHash = `gzboard=${gzWithImages}`;
+
+                if (tryHash.length < APP_MAX_HASH) {
+                    openInAppUrl = `${APP_BASE_URL}#${tryHash}`;
                     imagesIncludedInUrl = (imageCount > 0);
                 } else {
+                    // Gzip nativo sin imágenes
                     const safeData = {
                         ...urlDataWithImages,
                         notes: urlDataWithImages.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; })
                     };
-                    const compressedSafe = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
-                    openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressedSafe)}`;
+                    const gzSafe = await nativeCompressToURL(JSON.stringify(safeData));
+                    openInAppUrl = `${APP_BASE_URL}#gzboard=${gzSafe}`;
                 }
+            } else if (urlDataWithImages) {
+                // Fallback a LZ-String (navegadores sin CompressionStream)
+                const safeData = {
+                    ...urlDataWithImages,
+                    notes: urlDataWithImages.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; })
+                };
+                const compressedSafe = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
+                openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressedSafe)}`;
             }
         } catch(e) {
             console.warn('[export] No se pudo generar URL para App:', e);
@@ -950,4 +1036,11 @@ export function initializeShareAndImport(appState, callbacks) {
 
     // --- LÓGICA PARA IMPORTAR (se ejecuta al cargar la página) ---
     handleImportFromURL();
+
+    // Log de soporte de compresión nativa
+    if (isNativeCompressionSupported()) {
+        console.log('[exportar] ✅ CompressionStream nativo disponible. Los enlaces usarán Gzip + hash fragment.');
+    } else {
+        console.warn('[exportar] ⚠️ CompressionStream no soportado. Se usará LZ-String como fallback.');
+    }
 }
