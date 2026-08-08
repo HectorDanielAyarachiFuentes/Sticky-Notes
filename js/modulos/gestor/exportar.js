@@ -138,30 +138,7 @@ export function initializeShareAndImport(appState, callbacks) {
     }
 
     /**
-     * Usa la API de CleanURI para acortar una URL larga.
-     * @param {string} urlLarga - La URL generada por la aplicación
-     * @returns {Promise<string>} - La URL corta devuelta por CleanURI (o la original si falla)
-     */
-    async function acortarCleanURI(urlLarga) {
-        try {
-            const res = await fetch('https://cleanuri.com/api/v1/shorten', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `url=${encodeURIComponent(urlLarga)}`
-            });
-            const data = await res.json();
-            return data.result_url || urlLarga;
-        } catch (error) {
-            console.error("Error al acortar con CleanURI:", error);
-            return urlLarga; // Si falla, devuelve el link original
-        }
-    }
-
-    /**
      * Maneja la generación y copia del enlace para compartir.
-     * Pipeline de imágenes:
-     *   1. Intenta con miniaturas (imageMini) en el payload.
-     *   2. Si aún supera el límite, descarta las imágenes del enlace.
      */
     async function handleShareLink() {
         const activeBoardId = getActiveBoardId(); 
@@ -176,51 +153,34 @@ export function initializeShareAndImport(appState, callbacks) {
 
         try {
             const baseUrl = window.location.origin + window.location.pathname;
-            const urlDataWithImages = getBoardDataForSharing(activeBoardId, true);
-            if (!urlDataWithImages) { showToast('Error al recopilar los datos del tablero.'); return; }
+            const boardData = getBoardDataForSharing(activeBoardId, false);
+            if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
 
-            let finalUrl = null;
-            let imagesIncluded = false;
+            // Siempre quitamos imágenes del enlace: evita "URI Too Long" (HTTP 414)
+            // y protege al navegador del receptor de recibir megabytes sin querer.
+            const hasImages = boardData.notes.some(n => n.image || n.imageMini);
+            const safeData = {
+                ...boardData,
+                notes: boardData.notes.map(n => {
+                    const c = { ...n };
+                    delete c.image;
+                    delete c.imageMini;
+                    return c;
+                })
+            };
 
-            // 1. Intentamos generar el enlace con las miniaturas de las imágenes
-            const compressedWithImages = LZString.compressToEncodedURIComponent(JSON.stringify(urlDataWithImages));
-            const tryUrl = `${baseUrl}?board=${encodeURIComponent(compressedWithImages)}`;
+            const jsonString = JSON.stringify(safeData);
+            const compressed = LZString.compressToEncodedURIComponent(jsonString);
+            const shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
 
-            // El límite seguro para GitHub Pages (para evitar I/O error) y CleanURI es 1000 caracteres.
-            if (tryUrl.length < 1000) {
-                finalUrl = tryUrl;
-                imagesIncluded = urlDataWithImages.notes.some(n => n.image);
-            } else {
-                // 2. Si falló por longitud, hacemos fallback sin imágenes
-                const safeData = {
-                    ...urlDataWithImages,
-                    notes: urlDataWithImages.notes.map(n => {
-                        const c = { ...n };
-                        delete c.image;
-                        delete c.imageMini;
-                        return c;
-                    })
-                };
-                const compressedSafe = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
-                finalUrl = `${baseUrl}?board=${encodeURIComponent(compressedSafe)}`;
-            }
-
-            shareLinkOutput.value = 'Acortando con CleanURI...';
-            
-            // Acortar la URL final usando CleanURI
-            const shortUrl = await acortarCleanURI(finalUrl);
-
-            shareLinkOutput.value = shortUrl;
+            shareLinkOutput.value = shareUrl;
             shareLinkOutput.select();
-            await navigator.clipboard.writeText(shortUrl);
+            await navigator.clipboard.writeText(shareUrl);
 
-            const hasOriginalImages = urlDataWithImages.notes.some(n => n.image || n.imageMini);
-            if (hasOriginalImages && !imagesIncluded) {
-                showToast('🔗 Enlace corto generado (imágenes excluidas por límite de tamaño 💣). Usa «Imagen Mágica» para compartir fotos grandes.');
-            } else if (hasOriginalImages && imagesIncluded) {
-                showToast('✅ ¡Enlace corto generado con miniaturas y copiado al portapapeles!');
+            if (hasImages) {
+                showToast('🔗 Enlace generado (imágenes excluidas para no explotar el navegador 💣). Usa «Imagen Mágica» para compartir con imágenes.');
             } else {
-                showToast('✅ ¡Enlace corto generado y copiado al portapapeles!');
+                showToast('✅ ¡Enlace generado y copiado al portapapeles!');
             }
         } catch (error) {
             console.error('Error al generar el enlace para compartir:', error);
