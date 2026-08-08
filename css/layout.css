@@ -1821,51 +1821,50 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     body.palette-top #note-palette,
     body.palette-bottom #note-palette {
         position: fixed !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        height: 58px !important;
-        min-height: 58px !important;
-        max-height: 58px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        right: auto !important;
+        width: max-content !important;
+        max-width: 95vw !important;
+        height: 62px !important;
+        min-height: 62px !important;
+        max-height: 62px !important;
         margin: 0 !important;       /* Anula inline margin del collapse JS */
         top: auto !important;
         bottom: auto !important;
         flex-direction: row !important;
         align-items: stretch !important;
-        padding: 0 !important;
+        padding: 0 10px !important;
         gap: 0 !important;
         overflow: hidden !important;
-        /* Cristal Aero: muy transparente, el tablero se ve a travÃ©s */
+        border-radius: 40px !important;
+        /* Cristal Aero Premium */
         background: linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.055) 0%,
-            rgba(180, 210, 255, 0.025) 50%,
-            rgba(255, 255, 255, 0.015) 100%
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.03) 50%,
+            rgba(255, 255, 255, 0.01) 100%
         ) !important;
-        -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
-        backdrop-filter: blur(14px) saturate(1.6) brightness(1.08) !important;
-        border-right: none !important;
-        border-left: none !important;
+        -webkit-backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important;
+        backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
         /* Fade-in: espera 0.15s para que el JS cargue las notas antes de mostrar la barra */
-        animation: aero-palette-in 0.3s ease 0.15s both !important;
+        animation: aero-palette-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both !important;
         z-index: 149;
     }
 
     body.palette-top #note-palette {
-        top: 0 !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+        top: 15px !important;
         box-shadow:
-            0 2px 16px rgba(0,0,0,0.25),
-            inset 0 1px 0 rgba(255,255,255,0.18);
+            0 10px 30px rgba(0,0,0,0.3),
+            inset 0 1px 1px rgba(255,255,255,0.25);
     }
 
     body.palette-bottom #note-palette {
-        bottom: 0 !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
+        bottom: 15px !important;
         box-shadow:
-            0 -2px 20px rgba(0,0,0,0.35),
-            inset 0 1px 0 rgba(255,255,255,0.22),
-            inset 0 -1px 0 rgba(0,0,0,0.10);
+            0 -10px 30px rgba(0,0,0,0.3),
+            inset 0 1px 1px rgba(255,255,255,0.25);
     }
 
     /* Ocultar header y controles de scroll vertical */
@@ -1894,8 +1893,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
         gap: 0 !important;            /* Sin gap: el overlap lo manejan los margins */
         align-items: center !important;
         justify-content: center !important;  /* Centra notas en la barra */
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
-        mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+        mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
         scroll-behavior: auto !important;
     }
 
@@ -1936,10 +1935,10 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 
     /* Zoom controls en modo abajo: subirlos por encima de la paleta */
     body.palette-bottom #zoom-controls {
-        bottom: 68px;
+        bottom: 95px; /* 15px (margin) + 62px (height) + 18px (gap) */
     }
     body.palette-bottom #trash-can {
-        bottom: 126px;
+        bottom: 155px; /* Subirlo acorde al zoom-controls */
     }
 
 } /* fin @media (min-width: 769px) */
