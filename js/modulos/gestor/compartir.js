@@ -97,11 +97,24 @@ function handleJsonImport(event) {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const importedBoard = JSON.parse(e.target.result);
+            const fileContent = e.target.result;
+            let importedBoard;
+
+            const magicString = "===STICKY-NOTES-STEGO===";
+            const magicIndex = fileContent.lastIndexOf(magicString);
+
+            if (magicIndex !== -1) {
+                // Es una Imagen Mágica (PNG con esteganografía)
+                const jsonString = fileContent.substring(magicIndex + magicString.length);
+                importedBoard = JSON.parse(jsonString);
+            } else {
+                // Es un archivo JSON normal
+                importedBoard = JSON.parse(fileContent);
+            }
 
             // Validación básica del objeto importado
             if (!importedBoard.id || !importedBoard.name || !Array.isArray(importedBoard.notes)) {
-                throw new Error("El archivo JSON no tiene el formato de tablero esperado.");
+                throw new Error("El archivo no tiene el formato de tablero esperado.");
             }
 
             // Para evitar conflictos, generamos nuevos IDs para el tablero y sus notas
@@ -134,11 +147,11 @@ function handleJsonImport(event) {
             renderBoardList();
             switchBoard(newBoardId); // Cambiamos al tablero recién importado
             
-            showToast(`Tablero "${importedBoard.name}" importado con éxito.`);
+            showToast(`✨ ¡Magia! Tablero "${importedBoard.name}" importado con éxito.`);
 
         } catch (error) {
-            console.error("Error al importar el JSON:", error);
-            showToast("Error: El archivo no es un JSON de tablero válido.");
+            console.error("Error al importar el archivo:", error);
+            showToast("❌ Error: El archivo no es un tablero válido o la imagen no es mágica.");
         } finally {
             // Reseteamos el input para poder importar el mismo archivo de nuevo
             event.target.value = '';
@@ -174,9 +187,40 @@ function exportBoardToPng() {
     };
 
     html2canvas(boardElement, options).then(canvas => {
-        canvas.toBlob(function(blob) {
-            triggerDownload(blob, `${boardName.replace(/ /g, '_')}.png`);
-        });
+        canvas.toBlob(async function(blob) {
+            try {
+                const currentBoard = appState.boards[appState.activeBoardId];
+                // Reducimos el peso quitando image (dejando solo imageMini si existe) para la esteganografía
+                const boardCopy = { ...currentBoard };
+                boardCopy.notes = boardCopy.notes.map(note => {
+                    const noteCopy = { ...note };
+                    if (noteCopy.imageMini) {
+                        noteCopy.image = noteCopy.imageMini; // Usamos miniatura
+                    }
+                    delete noteCopy.imageMini;
+                    return noteCopy;
+                });
+
+                const boardData = JSON.stringify(boardCopy);
+                const magicString = "===STICKY-NOTES-STEGO===";
+                
+                // Leemos el blob de la imagen como ArrayBuffer
+                const arrayBuffer = await blob.arrayBuffer();
+                
+                // Convertimos el string mágico y los datos a Uint8Array
+                const textEncoder = new TextEncoder();
+                const stegoData = textEncoder.encode(magicString + boardData);
+                
+                // Combinamos la imagen original con nuestros datos ocultos al final
+                const combinedBlob = new Blob([arrayBuffer, stegoData], { type: 'image/png' });
+                
+                triggerDownload(combinedBlob, `${boardName.replace(/ /g, '_')}.png`);
+                showToast("¡Imagen Mágica generada con éxito!");
+            } catch (err) {
+                console.error("Error al inyectar esteganografía:", err);
+                triggerDownload(blob, `${boardName.replace(/ /g, '_')}.png`); // Fallback sin datos
+            }
+        }, 'image/png');
     }).catch(err => {
         console.error("Error al generar PNG:", err);
         showToast("Ocurrió un error al generar la imagen PNG.");

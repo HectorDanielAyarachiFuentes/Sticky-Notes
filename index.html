@@ -390,12 +390,12 @@
                             resaltado.</div>
                     </div>
                     <div class="share-card" id="import-json-btn" role="button" tabindex="0"
-                        aria-label="Importar tablero desde archivo JSON">
+                        aria-label="Importar tablero desde archivo JSON o Imagen Mágica">
                         <div class="share-card-icon" aria-hidden="true">📤</div>
-                        <div class="share-card-name">Importar desde JSON</div>
-                        <div class="share-card-desc">Carga un tablero desde un archivo guardado.</div>
-                        <input type="file" id="import-json-input" accept=".json"
-                            aria-label="Seleccionar archivo JSON para importar" style="display: none;">
+                        <div class="share-card-name">Importar Archivo</div>
+                        <div class="share-card-desc">Carga un tablero desde un archivo .json o una Imagen Mágica (.png).</div>
+                        <input type="file" id="import-json-input" accept=".json, .png"
+                            aria-label="Seleccionar archivo JSON o PNG para importar" style="display: none;">
                     </div>
                 </div>
             </section>
@@ -649,6 +649,17 @@
     </div>
 
     <div id="toast-container" role="region" aria-live="polite" aria-label="Notificaciones del sistema"></div>
+
+    <!-- Modal de Procesando Enlace -->
+    <div id="processing-overlay" class="processing-overlay hidden" role="dialog" aria-labelledby="processing-title" aria-modal="true">
+        <div class="processing-content">
+            <div class="spinner-container">
+                <div class="hexa-spinner"></div>
+            </div>
+            <h2 id="processing-title">Procesando internamente...</h2>
+            <p>Descifrando y cargando tu tablero</p>
+        </div>
+    </div>
 
     <!-- Input oculto para adjuntar imagen a una nota -->
     <input type="file" id="note-image-input" accept="image/*" aria-label="Seleccionar imagen para nota"

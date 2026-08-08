@@ -97,33 +97,63 @@ export function initializeShareAndImport(appState, callbacks) {
         const boardDataParam = boardMatch ? decodeURIComponent(boardMatch[1]) : null;
 
         if (boardDataParam) {
-            try {
-                // Descomprimir con LZ-String y parsear el JSON.
-                const jsonString = LZString.decompressFromEncodedURIComponent(boardDataParam);
-                if (!jsonString) throw new Error('No se pudo descomprimir el enlace.');
-                const importedData = JSON.parse(jsonString);
+            // Mostrar cartel de procesando
+            const processingOverlay = document.getElementById('processing-overlay');
+            if (processingOverlay) processingOverlay.classList.remove('hidden');
 
-                // Validar datos importados
-                if (!Array.isArray(importedData.notes)) throw new Error("Datos de tablero inválidos.");
+            // Usamos setTimeout para permitir que el navegador dibuje el modal antes de procesar el JSON pesado
+            setTimeout(() => {
+                try {
+                    // Descomprimir con LZ-String y parsear el JSON.
+                    const jsonString = LZString.decompressFromEncodedURIComponent(boardDataParam);
+                    if (!jsonString) throw new Error('No se pudo descomprimir el enlace.');
+                    const importedData = JSON.parse(jsonString);
 
-                const newBoardName = `Copia de Tablero`;
-                const newBoardId = createBoardFromData(importedData, newBoardName);
-                
-                // Cambiar a la vista del tablero recién importado.
-                switchBoard(newBoardId); 
+                    // Validar datos importados
+                    if (!Array.isArray(importedData.notes)) throw new Error("Datos de tablero inválidos.");
 
-                showToast(`✨ Tablero "${newBoardName}" importado con éxito.`);
+                    const newBoardName = `Copia de Tablero`;
+                    const newBoardId = createBoardFromData(importedData, newBoardName);
+                    
+                    // Cambiar a la vista del tablero recién importado.
+                    switchBoard(newBoardId); 
 
-                // Limpia la URL para que no se re-importe al recargar la página.
-                const cleanUrl = new URL(window.location.origin + window.location.pathname);
-                window.history.replaceState({}, document.title, cleanUrl);
+                    showToast(`✨ Tablero "${newBoardName}" importado con éxito.`);
 
+                    // Limpia la URL para que no se re-importe al recargar la página.
+                    const cleanUrl = new URL(window.location.origin + window.location.pathname);
+                    window.history.replaceState({}, document.title, cleanUrl);
 
+                } catch (error) {
+                    console.error('Error al importar el tablero desde la URL:', error);
+                    showToast('❌ El enlace de importación parece estar dañado o es inválido.');
+                } finally {
+                    if (processingOverlay) {
+                        // Añadir un pequeño retraso antes de ocultarlo para que se vea la animación
+                        setTimeout(() => processingOverlay.classList.add('hidden'), 800);
+                    }
+                }
+            }, 100);
+        }
+    }
 
-            } catch (error) {
-                console.error('Error al importar el tablero desde la URL:', error);
-                showToast('❌ El enlace de importación parece estar dañado o es inválido.');
-            }
+    /**
+     * Usa la API de CleanURI para acortar una URL larga.
+     * @param {string} urlLarga - La URL generada por la aplicación
+     * @returns {Promise<string>} - La URL corta devuelta por CleanURI (o la original si falla)
+     */
+    async function acortarCleanURI(urlLarga) {
+        try {
+            const res = await fetch('https://cleanuri.com/api/v1/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `url=${encodeURIComponent(urlLarga)}`
+            });
+            const data = await res.json();
+            return data.result_url || urlLarga;
+        } catch (error) {
+            console.error("Error al acortar con CleanURI:", error);
+            return urlLarga; // Si falla, devuelve el link original
         }
     }
 
@@ -131,7 +161,7 @@ export function initializeShareAndImport(appState, callbacks) {
      * Maneja la generación y copia del enlace para compartir.
      * Pipeline de imágenes:
      *   1. Intenta con miniaturas (imageMini) en el payload.
-     *   2. Si aún supera 8000 chars, descarta las imágenes del enlace.
+     *   2. Si aún supera el límite, descarta las imágenes del enlace.
      */
     async function handleShareLink() {
         const activeBoardId = getActiveBoardId(); 
@@ -146,34 +176,51 @@ export function initializeShareAndImport(appState, callbacks) {
 
         try {
             const baseUrl = window.location.origin + window.location.pathname;
-            const boardData = getBoardDataForSharing(activeBoardId, false);
-            if (!boardData) { showToast('Error al recopilar los datos del tablero.'); return; }
+            const urlDataWithImages = getBoardDataForSharing(activeBoardId, true);
+            if (!urlDataWithImages) { showToast('Error al recopilar los datos del tablero.'); return; }
 
-            // Siempre quitamos imágenes del enlace: evita "URI Too Long" (HTTP 414)
-            // y protege al navegador del receptor de recibir megabytes sin querer.
-            const hasImages = boardData.notes.some(n => n.image || n.imageMini);
-            const safeData = {
-                ...boardData,
-                notes: boardData.notes.map(n => {
-                    const c = { ...n };
-                    delete c.image;
-                    delete c.imageMini;
-                    return c;
-                })
-            };
+            let finalUrl = null;
+            let imagesIncluded = false;
 
-            const jsonString = JSON.stringify(safeData);
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
-            const shareUrl   = `${baseUrl}?board=${encodeURIComponent(compressed)}`;
+            // 1. Intentamos generar el enlace con las miniaturas de las imágenes
+            const compressedWithImages = LZString.compressToEncodedURIComponent(JSON.stringify(urlDataWithImages));
+            const tryUrl = `${baseUrl}?board=${encodeURIComponent(compressedWithImages)}`;
 
-            shareLinkOutput.value = shareUrl;
-            shareLinkOutput.select();
-            await navigator.clipboard.writeText(shareUrl);
-
-            if (hasImages) {
-                showToast('🔗 Enlace generado (imágenes excluidas para no explotar el navegador 💣). Usa «Exportar a JSON» para compartir con imágenes.');
+            // El límite seguro para CleanURI es 2000 caracteres.
+            if (tryUrl.length < 2000) {
+                finalUrl = tryUrl;
+                imagesIncluded = urlDataWithImages.notes.some(n => n.image);
             } else {
-                showToast('✅ ¡Enlace generado y copiado al portapapeles!');
+                // 2. Si falló por longitud, hacemos fallback sin imágenes
+                const safeData = {
+                    ...urlDataWithImages,
+                    notes: urlDataWithImages.notes.map(n => {
+                        const c = { ...n };
+                        delete c.image;
+                        delete c.imageMini;
+                        return c;
+                    })
+                };
+                const compressedSafe = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
+                finalUrl = `${baseUrl}?board=${encodeURIComponent(compressedSafe)}`;
+            }
+
+            shareLinkOutput.value = 'Acortando con CleanURI...';
+            
+            // Acortar la URL final usando CleanURI
+            const shortUrl = await acortarCleanURI(finalUrl);
+
+            shareLinkOutput.value = shortUrl;
+            shareLinkOutput.select();
+            await navigator.clipboard.writeText(shortUrl);
+
+            const hasOriginalImages = urlDataWithImages.notes.some(n => n.image || n.imageMini);
+            if (hasOriginalImages && !imagesIncluded) {
+                showToast('🔗 Enlace corto generado (imágenes excluidas por límite de tamaño 💣). Usa «Imagen Mágica» para compartir fotos grandes.');
+            } else if (hasOriginalImages && imagesIncluded) {
+                showToast('✅ ¡Enlace corto generado con miniaturas y copiado al portapapeles!');
+            } else {
+                showToast('✅ ¡Enlace corto generado y copiado al portapapeles!');
             }
         } catch (error) {
             console.error('Error al generar el enlace para compartir:', error);
@@ -251,15 +298,24 @@ export function initializeShareAndImport(appState, callbacks) {
         // Siempre sin imágenes para evitar HTTP 414 (URI Too Long).
         const APP_BASE_URL = 'https://hectordanielayarachifuentes.github.io/Sticky-Notes/';
         let openInAppUrl = null;
+        let imagesIncludedInUrl = false;
         try {
-            const urlData = getBoardDataForSharing(appState.activeBoardId, false);
-            if (urlData) {
-                const safeData = {
-                    ...urlData,
-                    notes: urlData.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; })
-                };
-                const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
-                openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressed)}`;
+            const urlDataWithImages = getBoardDataForSharing(appState.activeBoardId, true);
+            if (urlDataWithImages) {
+                const compressedWithImages = LZString.compressToEncodedURIComponent(JSON.stringify(urlDataWithImages));
+                const tryUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressedWithImages)}`;
+                
+                if (tryUrl.length < 3500) {
+                    openInAppUrl = tryUrl;
+                    imagesIncludedInUrl = (imageCount > 0);
+                } else {
+                    const safeData = {
+                        ...urlDataWithImages,
+                        notes: urlDataWithImages.notes.map(n => { const c = {...n}; delete c.image; delete c.imageMini; return c; })
+                    };
+                    const compressedSafe = LZString.compressToEncodedURIComponent(JSON.stringify(safeData));
+                    openInAppUrl = `${APP_BASE_URL}?board=${encodeURIComponent(compressedSafe)}`;
+                }
             }
         } catch(e) {
             console.warn('[export] No se pudo generar URL para App:', e);
@@ -304,7 +360,7 @@ export function initializeShareAndImport(appState, callbacks) {
         // Pre-construir bloque "bomb warning" para evitar templates anidados
         const imgPlural  = imageCount > 1 ? 'es' : '';
         const imgSufixo  = imageCount > 1 ? 's' : '';
-        const bombWarningHtml = hasImages ? (
+        const bombWarningHtml = (hasImages && !imagesIncludedInUrl) ? (
             '<div class="bomb-warning">'
           + '<div class="bomb-icon">'
           + '<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
@@ -602,7 +658,7 @@ export function initializeShareAndImport(appState, callbacks) {
 
   ${noteCount > 0 ? '<p class="section-title">Vista previa de notas</p><div class="notes-grid">' + notesPreviewHtml + '</div>' : ''}
 
-  ${hasImages ? (
+  ${(hasImages && !imagesIncludedInUrl) ? (
     '<div class="img-notice">'
   + '<svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">'
   + '<circle cx="28" cy="28" r="28" fill="rgba(255,168,50,0.12)"/>'
@@ -843,7 +899,7 @@ export function initializeShareAndImport(appState, callbacks) {
   }
 
   const APP_URL = ${JSON.stringify(openInAppUrl || '')};
-  const HAS_IMAGES = ${hasImages ? 'true' : 'false'};
+  const HAS_IMAGES = ${(hasImages && !imagesIncludedInUrl) ? 'true' : 'false'};
 
   function openInAppModal() {
     if (!APP_URL) return;
