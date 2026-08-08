@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Pestaña de fondos
     const backgroundOptionsContainer = document.getElementById("background-options-container");
     const resetBackgroundBtn = document.getElementById("reset-background-btn");
+    document.addEventListener('saveAppState', saveState);
+
     const bgApplyToBoardCard = document.getElementById("bg-apply-board");
     const bgApplyToNotesCard = document.getElementById("bg-apply-notes");
     // Menú contextual
@@ -309,6 +311,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (appState.lineOptions.promptBeforeDelete === undefined) {
             appState.lineOptions.promptBeforeDelete = true;
+        }
+        if (appState.promptBeforeDeleteNote === undefined) {
+            appState.promptBeforeDeleteNote = true;
         }
         // Inicializar posición de paleta si no existe
         if (!appState.palettePosition) {
@@ -549,13 +554,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (appState.lineOptions.promptBeforeDelete) {
             const userResponse = await showConfirmationModal(
                 '¿Estás seguro de que quieres borrar todas las conexiones de esta nota?',
-                'Esta acción no se puede deshacer.'
+                'Esta acción no se puede deshacer.',
+                true
             );
+
+            if (userResponse.dontAskAgain) {
+                appState.lineOptions.promptBeforeDelete = false;
+                saveState();
+                const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
+                if (promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
+            }
 
             if (userResponse.confirmed) {
                 performDelete();
             }
-            // La lógica para 'dontAskAgain' se maneja dentro de showConfirmationModal
         } else {
             performDelete();
         }
@@ -922,9 +934,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const noteId = contextMenuNoteId;
         hideContextMenu();
         
-        const userRes = await showConfirmationModal("Eliminar Nota", "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
-        if (userRes.confirmed) {
-            moveNoteToTrash(noteId);
+        const performDelete = () => moveNoteToTrash(noteId);
+
+        if (appState.promptBeforeDeleteNote) {
+            const userRes = await showConfirmationModal(
+                "Eliminar Nota", 
+                "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.",
+                true
+            );
+            
+            if (userRes.dontAskAgain) {
+                appState.promptBeforeDeleteNote = false;
+                saveState();
+            }
+
+            if (userRes.confirmed) {
+                performDelete();
+            }
+        } else {
+            performDelete();
         }
     }
 
@@ -1056,11 +1084,18 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Muestra un modal de confirmación personalizable y devuelve una promesa.
      * @param {string} title - El título del modal.
      * @param {string} message - El mensaje del cuerpo del modal.
+     * @param {boolean} showDontAskToggle - Si es true, muestra el checkbox "No volver a preguntar".
      * @returns {Promise<{confirmed: boolean, dontAskAgain: boolean}>}
      */
-    function showConfirmationModal(title, message) {
+    function showConfirmationModal(title, message, showDontAskToggle = false) {
         confirmationModal.querySelector('.modal-title').textContent = title;
         confirmationModal.querySelector('.modal-body p').textContent = message;
+        
+        const dontAskContainer = confirmationModal.querySelector('.dont-ask-again-container');
+        if (dontAskContainer) {
+            dontAskContainer.style.display = showDontAskToggle ? 'flex' : 'none';
+        }
+
         confirmationModal.classList.remove('hidden');
         confirmDontAskAgain.checked = false; // Reset checkbox
 
@@ -1073,14 +1108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!resolveConfirmationPromise) return;
 
         const dontAskAgain = confirmDontAskAgain.checked;
-        if (dontAskAgain) {
-            appState.lineOptions.promptBeforeDelete = false;
-            saveState();
-            // Actualizar la UI de la pestaña de líneas si está visible
-            const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
-            if (promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
-        }
-
+        
         resolveConfirmationPromise({ confirmed, dontAskAgain });
         confirmationModal.classList.add('hidden');
         resolveConfirmationPromise = null;

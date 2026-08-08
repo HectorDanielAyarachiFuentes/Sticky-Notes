@@ -273,13 +273,28 @@ async function handlePointerUp(e) {
         activeNote = null; activeNoteData = null; isResizing = false;
         offsetX = 0; offsetY = 0;
 
-        const userRes = await Callbacks.showConfirmationModal("Eliminar Nota", "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.");
-        if (userRes.confirmed) {
+        const performDelete = () => {
             Callbacks.moveNoteToTrash(noteId); 
             DOM.trashCan.classList.remove('visible', 'active');
-            return; 
-        } else {
-            // Devolver la nota a su posición original
+        };
+
+        if (appState.promptBeforeDeleteNote) {
+            const userRes = await Callbacks.showConfirmationModal(
+                "Eliminar Nota", 
+                "¿Estás seguro de que quieres eliminar esta nota? No te preocupes, puedes recuperarla después desde la pestaña de Papelera o usando el botón Deshacer.",
+                true
+            );
+            
+            if (userRes.dontAskAgain) {
+                appState.promptBeforeDeleteNote = false;
+                Callbacks.saveState();
+            }
+
+            if (userRes.confirmed) {
+                performDelete();
+                return; 
+            } else {
+                // Devolver la nota a su posición original
             const currentBoard = appState.boards[appState.activeBoardId];
             if (currentBoard) {
                 const nData = currentBoard.notes.find(n => n.id === noteId);
@@ -294,6 +309,11 @@ async function handlePointerUp(e) {
             Callbacks.updateAllLinesPosition();
             DOM.trashCan.classList.remove('visible', 'active');
             Callbacks.saveState();
+            return;
+        }
+        } else {
+            // Eliminar sin preguntar
+            performDelete();
             return;
         }
     } else {

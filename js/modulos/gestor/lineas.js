@@ -476,7 +476,16 @@ export function removeLinesForNote(noteId) {
 async function deleteSpecificLine(fromId, toId, lineInstance) {
     if (appState.lineOptions.promptBeforeDelete) {
         if (window._showConfirmationModal) {
-            const userRes = await window._showConfirmationModal('Borrar Conexión', '¿Estás seguro de que quieres borrar esta conexión?');
+            const userRes = await window._showConfirmationModal('Borrar Conexión', '¿Estás seguro de que quieres borrar esta conexión?', true);
+            
+            if (userRes.dontAskAgain) {
+                appState.lineOptions.promptBeforeDelete = false;
+                // Intentar guardar el estado usando un CustomEvent o directamente si reRenderCallback puede ayudar
+                document.dispatchEvent(new CustomEvent('saveAppState'));
+                const promptDeleteCheckbox = document.getElementById('prompt-delete-connections');
+                if (promptDeleteCheckbox) promptDeleteCheckbox.checked = false;
+            }
+
             if (!userRes.confirmed) return;
         } else if (!confirm('¿Estás seguro de que quieres borrar esta conexión?')) {
             return;
