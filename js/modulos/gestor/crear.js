@@ -133,8 +133,8 @@ function addNewBoard() {
             notes: [],
             createdAt: Date.now(),
             connections: [],
-            background: null,
-            backgroundApplyTo: { board: true, notes: false }
+            backgroundBoard: importedData.backgroundBoard !== undefined ? importedData.backgroundBoard : (importedData.backgroundApplyTo?.board ? importedData.background : null),
+            backgroundNotes: importedData.backgroundNotes !== undefined ? importedData.backgroundNotes : (importedData.backgroundApplyTo?.notes ? importedData.background : null)
         };
         // Llama a la función del script principal para cambiar de tablero y renderizarlo
         switchBoard(newBoardId);
@@ -175,8 +175,8 @@ function createBoardFromTemplate(templateType) {
             createdAt: Date.now(),
             notes: newNotes,
             connections: [],
-            background: null,
-            backgroundApplyTo: { board: true, notes: false }
+            backgroundBoard: null,
+            backgroundNotes: null
         };
         
         // Llama a la función del script principal para cambiar de tablero y renderizarlo

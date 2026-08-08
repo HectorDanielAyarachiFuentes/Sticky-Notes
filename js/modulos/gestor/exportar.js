@@ -61,8 +61,8 @@ export function initializeShareAndImport(appState, callbacks) {
         const boardData = {
             notes,
             connections: board.connections || [],
-            background: board.background || null,
-            backgroundApplyTo: board.backgroundApplyTo || { board: true, notes: false }
+            backgroundBoard: board.backgroundBoard || null,
+            backgroundNotes: board.backgroundNotes || null
         };
         return boardData;
     }

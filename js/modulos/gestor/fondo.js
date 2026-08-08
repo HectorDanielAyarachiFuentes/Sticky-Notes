@@ -92,17 +92,21 @@ function previewBackground(backgroundValue) {
     if (!currentBoard) return;
 
     originalBackground = {
-        background: currentBoard.background,
-        applyTo: { ...currentBoard.backgroundApplyTo }
+        backgroundBoard: currentBoard.backgroundBoard,
+        backgroundNotes: currentBoard.backgroundNotes
     };
 
     const applyToBoard = DOM.bgApplyToBoardCard.classList.contains('active');
     const applyToNotes = DOM.bgApplyToNotesCard.classList.contains('active');
 
-    DOM.boardContainer.style.background = applyToBoard ? backgroundValue : Callbacks.getDefaultBackground();
-    document.querySelectorAll('.stickynote').forEach(noteEl => {
-        noteEl.style.backgroundImage = applyToNotes ? backgroundValue : '';
-    });
+    if (applyToBoard) {
+        DOM.boardContainer.style.background = backgroundValue || Callbacks.getDefaultBackground();
+    }
+    if (applyToNotes) {
+        document.querySelectorAll('.stickynote').forEach(noteEl => {
+            noteEl.style.backgroundImage = backgroundValue || '';
+        });
+    }
 }
 
 /**
@@ -111,9 +115,9 @@ function previewBackground(backgroundValue) {
 function restoreOriginalBackground() {
     if (!originalBackground) return;
 
-    DOM.boardContainer.style.background = originalBackground.applyTo.board ? originalBackground.background : Callbacks.getDefaultBackground();
+    DOM.boardContainer.style.background = originalBackground.backgroundBoard || Callbacks.getDefaultBackground();
     document.querySelectorAll('.stickynote').forEach(noteEl => {
-        noteEl.style.backgroundImage = originalBackground.applyTo.notes ? originalBackground.background : '';
+        noteEl.style.backgroundImage = originalBackground.backgroundNotes || '';
     });
     originalBackground = null;
 }
@@ -126,42 +130,67 @@ function applyBackground(backgroundValue) {
     const currentBoard = appState.boards[appState.activeBoardId];
     if (!currentBoard) return;
 
-    currentBoard.backgroundApplyTo = {
-        board: DOM.bgApplyToBoardCard.classList.contains('active'),
-        notes: DOM.bgApplyToNotesCard.classList.contains('active')
-    };
-    currentBoard.background = backgroundValue;
+    const applyToBoard = DOM.bgApplyToBoardCard.classList.contains('active');
+    const applyToNotes = DOM.bgApplyToNotesCard.classList.contains('active');
+
+    if (!applyToBoard && !applyToNotes) return; // Nada seleccionado
+
+    if (applyToBoard) {
+        currentBoard.backgroundBoard = backgroundValue;
+    }
+    if (applyToNotes) {
+        currentBoard.backgroundNotes = backgroundValue;
+    }
 
     Callbacks.saveState();
-    Callbacks.renderActiveBoard(); // Dejamos que el renderizador principal se encargue
+    Callbacks.renderActiveBoard(); 
 }
 
 /**
  * Maneja el clic en las tarjetas de "Aplicar a".
+ * En el nuevo modelo, estas tarjetas solo seleccionan el "objetivo" 
+ * (qué se verá afectado al hacer clic en un fondo).
  * @param {Event} e - El evento de clic.
  */
 function toggleApplyOption(e) {
     const card = e.currentTarget;
     card.classList.toggle('active');
-    // Aplicamos el cambio inmediatamente con el fondo actual
-    applyBackground(appState.boards[appState.activeBoardId].background);
+    // Asegurarse de que al menos uno esté activo (opcional, pero buena UX)
+    const applyToBoard = DOM.bgApplyToBoardCard.classList.contains('active');
+    const applyToNotes = DOM.bgApplyToNotesCard.classList.contains('active');
+    
+    if (!applyToBoard && !applyToNotes) {
+        // Si desactiva ambos, forzamos a que se quede activo el que intentó desactivar
+        card.classList.add('active');
+    }
+    
+    // Actualizar UI para reflejar qué fondo está activo para la nueva selección
+    updateBackgroundUI(appState.boards[appState.activeBoardId]);
 }
 
 /**
  * Actualiza la UI para marcar la previsualización y las opciones activas.
- * Esta función se exporta para que el script principal pueda llamarla.
  * @param {object} currentBoard - El tablero activo.
  */
 export function updateBackgroundUI(currentBoard) {
     if (!currentBoard) return;
 
-    // Actualizar tarjetas de "Aplicar a"
-    DOM.bgApplyToBoardCard.classList.toggle('active', currentBoard.backgroundApplyTo.board);
-    DOM.bgApplyToNotesCard.classList.toggle('active', currentBoard.backgroundApplyTo.notes);
+    const applyToBoard = DOM.bgApplyToBoardCard.classList.contains('active');
+    const applyToNotes = DOM.bgApplyToNotesCard.classList.contains('active');
 
-    // Actualizar previsualización de fondo activa
+    // Actualizar previsualización de fondo activa según lo seleccionado
     document.querySelectorAll('.background-preview').forEach(p => {
-        const isActive = p.dataset.background === currentBoard.background || (!currentBoard.background && !p.dataset.background);
+        let isActive = false;
+        const bgVal = p.dataset.background;
+        
+        if (applyToBoard && applyToNotes) {
+            isActive = (bgVal === currentBoard.backgroundBoard) && (bgVal === currentBoard.backgroundNotes);
+        } else if (applyToBoard) {
+            isActive = (bgVal === currentBoard.backgroundBoard);
+        } else if (applyToNotes) {
+            isActive = (bgVal === currentBoard.backgroundNotes);
+        }
+        
         p.classList.toggle('active', isActive);
     });
 }

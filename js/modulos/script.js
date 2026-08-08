@@ -249,7 +249,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedState) {
             const loadedState = JSON.parse(savedState);
             Object.values(loadedState.boards).forEach(board => {
-                if (!board.backgroundApplyTo) board.backgroundApplyTo = { board: true, notes: false };
+                // Migración a fondos separados
+                if (board.background !== undefined) {
+                    board.backgroundBoard = board.backgroundApplyTo?.board ? board.background : null;
+                    board.backgroundNotes = board.backgroundApplyTo?.notes ? board.background : null;
+                    delete board.background;
+                    delete board.backgroundApplyTo;
+                }
+                
                 board.notes.forEach(note => {
                     if (note.locked === undefined) note.locked = false;
                     if (note.tabs === undefined) {
@@ -290,8 +297,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 boards: {
                     [initialBoardId]: {
                         id: initialBoardId, name: 'Tablero Principal', notes: [], connections: [],
-                        background: null,
-                        backgroundApplyTo: { board: true, notes: false }
+                        backgroundBoard: null,
+                        backgroundNotes: null
                     }
                 },
                 boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
@@ -418,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         removeActiveLines();
         const currentBoard = appState.boards[appState.activeBoardId];
         if (!currentBoard) { board.style.transform = 'scale(1) translate(0,0)'; return; }
-        boardContainer.style.background = currentBoard.backgroundApplyTo.board ? (currentBoard.background || DEFAULT_BOARD_BACKGROUND) : DEFAULT_BOARD_BACKGROUND;
+        boardContainer.style.background = currentBoard.backgroundBoard || DEFAULT_BOARD_BACKGROUND;
         updateBackgroundUI(currentBoard);
         updateZoom();
         if (currentBoard.notes.length === 0) {
@@ -476,7 +483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newBoardId = `board-${Date.now()}`;
         appState.boards[newBoardId] = {
             id: newBoardId, name: "Tablero de Respaldo", notes: [], createdAt: Date.now(), panX: 0, panY: 0,
-            connections: [], background: null, backgroundApplyTo: { board: true, notes: false }
+            connections: [], backgroundBoard: null, backgroundNotes: null
         };
         return newBoardId;
     }
@@ -589,8 +596,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         sticky.dataset.noteId = noteData.id;
         sticky.style.cssText = `left:${noteData.x}px; top:${noteData.y}px; width:${noteData.width}px; height:${noteData.height}px; background-color:${noteData.color}; transform:rotate(${noteData.rotation}deg); z-index:${noteData.zIndex};`;
         const currentBoard = appState.boards[appState.activeBoardId];
-        if (currentBoard.backgroundApplyTo.notes && currentBoard.background) {
-            sticky.style.backgroundImage = currentBoard.background;
+        if (currentBoard.backgroundNotes) {
+            sticky.style.backgroundImage = currentBoard.backgroundNotes;
         }
         // --- IMAGEN: Aplicar imagen de fondo de la nota si existe ---
         if (noteData.image) {
