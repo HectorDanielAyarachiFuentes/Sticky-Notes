@@ -663,11 +663,13 @@ if (ctxLineColor) {
 }
 
 if (ctxLineDelete) {
-    ctxLineDelete.addEventListener('click', async () => {
+    ctxLineDelete.addEventListener('click', async (e) => {
+        e.stopPropagation();
         if (currentLineContext) {
             const { fromId, toId, lineInstance } = currentLineContext;
-            closeLineContextMenu();
+            lineContextMenu.classList.add('hidden');
             await deleteSpecificLine(fromId, toId, lineInstance);
+            currentLineContext = null;
         }
     });
 }
