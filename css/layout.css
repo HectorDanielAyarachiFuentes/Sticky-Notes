@@ -1,9 +1,11 @@
 /* --- PANEL DE GESTIÃ“N DE TABLEROS --- */
 #board-manager {
-    /* El ancho ahora se controla por JS, con un valor inicial y lÃ­mites */
+    /* El ancho ahora se controla por JS, con un valor inicial y límites */
     flex-shrink: 0;
     /* Evita que se encoja */
     background: var(--bg-dark);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     /* Usamos el gradiente definido en root */
     color: var(--text-light);
     padding: 20px;
@@ -1166,6 +1168,9 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 .modal-content {
     background: var(--surface-light);
     /* Usamos el gradiente */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 30px 40px;
     border-radius: 12px;
     box-shadow: var(--shadow-lg);

@@ -611,13 +611,16 @@
 
 /* --- MENÃš CONTEXTUAL --- */
 #context-menu,
-#tab-context-menu {
+#tab-context-menu,
+#line-context-menu {
     position: fixed;
     z-index: 2000;
     background: var(--surface-light);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     /* Usamos el gradiente */
     border-radius: 12px;
-    /* Aumentamos el redondeo para un look mÃ¡s suave */
+    /* Aumentamos el redondeo para un look más suave */
     box-shadow: var(--shadow-lg);
     padding: 8px 0;
     min-width: 170px;
@@ -901,8 +904,10 @@
 #color-picker-popover {
     position: fixed;
     z-index: 2001;
-    /* Encima del menÃº contextual */
+    /* Encima del menú contextual */
     background: var(--surface-light);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     /* Usamos el gradiente */
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
