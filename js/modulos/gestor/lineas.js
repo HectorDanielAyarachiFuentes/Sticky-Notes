@@ -587,12 +587,18 @@ function openLineContextMenu(e, fromId, toId, lineInstance) {
 /**
  * Edita el texto de una línea.
  */
-function editSpecificLine(fromId, toId) {
+async function editSpecificLine(fromId, toId) {
     const currentBoard = appState.boards[appState.activeBoardId];
     if (currentBoard && currentBoard.connections) {
         const connection = currentBoard.connections.find(c => c.from === fromId && c.to === toId);
         if (connection) {
-            const newLabel = prompt('Ingrese el nuevo texto para la línea:', connection.options?.label || '');
+            let newLabel = null;
+            if (window._showPromptModal) {
+                newLabel = await window._showPromptModal('Texto de la línea', 'Ingrese el nuevo texto para la línea:', connection.options?.label || '');
+            } else {
+                newLabel = prompt('Ingrese el nuevo texto para la línea:', connection.options?.label || '');
+            }
+            
             if (newLabel !== null) { // Si el usuario no canceló
                 // Asegurar que exista el objeto de opciones
                 if (!connection.options) connection.options = {};

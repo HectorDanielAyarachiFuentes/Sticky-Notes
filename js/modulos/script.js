@@ -111,6 +111,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let confirmationModal, confirmYesBtn, confirmNoBtn, confirmDontAskAgain;
     let resolveConfirmationPromise = null;
 
+    let promptModal, promptInput, promptYesBtn, promptNoBtn;
+    let resolvePromptPromise = null;
+
 
     /**
      * Convierte un color HEX a HSL.
@@ -1149,6 +1152,76 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    /**
+     * Muestra un modal de prompt personalizable y devuelve una promesa.
+     */
+    function showPromptModal(title, message, defaultValue = '') {
+        promptModal.querySelector('.modal-title').textContent = title;
+        promptModal.querySelector('.modal-body p').textContent = message;
+        promptInput.value = defaultValue;
+        
+        promptModal.classList.remove('hidden');
+        setTimeout(() => promptInput.focus(), 50);
+
+        return new Promise(resolve => {
+            resolvePromptPromise = resolve;
+        });
+    }
+    // Exponer globalmente
+    window._showPromptModal = showPromptModal;
+
+    function handlePrompt(confirmed) {
+        if (!resolvePromptPromise) return;
+        
+        const value = confirmed ? promptInput.value : null;
+        resolvePromptPromise(value);
+        promptModal.classList.add('hidden');
+        resolvePromptPromise = null;
+    }
+
+    function createPromptModal() {
+        const modalHTML = `
+            <div class="modal-content confirmation-modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon-container"><div class="modal-icon-text">?</div></div>
+                    <h3 class="modal-title">Texto</h3>
+                </div>
+                <div class="modal-body">
+                    <p></p>
+                    <input type="text" id="prompt-input" style="width: 100%; margin-top: 15px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0,0,0,0.3); color: #fff; font-size: 1rem; outline: none; transition: border-color 0.3s; font-family: inherit;">
+                </div>
+                <div class="modal-footer">
+                    <div class="confirmation-buttons" style="width:100%; justify-content: flex-end;">
+                        <button id="prompt-no-btn" class="modal-btn secondary">Cancelar</button>
+                        <button id="prompt-yes-btn" class="modal-btn" style="background-color: var(--primary-color, #4a90e2); border-color: var(--primary-color, #4a90e2); color: white;">Aceptar</button>
+                    </div>
+                </div>
+            </div>`;
+        promptModal = document.createElement('div');
+        promptModal.id = 'prompt-modal';
+        promptModal.className = 'modal-overlay hidden';
+        promptModal.innerHTML = modalHTML;
+        document.body.appendChild(promptModal);
+
+        promptYesBtn = document.getElementById('prompt-yes-btn');
+        promptNoBtn = document.getElementById('prompt-no-btn');
+        promptInput = document.getElementById('prompt-input');
+
+        promptYesBtn.addEventListener('click', () => handlePrompt(true));
+        promptNoBtn.addEventListener('click', () => handlePrompt(false));
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handlePrompt(true);
+            if (e.key === 'Escape') handlePrompt(false);
+        });
+        promptModal.addEventListener('click', (e) => {
+            if (e.target === promptModal) handlePrompt(false);
+        });
+        
+        // Efecto hover y focus para el input
+        promptInput.addEventListener('focus', () => promptInput.style.borderColor = 'var(--primary-color, #4a90e2)');
+        promptInput.addEventListener('blur', () => promptInput.style.borderColor = 'rgba(255, 255, 255, 0.2)');
+    }
+
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -1272,6 +1345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initializeApp() {
         loadState();
         createConfirmationModal();
+        createPromptModal();
 
         // Inicializar módulos principales que no dependen de otros
         initializeLineManager(appState, board, renderActiveBoard, showConfirmationModal);
