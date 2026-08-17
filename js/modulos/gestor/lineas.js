@@ -171,9 +171,8 @@ export function renderConnections() {
                 lineOptions.dropShadow = { dx: 2, dy: 4, blur: 4, color: 'rgba(0, 0, 0, 0.4)' };
             }
             
-            // Configurar animación si está activada
             if (lineOptions.dash) {
-                lineOptions.dash = { animation: true };
+                lineOptions.dash = true; // Desactivada la animación infinita por rendimiento
             }
 
             // Configurar etiqueta si hay texto
@@ -411,7 +410,7 @@ function renderSingleConnection(conn) {
         
         // Configurar animación si está activada
         if (lineOptions.dash) {
-            lineOptions.dash = { animation: true };
+            lineOptions.dash = true; // Desactivada la animación infinita por rendimiento
         }
 
         // Configurar etiqueta si hay texto
