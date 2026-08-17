@@ -1,8 +1,12 @@
 import { state } from './gestor/estadoApp.js';
 import { initializeTableros, switchBoard, deleteBoard } from './gestor/tableros.js';
 import { initializeNotasDOM, renderActiveBoard, createStickyNoteElement, bringToFront, isColorDark } from './gestor/notasDOM.js';
+import { initializeHotkeys } from './gestor/atajosTeclado.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Inicializar atajos globales
+    initializeHotkeys();
+
     // --- IMPORTACIÓN DE MÓDULOS ---
     // Optimización de Carga: Cargar todos los módulos en paralelo
     const [
@@ -51,6 +55,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { initializeCreateTab } = createTabModule;
     const { initializeCursorManager } = cursorManagerModule;
     const { initializeNoteImageFeature, removeNoteImage } = noteImageModule;
+
+    // --- ESCUCHADORES DE ATAJOS GLOBALES ---
+    document.addEventListener('hotkey:delete', () => {
+        const targetNote = document.querySelector('.stickynote:hover') || document.querySelector('.stickynote.highlight');
+        if (targetNote && !targetNote.classList.contains('locked')) {
+            moveNoteToTrash(targetNote.dataset.noteId);
+        }
+    });
+
+    document.addEventListener('hotkey:duplicate', () => {
+        const targetNote = document.querySelector('.stickynote:hover');
+        if (targetNote) {
+            // Buscamos el botón de duplicar original del menú contextual para reciclar su lógica 
+            // o clonamos la nota directamente en el estado.
+            const noteId = targetNote.dataset.noteId;
+            const currentBoard = appState.boards[appState.activeBoardId];
+            const originalNote = currentBoard.notes.find(n => n.id === noteId);
+            if (originalNote) {
+                const newNote = JSON.parse(JSON.stringify(originalNote));
+                newNote.id = `note-${Date.now()}`;
+                newNote.x += 40;
+                newNote.y += 40;
+                newNote.zIndex = state.getNewZIndex();
+                currentBoard.notes.push(newNote);
+                state.save();
+                renderActiveBoard(false, true); // True flag forces redraw
+                document.dispatchEvent(new CustomEvent('showToast', { detail: 'Nota duplicada.' }));
+            }
+        }
+    });
+
+    document.addEventListener('hotkey:undo', () => {
+        if (globalUndoBtn) globalUndoBtn.click();
+    });
+
+    document.addEventListener('hotkey:redo', () => {
+        if (globalRedoBtn) globalRedoBtn.click();
+    });
 
     // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
     const boardContainer = document.querySelector("#board-container");

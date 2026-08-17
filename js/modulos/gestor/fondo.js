@@ -193,4 +193,49 @@ export function updateBackgroundUI(currentBoard) {
         
         p.classList.toggle('active', isActive);
     });
+
+    checkDynamicGlassmorphism(currentBoard.backgroundBoard);
+}
+
+function checkDynamicGlassmorphism(bgString) {
+    if (!bgString) {
+        document.documentElement.classList.remove('glass-dark-mode');
+        return;
+    }
+    
+    let isDark = false;
+    
+    // Intenta extraer el primer HSL
+    const hslMatch = bgString.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (hslMatch) {
+        const l = parseInt(hslMatch[3], 10);
+        isDark = l < 50;
+    } else {
+        const rgbMatch = bgString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+            const r = parseInt(rgbMatch[1], 10);
+            const g = parseInt(rgbMatch[2], 10);
+            const b = parseInt(rgbMatch[3], 10);
+            const luminance = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            isDark = luminance < 128;
+        } else if (bgString.includes('url(')) {
+            // Imágenes personalizadas asumimos oscuras para máximo contraste en el cristal
+            isDark = true;
+        } else if (bgString.includes('#222') || bgString.includes('#1a1a1a')) {
+            isDark = true; // Hardcoded fallback for dark hexes
+        }
+    }
+
+    if (isDark) {
+        document.documentElement.classList.add('glass-dark-mode');
+        // También inyectamos las variables CSS de fallback directo por si la clase no existe aún
+        document.documentElement.style.setProperty('--text-color', '#ffffff');
+        document.documentElement.style.setProperty('--note-bg-opacity', '0.15');
+        document.documentElement.style.setProperty('--note-border-color', 'rgba(255, 255, 255, 0.4)');
+    } else {
+        document.documentElement.classList.remove('glass-dark-mode');
+        document.documentElement.style.removeProperty('--text-color');
+        document.documentElement.style.removeProperty('--note-bg-opacity');
+        document.documentElement.style.removeProperty('--note-border-color');
+    }
 }

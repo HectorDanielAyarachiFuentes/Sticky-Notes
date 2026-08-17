@@ -1,6 +1,7 @@
 import { state } from './estadoApp.js';
 
 let dom = {};
+let debounceTimers = {};
 
 export function initializeNotasDOM(elements) {
     dom = elements;
@@ -20,17 +21,161 @@ export function initializeNotasDOM(elements) {
             }, 100);
         }
     });
+
+    // --- EVENT DELEGATION GLOBAL EN EL TABLERO ---
+    if (dom.board) {
+        // 1. Manejo de inputs (Title y Content)
+        dom.board.addEventListener('input', handleNoteInput);
+        
+        // 2. Manejo de Blur / Focusout (Guardar estado al salir)
+        dom.board.addEventListener('focusout', handleNoteFocusOut);
+        
+        // 3. Manejo de Clicks (Pestañas y Botón Conectar)
+        dom.board.addEventListener('click', handleNoteClick);
+
+        // 4. Manejo de ContextMenu (Pestañas)
+        dom.board.addEventListener('contextmenu', handleNoteContextMenu);
+    }
 }
+
+// --- HANDLERS DE DELEGACIÓN ---
+
+function getNoteData(element) {
+    const sticky = element.closest('.stickynote');
+    if (!sticky) return null;
+    const noteId = sticky.dataset.noteId;
+    const appState = state.get();
+    const currentBoard = appState.boards[appState.activeBoardId];
+    return currentBoard?.notes.find(n => n.id === noteId) || null;
+}
+
+function handleNoteInput(e) {
+    const isTitle = e.target.classList.contains('stickynote-title');
+    const isContent = e.target.classList.contains('stickynote-text');
+    if (!isTitle && !isContent) return;
+
+    const noteData = getNoteData(e.target);
+    if (!noteData) return;
+
+    const noteId = noteData.id;
+    if (debounceTimers[noteId]) clearTimeout(debounceTimers[noteId]);
+
+    debounceTimers[noteId] = setTimeout(() => {
+        const activeTab = noteData.activeTab;
+        if (isTitle) {
+            noteData.tabs[activeTab].title = e.target.innerHTML;
+        } else {
+            noteData.tabs[activeTab].content = e.target.innerHTML;
+        }
+        state.save();
+    }, 800);
+}
+
+function handleNoteFocusOut(e) {
+    const isTitle = e.target.classList.contains('stickynote-title');
+    const isContent = e.target.classList.contains('stickynote-text');
+    if (!isTitle && !isContent) return;
+
+    const sticky = e.target.closest('.stickynote');
+    const noteData = getNoteData(e.target);
+    if (!noteData || !sticky) return;
+
+    const activeTab = noteData.activeTab;
+    const newValue = e.target.innerHTML;
+    let changed = false;
+
+    if (isTitle && noteData.tabs[activeTab].title !== newValue) {
+        noteData.tabs[activeTab].title = newValue;
+        changed = true;
+        const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${activeTab}"] .stickynote-tab-part[data-part="title"]`);
+        if(tabPart) {
+            tabPart.classList.toggle('filled', !!newValue.trim());
+            tabPart.classList.toggle('empty', !newValue.trim());
+        }
+    } else if (isContent && noteData.tabs[activeTab].content !== newValue) {
+        noteData.tabs[activeTab].content = newValue;
+        changed = true;
+        const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${activeTab}"] .stickynote-tab-part[data-part="content"]`);
+        if(tabPart) {
+            tabPart.classList.toggle('filled', !!newValue.trim());
+            tabPart.classList.toggle('empty', !newValue.trim());
+        }
+    }
+
+    if (changed) {
+        state.save();
+        document.dispatchEvent(new CustomEvent('handleSearch'));
+    }
+}
+
+function handleNoteClick(e) {
+    // A) Clic en Pestaña
+    const tabEl = e.target.closest('.stickynote-tab');
+    if (tabEl) {
+        e.stopPropagation();
+        const sticky = tabEl.closest('.stickynote');
+        const noteData = getNoteData(tabEl);
+        if (!noteData || !sticky) return;
+
+        const i = parseInt(tabEl.dataset.tabIndex, 10);
+        if (noteData.activeTab === i) return;
+
+        // Blur manual del contenido actual
+        const activeContent = sticky.querySelector('.stickynote-text.active');
+        if (activeContent) activeContent.blur();
+
+        noteData.activeTab = i;
+        state.save();
+        
+        sticky.querySelector('.stickynote-tab.active')?.classList.remove('active');
+        tabEl.classList.add('active');
+        
+        const content = sticky.querySelector('.stickynote-text');
+        const title = sticky.querySelector('.stickynote-title');
+        if (content) {
+            content.dataset.tabIndex = i;
+            content.innerHTML = noteData.tabs[i].content || '';
+        }
+        if (title) {
+            title.innerHTML = noteData.tabs[i].title || '';
+        }
+        return;
+    }
+
+    // B) Clic en Botón Conectar
+    const connectBtn = e.target.closest('.connect-btn');
+    if (connectBtn) {
+        e.stopPropagation(); 
+        const noteData = getNoteData(connectBtn);
+        if (noteData) {
+            document.dispatchEvent(new CustomEvent('handleConnectionClick', { detail: { noteId: noteData.id } }));
+        }
+        return;
+    }
+}
+
+function handleNoteContextMenu(e) {
+    const tabEl = e.target.closest('.stickynote-tab');
+    if (tabEl) {
+        e.preventDefault(); e.stopPropagation();
+        const noteData = getNoteData(tabEl);
+        if (noteData) {
+            const i = parseInt(tabEl.dataset.tabIndex, 10);
+            document.dispatchEvent(new CustomEvent('showTabContextMenu', { 
+                detail: { x: e.clientX, y: e.clientY, noteId: noteData.id, tabIndex: i } 
+            }));
+        }
+    }
+}
+
+// --- RENDERIZADO DOM ---
 
 export function renderActiveBoard(shouldSave = false, fullRedraw = true) {
     if (shouldSave) state.save();
-    
     if (!fullRedraw) return;
-
     if (!dom.board) return;
     
     dom.board.innerHTML = '';
-    // Disparamos evento para que lineas.js quite las líneas
     document.dispatchEvent(new CustomEvent('removeActiveLines'));
     
     const appState = state.get();
@@ -61,7 +206,6 @@ export function renderActiveBoard(shouldSave = false, fullRedraw = true) {
         dom.board.appendChild(fragment);
     }
     
-    // Disparamos evento para que lineas.js pinte las líneas
     document.dispatchEvent(new CustomEvent('renderConnections'));
 }
 
@@ -77,11 +221,12 @@ export function isColorDark(hexColor) {
 
 export function createStickyNoteElement(noteData, isNew = false, container = null) {
     if (!container) container = dom.board;
-    if (!container) return; // Si no hay DOM, fallamos en silencio
+    if (!container) return; 
     
     const appState = state.get();
     
     const sticky = document.createElement("div");
+    // Añadimos una clase base 'stickynote'
     sticky.className = `stickynote ${noteData.locked ? 'locked' : ''} ${isColorDark(noteData.color) ? 'dark-theme' : ''}`;
     sticky.dataset.noteId = noteData.id;
     sticky.style.cssText = `left:${noteData.x}px; top:${noteData.y}px; width:${noteData.width}px; height:${noteData.height}px; background-color:${noteData.color}; transform:rotate(${noteData.rotation}deg); z-index:${noteData.zIndex};`;
@@ -96,37 +241,13 @@ export function createStickyNoteElement(noteData, isNew = false, container = nul
         sticky.classList.add('has-image');
     }
     
+    // Título (ahora sin Event Listeners directos)
     const title = document.createElement("div");
     title.contentEditable = !noteData.locked;
     title.className = "stickynote-title";
     title.setAttribute("placeholder", "Título...");
     title.innerHTML = noteData.tabs[noteData.activeTab].title || '';
     
-    let titleDebounceTimer;
-    title.addEventListener('input', () => {
-        clearTimeout(titleDebounceTimer);
-        titleDebounceTimer = setTimeout(() => {
-            // Se asume que el objeto es mutado aquí directamente. Lo ideal en Redux es inmutabilidad
-            // pero para esta refactorización Vanilla preservamos la lógica.
-            noteData.tabs[noteData.activeTab].title = title.innerHTML;
-            state.save(); // Dispara la persistencia
-        }, 800);
-    });
-
-    title.addEventListener('blur', () => {
-        const newTitle = title.innerHTML;
-        if (noteData.tabs[noteData.activeTab].title !== newTitle) {
-            noteData.tabs[noteData.activeTab].title = newTitle;
-            state.save();
-            const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${noteData.activeTab}"] .stickynote-tab-part[data-part="title"]`);
-            if(tabPart) {
-                tabPart.classList.toggle('filled', !!newTitle.trim());
-                tabPart.classList.toggle('empty', !newTitle.trim());
-            }
-            document.dispatchEvent(new CustomEvent('handleSearch'));
-        }
-    });
-
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'stickynote-content-wrapper';
     
@@ -136,83 +257,32 @@ export function createStickyNoteElement(noteData, isNew = false, container = nul
     const contentContainer = document.createElement('div');
     contentContainer.className = 'stickynote-content-container';
     
+    // Contenido (ahora sin Event Listeners directos)
     const content = document.createElement("div");
     content.contentEditable = !noteData.locked;
     content.className = `stickynote-text active`;
     content.dataset.tabIndex = noteData.activeTab;
     content.setAttribute("placeholder", "Escribe algo...");
     content.innerHTML = noteData.tabs[noteData.activeTab].content || '';
-    
-    let debounceTimer;
-    content.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        const currentTab = noteData.activeTab;
-        debounceTimer = setTimeout(() => {
-            noteData.tabs[currentTab].content = content.innerHTML;
-            state.save();
-        }, 800);
-    });
-
-    content.addEventListener('blur', () => {
-        const newContent = content.innerHTML;
-        const currentTab = noteData.activeTab;
-        if (noteData.tabs[currentTab].content !== newContent) {
-            noteData.tabs[currentTab].content = newContent;
-            state.save();
-            const tabPart = sticky.querySelector(`.stickynote-tab[data-tab-index="${currentTab}"] .stickynote-tab-part[data-part="content"]`);
-            if(tabPart) {
-                tabPart.classList.toggle('filled', !!newContent.trim());
-                tabPart.classList.toggle('empty', !newContent.trim());
-            }
-            document.dispatchEvent(new CustomEvent('handleSearch'));
-        }
-    });
-
     contentContainer.appendChild(content);
 
+    // Pestañas (ahora sin Event Listeners directos)
     for (let i = 0; i < 5; i++) {
         const tab = document.createElement('div');
         tab.className = `stickynote-tab ${i === noteData.activeTab ? 'active' : ''}`;
         tab.dataset.tabIndex = i;
         tab.innerHTML = `<span class="stickynote-tab-part ${noteData.tabs[i]?.title?.trim() ? 'filled' : 'empty'}" data-part="title">Título</span><span class="stickynote-tab-part ${noteData.tabs[i]?.content?.trim() ? 'filled' : 'empty'}" data-part="content">Cuerpo</span>`;
-        
-        tab.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (noteData.activeTab === i) return;
-
-            content.blur();
-            noteData.activeTab = i;
-            state.save();
-            
-            sticky.querySelector('.stickynote-tab.active')?.classList.remove('active');
-            tab.classList.add('active');
-            
-            content.dataset.tabIndex = i;
-            content.innerHTML = noteData.tabs[i].content || '';
-            title.innerHTML = noteData.tabs[i].title || '';
-        });
-        
-        tab.addEventListener('contextmenu', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            // Disparamos evento para mostrar el menú contextual
-            document.dispatchEvent(new CustomEvent('showTabContextMenu', { 
-                detail: { x: e.clientX, y: e.clientY, noteId: noteData.id, tabIndex: i } 
-            }));
-        });
         tabContainer.appendChild(tab);
     }
     
     const connectionBtnsContainer = document.createElement("div");
     connectionBtnsContainer.className = 'connection-buttons-container';
 
+    // Botón de conexión (ahora manejado por delegación)
     const connectBtn = document.createElement("div");
     connectBtn.className = 'connect-btn';
     connectBtn.innerHTML = '☍';
     connectBtn.title = 'Crear conexión';
-    connectBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        document.dispatchEvent(new CustomEvent('handleConnectionClick', { detail: { noteId: noteData.id } }));
-    });
     connectionBtnsContainer.appendChild(connectBtn);
 
     const resizer = document.createElement("div");
