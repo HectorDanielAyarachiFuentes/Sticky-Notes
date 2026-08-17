@@ -4,8 +4,8 @@
     flex-shrink: 0;
     /* Evita que se encoja */
     background: var(--bg-dark);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* backdrop-filter: blur(16px); */
+    /* -webkit-backdrop-filter: blur(16px); */
     /* Usamos el gradiente definido en root */
     color: var(--text-light);
     padding: 20px;
@@ -1157,7 +1157,7 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
     z-index: 4000;
     opacity: 1;
     transition: opacity 0.3s ease;
-    backdrop-filter: blur(4px);
+    /* backdrop-filter: blur(4px); */
 }
 
 .modal-overlay.hidden {
@@ -1168,8 +1168,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
 .modal-content {
     background: var(--surface-light);
     /* Usamos el gradiente */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* backdrop-filter: blur(16px); */
+    /* -webkit-backdrop-filter: blur(16px); */
     border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 30px 40px;
     border-radius: 12px;
@@ -1850,8 +1850,8 @@ body:not(.palette-pinned) #board-manager.collapsed~#note-palette {
             rgba(255, 255, 255, 0.03) 50%,
             rgba(255, 255, 255, 0.01) 100%
         ) !important;
-        -webkit-backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important;
-        backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important;
+        /* -webkit-backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important; */
+        /* backdrop-filter: blur(18px) saturate(1.8) brightness(1.1) !important; */
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         /* Fade-in: espera 0.15s para que el JS cargue las notas antes de mostrar la barra */
         animation: aero-palette-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both !important;
@@ -1961,7 +1961,7 @@ body.no-palette-transition #board-container {
     inset: 0;
     z-index: 10000;
     background: linear-gradient(135deg, rgba(15,15,26,0.95) 0%, rgba(26,26,46,0.95) 100%);
-    backdrop-filter: blur(10px);
+    /* backdrop-filter: blur(10px); */
     display: flex;
     align-items: center;
     justify-content: center;

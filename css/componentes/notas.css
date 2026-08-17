@@ -167,7 +167,7 @@
     font-weight: bold;
     color: #fff;
     background: rgba(0, 122, 255, 0.45);
-    backdrop-filter: blur(3px);
+    /* backdrop-filter: blur(3px); */
     border-radius: inherit;
     z-index: 100;
     pointer-events: none;
@@ -531,7 +531,7 @@
     /* Oculta por defecto */
     pointer-events: none;
     /* No interactuable cuando estÃ¡ oculta */
-    backdrop-filter: blur(5px);
+    /* backdrop-filter: blur(5px); */
 }
 
 @keyframes shake {
@@ -616,8 +616,8 @@
     position: fixed;
     z-index: 2000;
     background: var(--surface-light);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* backdrop-filter: blur(16px); */
+    /* -webkit-backdrop-filter: blur(16px); */
     /* Usamos el gradiente */
     border-radius: 12px;
     /* Aumentamos el redondeo para un look más suave */
@@ -718,7 +718,7 @@
     transform: scale(1);
     transform-origin: top left;
     transition: opacity 0.2s ease-out, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-    backdrop-filter: blur(10px);
+    /* backdrop-filter: blur(10px); */
 }
 
 #line-context-menu.hidden {
@@ -906,8 +906,8 @@
     z-index: 2001;
     /* Encima del menú contextual */
     background: var(--surface-light);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* backdrop-filter: blur(16px); */
+    /* -webkit-backdrop-filter: blur(16px); */
     /* Usamos el gradiente */
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
@@ -1007,7 +1007,7 @@
     border-radius: 25px;
     box-shadow: var(--shadow-lg);
     animation: toast-fade-in-out 4s ease-in-out forwards;
-    backdrop-filter: blur(5px);
+    /* backdrop-filter: blur(5px); */
 }
 
 /* --- PESTAÃ‘A DE CURSOR --- */

@@ -402,13 +402,19 @@ function animateRainbow() {
         return;
     }
 
-    // Avanzar frames por ticks según la velocidad (1–10 → 1–3 frames por tick)
-    const framesPerTick = Math.max(1, Math.round((rainbowSpeed / 10) * 3));
-    _rainbowFrameIndex = (_rainbowFrameIndex + framesPerTick) % _rainbowFrameCache.length;
-    applyRainbowFrame();
+    const now = performance.now();
+    if (!window._lastRainbowTime) window._lastRainbowTime = now;
+    
+    // Throttle a ~15fps (aprox 66ms) para no ahogar el CPU
+    if (now - window._lastRainbowTime >= 66) {
+        window._lastRainbowTime = now;
+        const framesPerTick = Math.max(1, Math.round((rainbowSpeed / 10) * 3));
+        _rainbowFrameIndex = (_rainbowFrameIndex + framesPerTick) % _rainbowFrameCache.length;
+        applyRainbowFrame();
+    }
 
-    // ~12fps: suficiente para ver el efecto sin cargar el CPU
-    rainbowAnimationId = setTimeout(animateRainbow, 80);
+    // Usar requestAnimationFrame en lugar de setTimeout para sincronizar con la GPU
+    rainbowAnimationId = requestAnimationFrame(animateRainbow);
 }
 
 /**
