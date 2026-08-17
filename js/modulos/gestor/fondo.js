@@ -35,8 +35,8 @@ export async function initializeBackgroundManager(appStateRef, domRefs, callback
 
     try {
         const [gradients, stripes] = await Promise.all([
-            fetch('fondo/gradients.json').then(res => res.json()),
-            fetch('fondo/gradientesraya.json').then(res => res.json())
+            fetch('assets/data/fondo/gradients.json').then(res => res.json()),
+            fetch('assets/data/fondo/gradientesraya.json').then(res => res.json())
         ]);
         createBackgroundPreviews('Gradientes', gradients, false);
         createBackgroundPreviews('Rayas', stripes, true);

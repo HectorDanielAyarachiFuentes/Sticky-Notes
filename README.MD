@@ -2,7 +2,7 @@
 
 ¡Bienvenido al **Tablero de Notas Adhesivas Interactivo**! Una aplicación web dinámica, hermosa y altamente personalizable diseñada para ayudarte a organizar tus ideas, gestionar proyectos y colaborar de forma visual. Desde un simple tablero Kanban hasta un complejo mapa mental, esta herramienta te da la libertad de crear sin límites.
 
-![Vista General de la Aplicación](img-readme/1_vision_general.png)
+![Vista General de la Aplicación](assets/img/readme/1_vision_general.png)
 
 ---
 
@@ -28,57 +28,57 @@ A continuación, te mostramos las principales interfaces y funcionalidades desta
 ### 1. Paleta de Notas Rápida
 Arrastra y suelta notas de colores predeterminados rápidamente desde el panel derecho hacia el tablero para empezar a mapear tus ideas.
 
-![Paleta de notas](img-readme/2_paleta_notas.png)
+![Paleta de notas](assets/img/readme/2_paleta_notas.png)
 
 ### 2. Gestor de Tableros
 Administra tus espacios de trabajo: renombra, elimina y visualiza todos los tableros activos de un vistazo.
 
-![Gestor de Tableros](img-readme/3_gestor_tableros.png)
+![Gestor de Tableros](assets/img/readme/3_gestor_tableros.png)
 
 ### 3. Plantillas de Creación
 Usa el menú de "Crear" para invocar componentes complejos, como *Prioridades*, *Matriz FODA* o *Kanban* inmediatamente sobre tu lienzo.
 
-![Plantillas](img-readme/4_crear_plantillas.png)
+![Plantillas](assets/img/readme/4_crear_plantillas.png)
 
 ### 4. Estilo de Líneas y Mapeo
 Configura de forma granular las conexiones visuales (color, patrón, formas, puntas de flecha) para crear mapas conceptuales vibrantes.
 
-![Estilo de líneas](img-readme/5_estilo_lineas.png)
+![Estilo de líneas](assets/img/readme/5_estilo_lineas.png)
 
 ### 5. Compartir y Exportar a JSON
 Comparte tu estado de trabajo exportándolo en un archivo `.json` que puedes restaurar sin depender de bases de datos.
 
-![Compartir e importar](img-readme/6_compartir.png)
+![Compartir e importar](assets/img/readme/6_compartir.png)
 
 ### 6. Fondos Personalizables
 Cambia el tapiz visual de tu espacio de trabajo. Puedes aplicar el diseño general al fondo principal o texturizar las notas individualmente.
 
-![Personalización del fondo](img-readme/7_fondos.png)
+![Personalización del fondo](assets/img/readme/7_fondos.png)
 
 ### 7. Configuración de Cursores Animados
 ¡Un toque de diversión! Cambia el color de tu puntero, y activa el exclusivo "Modo Arcoíris" con controles de velocidad.
 
-![Cursores dinámicos](img-readme/8_cursores.png)
+![Cursores dinámicos](assets/img/readme/8_cursores.png)
 
 ### 8. Búsqueda Global y Resaltado
 Al introducir términos en la barra de búsqueda (pestaña Tableros), la aplicación resaltará las coincidencias tanto en el gestor lateral como en el tablero en tiempo real.
 
-![Búsqueda inteligente](img-readme/12_busqueda.png)
+![Búsqueda inteligente](assets/img/readme/12_busqueda.png)
 
 ### 9. Contextual Menú y Bloqueo
 Haz clic derecho sobre cualquier nota para duplicarla, bloquearla, cambiarle color o manipular todas sus líneas conectadas.
 
-![Menú contextual](img-readme/10_menu_contextual.png)
+![Menú contextual](assets/img/readme/10_menu_contextual.png)
 
 ### 10. Papelera de Reciclaje
 Arrastra notas a la papelera o revisa los archivos temporales eliminados para evitar pérdida de datos. ¡Todo es reversible antes del vaciado final!
 
-![Gestor de papelera](img-readme/9_papelera.png)
+![Gestor de papelera](assets/img/readme/9_papelera.png)
 
 ### 11. Sobre el Desarrollador
 Explora el hermoso modal de información, con música dedicada, animaciones y visor visual. ¡Escrito todo a mano!
 
-![Información del desarrollador](img-readme/11_sobre_mi.png)
+![Información del desarrollador](assets/img/readme/11_sobre_mi.png)
 
 ---
 

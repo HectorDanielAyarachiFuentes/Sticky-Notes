@@ -57,12 +57,12 @@ body {
 /* La URL del cursor se define con una variable CSS (--cursor-default) que se puede cambiar con JS */
 body,
 #board-container {
-    cursor: var(--cursor-default, url('../cursors/cursor.svg') 10 2, auto) !important;
+    cursor: var(--cursor-default, url('../assets/cursors/cursor.svg') 10 2, auto) !important;
 }
 
 /* Cursor por defecto para las notas, para que no herede el de agarre al mover */
 .stickynote {
-    cursor: var(--cursor-default, url('../cursors/cursor.svg') 10 2, auto);
+    cursor: var(--cursor-default, url('../assets/cursors/cursor.svg') 10 2, auto);
 }
 
 /* Cursor de mano para elementos clickeables */
@@ -82,7 +82,7 @@ a,
 .stickynote-tab,
 .background-preview,
 #board-manager li {
-    cursor: var(--cursor-pointer, url('../cursors/hand.svg') 8 2, pointer) !important;
+    cursor: var(--cursor-pointer, url('../assets/cursors/hand.svg') 8 2, pointer) !important;
 }
 
 /* Cursor de agarre para elementos que se estÃ¡n arrastrando o agarrando */
@@ -91,14 +91,14 @@ a,
 .palette-note:active,
 body.panning,
 body.panning * {
-    cursor: var(--cursor-grabbing, url('../cursors/grabing.svg') 16 16, grabbing) !important;
+    cursor: var(--cursor-grabbing, url('../assets/cursors/grabing.svg') 16 16, grabbing) !important;
 }
 
 /* Cursor de mano abierta (grab) para el fondo del tablero cuando se puede mover */
 .pannable {
     /* Usamos el cursor de mano, pero con el valor 'grab' para indicar que se puede agarrar */
     /* No usamos !important para que la clase .panning pueda sobreescribirlo */
-    cursor: var(--cursor-pointer, url('../cursors/hand.svg') 8 2, grab);
+    cursor: var(--cursor-pointer, url('../assets/cursors/hand.svg') 8 2, grab);
 }
 
 /* Cursor de texto para Ã¡reas de escritura */
@@ -106,6 +106,6 @@ body.panning * {
 .stickynote-text,
 #board-manager #search-input,
 #share-link-output {
-    cursor: var(--cursor-text, url('../cursors/cursor-text.svg') 8 8, text) !important;
+    cursor: var(--cursor-text, url('../assets/cursors/cursor-text.svg') 8 8, text) !important;
 }
 

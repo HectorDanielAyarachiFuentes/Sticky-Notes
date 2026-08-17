@@ -15,7 +15,7 @@
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1a1a2e">
     <link rel="image_src"
-        href="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+        href="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/assets/img/metadatos/dulce.png?raw=true">
 
     <!-- Metadatos Open Graph para Redes Sociales (Facebook, LinkedIn, etc.) -->
     <meta property="og:title" content="Tablero de Notas Adhesivas Interactivo">
@@ -24,7 +24,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://hectordanielayarachifuentes.github.io/Sticky-Notes/">
     <meta property="og:image"
-        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/assets/img/metadatos/dulce.png?raw=true">
     <meta property="og:image:alt" content="Mascota Dulce de la aplicación Sticky Notes">
 
     <!-- Metadatos para Twitter Card -->
@@ -33,11 +33,11 @@
     <meta name="twitter:description"
         content="Crea y organiza tus ideas con tableros de notas adhesivas virtuales, personalizables y fáciles de usar.">
     <meta name="twitter:image"
-        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/img-metadatos/dulce.png?raw=true">
+        content="https://github.com/HectorDanielAyarachiFuentes/Sticky-Notes/blob/main/assets/img/metadatos/dulce.png?raw=true">
     <meta name="twitter:image:alt" content="Mascota Dulce de la aplicación Sticky Notes">
 
     <!-- Links -->
-    <link rel="icon" href="svg/favicon-nota.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/img/svg/favicon-nota.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/componentes/tablero.css">
@@ -75,10 +75,10 @@
         <h3>
             Gestor
             <button id="about-btn" aria-label="Abrir información sobre el desarrollador">
-                <img src="svg/sobremi.svg" alt="">
+                <img src="assets/img/svg/sobremi.svg" alt="">
             </button>
             <span id="sidebar-collapse-btn" role="button" tabindex="0" aria-label="Ocultar panel lateral"><img
-                    src="svg/izquierda.svg" alt=""></span>
+                    src="assets/img/svg/izquierda.svg" alt=""></span>
         </h3>
 
         <nav class="tab-nav" role="tablist" aria-label="Navegación del panel de control">
@@ -466,29 +466,29 @@
             tabindex="0"></div>
     </aside>
 
-    <button id="sidebar-expander" aria-label="Mostrar panel lateral" aria-expanded="false"><img src="svg/derecha.svg"
+    <button id="sidebar-expander" aria-label="Mostrar panel lateral" aria-expanded="false"><img src="assets/img/svg/derecha.svg"
             alt=""></button>
 
     <button id="palette-expander" aria-label="Mostrar paleta de notas" aria-expanded="false"><img
-            src="svg/izquierda.svg" alt=""></button>
+            src="assets/img/svg/izquierda.svg" alt=""></button>
 
     <aside id="note-palette" role="complementary" aria-label="Paleta de plantillas de notas">
         <div class="palette-header">
             <div class="palette-title-container">
-                <img src="svg/crear-nota.svg" alt="Crear Nota" class="palette-create-icon">
+                <img src="assets/img/svg/crear-nota.svg" alt="Crear Nota" class="palette-create-icon">
             </div>
             <button id="pin-palette-btn" aria-label="Fijar o desfijar paleta" aria-pressed="false">
-                <img src="svg/pin.svg" alt="" class="pin-icon">
+                <img src="assets/img/svg/pin.svg" alt="" class="pin-icon">
             </button>
         </div>
         <div class="scroll-indicator-up" aria-hidden="true">
-            <img src="svg/arriba.svg" alt="">
+            <img src="assets/img/svg/arriba.svg" alt="">
         </div>
         <div id="palette-scroll-container" role="list" aria-label="Plantillas de notas disponibles">
             <!-- Las notas de plantilla se generarán aquí con JS -->
         </div>
         <div class="scroll-indicator" aria-hidden="true">
-            <img src="svg/abajo.svg" alt="">
+            <img src="assets/img/svg/abajo.svg" alt="">
         </div>
     </aside>
     <script>
@@ -519,7 +519,7 @@
 
     <div id="trash-can" role="button" tabindex="0" aria-label="Papelera, arrastra aquí para eliminar notas"
         aria-dropeffect="move">
-        <img src="svg/trash-full-svgrepo-com.svg" alt="">
+        <img src="assets/img/svg/trash-full-svgrepo-com.svg" alt="">
     </div>
 
     <!-- Menú Contextual Personalizado -->
@@ -615,13 +615,13 @@
     <!-- Modal "Sobre Mí" -->
     <div id="about-modal" class="modal-overlay hidden" role="dialog" aria-labelledby="modal-title" aria-modal="true">
         <div class="modal-content">
-            <audio id="about-modal-audio" src="musica/dulcehermosa.mp3" loop
+            <audio id="about-modal-audio" src="assets/audio/dulcehermosa.mp3" loop
                 aria-label="Música de fondo del modal"></audio>
             <button class="modal-close-btn" aria-label="Cerrar ventana modal">&times;</button>
             <div class="modal-header">
                 <div class="about-image-container">
                     <canvas id="audio-visualizer" aria-hidden="true"></canvas>
-                    <img src="img-about\Dulce.gif" alt="Mascota de la aplicación" class="about-modal-img">
+                    <img src="assets/img/about\Dulce.gif" alt="Mascota de la aplicación" class="about-modal-img">
                 </div>
                 <h2 class="modal-title" id="modal-title">Héctor Daniel Ayarachi Fuentes</h2>
                 <p class="modal-subtitle">Desarrollador Front-End</p>
@@ -632,9 +632,9 @@
                 <div class="skills-container">
                     <h3>Tecnologías Utilizadas</h3>
                     <div class="skills-list" role="list" aria-label="Lista de tecnologías utilizadas">
-                        <div class="skill-item" role="listitem"><img src="svg/html5.svg" alt=""><span>HTML5</span></div>
-                        <div class="skill-item" role="listitem"><img src="svg/css3.svg" alt=""><span>CSS3</span></div>
-                        <div class="skill-item" role="listitem"><img src="svg/js.svg" alt=""><span>JavaScript</span>
+                        <div class="skill-item" role="listitem"><img src="assets/img/svg/html5.svg" alt=""><span>HTML5</span></div>
+                        <div class="skill-item" role="listitem"><img src="assets/img/svg/css3.svg" alt=""><span>CSS3</span></div>
+                        <div class="skill-item" role="listitem"><img src="assets/img/svg/js.svg" alt=""><span>JavaScript</span>
                         </div>
                     </div>
                 </div>

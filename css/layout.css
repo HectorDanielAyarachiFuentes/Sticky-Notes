@@ -390,7 +390,7 @@
     top: 0;
     width: 5px;
     height: 100%;
-    cursor: var(--cursor-ew_resize, url('../cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
+    cursor: var(--cursor-ew_resize, url('../assets/cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
     z-index: 201;
     /* Por encima del contenido del panel */
     background-color: transparent;
@@ -405,7 +405,7 @@
 /* Cuando se estÃ¡ redimensionando, aplicamos el cursor a todo el body */
 body.sidebar-resizing,
 body.sidebar-resizing * {
-    cursor: var(--cursor-ew_resize, url('../cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
+    cursor: var(--cursor-ew_resize, url('../assets/cursors/cursor-ew-resize.svg') 16 16, ew-resize) !important;
 }
 
 /* Cuando se estÃ¡ redimensionando una NOTA, forzamos el cursor de redimensionar en todo el body */
