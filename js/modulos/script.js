@@ -1,3 +1,7 @@
+import { state } from './gestor/estadoApp.js';
+import { initializeTableros, switchBoard, deleteBoard } from './gestor/tableros.js';
+import { initializeNotasDOM, renderActiveBoard, createStickyNoteElement, bringToFront, isColorDark } from './gestor/notasDOM.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
     // --- IMPORTACIÓN DE MÓDULOS ---
     // Optimización de Carga: Cargar todos los módulos en paralelo
@@ -75,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Pestaña de fondos
     const backgroundOptionsContainer = document.getElementById("background-options-container");
     const resetBackgroundBtn = document.getElementById("reset-background-btn");
-    document.addEventListener('saveAppState', saveState);
+    document.addEventListener('saveAppState', () => state.save());
 
     const bgApplyToBoardCard = document.getElementById("bg-apply-board");
     const bgApplyToNotesCard = document.getElementById("bg-apply-notes");
@@ -193,136 +197,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let popoverOriginalColor = null;
 
     // --- GESTIÓN DE ESTADO DE LA APLICACIÓN ---
-    let appState = {};
+    let appState = state.get();
     let contextMenuNoteId = null;
     let contextMenuTabInfo = null;
     let popoverNoteId = null;
-    let maxZIndex = 0;
+
+    state.subscribe((newState) => {
+        appState = newState;
+    });
 
     // --- FUNCIONES DE ESTADO (GUARDAR Y CARGAR) ---
-    function saveState() {
-        const stateString = JSON.stringify(appState, (key, value) => {
-            if (key === 'history' || key === 'historyTitle' || key === 'historyIndex' || key === 'historyTitleIndex') {
-                return undefined;
-            }
-            return value;
-        });
-        localStorage.setItem('stickyNotesApp', stateString);
-        updateStorageIndicator();
-    }
-
-    /**
-     * Calcula el uso del localStorage y actualiza la barra de progreso en la sidebar.
-     * Límite estimado: 5 MB (5,120 KB).
-     */
-    function updateStorageIndicator() {
-        const LIMIT_BYTES = 5 * 1024 * 1024; // 5 MB
-        let usedBytes = 0;
-        try {
-            for (const key in localStorage) {
-                if (!localStorage.hasOwnProperty(key)) continue;
-                usedBytes += (localStorage[key].length + key.length) * 2; // UTF-16: 2 bytes por char
-            }
-        } catch (e) { /* seguro */ }
-
-        const pct = Math.min(100, (usedBytes / LIMIT_BYTES) * 100);
-        const usedKB  = (usedBytes / 1024).toFixed(1);
-        const totalMB = (LIMIT_BYTES / 1024 / 1024).toFixed(0);
-
-        const bar  = document.getElementById('storage-bar-fill');
-        const text = document.getElementById('storage-text');
-        const track = bar?.closest('[role="progressbar"]');
-
-        if (!bar || !text) return;
-
-        bar.style.width = `${pct.toFixed(1)}%`;
-        bar.classList.remove('warn', 'danger');
-        if (pct >= 90)      bar.classList.add('danger');
-        else if (pct >= 70) bar.classList.add('warn');
-
-        text.textContent = `${usedKB} KB / ${totalMB} MB`;
-        track?.setAttribute('aria-valuenow', Math.round(pct));
-
-        // Toast de advertencia cuando supera el 90%
-        if (pct >= 90) {
-            showToast('⚠️ ¡Almacenamiento casi lleno! Considera borrar tableros o notas.');
-        }
-    }
-
-    function loadState() {
-        const savedState = localStorage.getItem('stickyNotesApp');
-        if (savedState) {
-            const loadedState = JSON.parse(savedState);
-            Object.values(loadedState.boards).forEach(board => {
-                // Migración a fondos separados
-                if (board.background !== undefined) {
-                    board.backgroundBoard = board.backgroundApplyTo?.board ? board.background : null;
-                    board.backgroundNotes = board.backgroundApplyTo?.notes ? board.background : null;
-                    delete board.background;
-                    delete board.backgroundApplyTo;
-                }
-                
-                board.notes.forEach(note => {
-                    if (note.locked === undefined) note.locked = false;
-                    if (note.tabs === undefined) {
-                        const oldTabsContent = note.content ? [note.content, '', '', '', ''] : (note.tabs || ['', '', '', '', '']);
-                        note.tabs = oldTabsContent.map((content, index) => ({
-                            title: index === 0 ? (note.title || '') : '',
-                            content: content || ''
-                        }));
-                        note.activeTab = 0;
-                        delete note.content;
-                        delete note.title;
-                    }
-                });
-                if (!loadedState.trash) loadedState.trash = [];
-                if (!loadedState.boardsTrash) loadedState.boardsTrash = [];
-                board.notes.forEach(note => {
-                    if (note.zIndex === undefined) {
-                        note.zIndex = ++maxZIndex;
-                    } else if (note.zIndex > maxZIndex) {
-                        maxZIndex = note.zIndex;
-                    }
-                });
-                if (board.lineOptions && board.lineOptions.sidebarWidth) {
-                    loadedState.sidebarWidth = board.lineOptions.sidebarWidth;
-                    delete board.lineOptions.sidebarWidth;
-                }
-            });
-            if (loadedState.isSidebarCollapsed === undefined) {
-                loadedState.isSidebarCollapsed = false;
-                loadedState.isPalettePinned = true;
-            }
-            if (!loadedState.globalHistory) loadedState.globalHistory = [];
-            if (!loadedState.globalRedoHistory) loadedState.globalRedoHistory = [];
-            appState = loadedState;
-        } else {
-            const initialBoardId = `board-${Date.now()}`;
-            appState = {
-                boards: {
-                    [initialBoardId]: {
-                        id: initialBoardId, name: 'Tablero Principal', notes: [], connections: [],
-                        backgroundBoard: null,
-                        backgroundNotes: null
-                    }
-                },
-                boardsTrash: [], trash: [], zoomLevel: 1.0, isPalettePinned: true,
-                isSidebarCollapsed: false, activeBoardId: initialBoardId, sidebarWidth: 260,
-                globalHistory: [], globalRedoHistory: [],
-                lineOptions: { color: '#4B4B4B', opacity: 0.8, size: 4, path: 'fluid', startPlug: 'behind', endPlug: 'arrow1', dash: false, dropShadow: false, label: '' }
-            };
-        }
-        if (appState.lineOptions.promptBeforeDelete === undefined) {
-            appState.lineOptions.promptBeforeDelete = true;
-        }
-        if (appState.promptBeforeDeleteNote === undefined) {
-            appState.promptBeforeDeleteNote = true;
-        }
-        // Inicializar posición de paleta si no existe
-        if (!appState.palettePosition) {
-            appState.palettePosition = 'left';
-        }
-    }
+    const saveState = () => state.save();
+    const loadState = () => state.load();
+    const updateStorageIndicator = () => state.updateStorageIndicator();
 
     // --- FUNCIONES DE LA PALETA DE NOTAS ---
     function togglePalettePin() {
