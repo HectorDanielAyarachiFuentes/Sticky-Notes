@@ -718,8 +718,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function bringToFront(noteElement, noteData) {
-        if (noteData.zIndex >= maxZIndex) return;
-        noteData.zIndex = ++maxZIndex;
+        if (noteData.zIndex >= state.maxZIndex) return;
+        noteData.zIndex = state.getNewZIndex();
         noteElement.style.zIndex = noteData.zIndex;
         saveState();
     }
@@ -838,7 +838,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             id: `note-${Date.now()}`,
             x: originalNoteData.x + 20,
             y: originalNoteData.y + 20,
-            zIndex: ++maxZIndex,
+            zIndex: state.getNewZIndex(),
             locked: false
         };
         appState.boards[appState.activeBoardId].notes.push(newNoteData);
@@ -1297,11 +1297,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const noteInteractionCallbacks = {
             handleConnectionClick, bringToFront, updateAllLinesPosition, moveNoteToTrash, saveState,
             renderActiveBoard, createDefaultBoard, switchBoard, showToast, createStickyNoteElement, showConfirmationModal,
-            getNewZIndex: () => ++maxZIndex
+            getNewZIndex: () => state.getNewZIndex()
         };
         initializeNoteInteractions(appState, noteInteractionDOM, noteInteractionCallbacks);
 
-        initializeCreateTab(appState, switchBoard, () => ++maxZIndex);
+        initializeCreateTab(appState, switchBoard, () => state.getNewZIndex());
 
         const cursorDOM = { cursorColorInput, resetCursorBtn };
         initializeCursorManager(appState, cursorDOM, { saveState });
